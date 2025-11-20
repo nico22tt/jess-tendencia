@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Added custom font imports for Space Grotesk and DM Sans */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap");
+
+@layer base {
+  :root {
+    /* Updated color tokens for Jess Tendencia fashion brand with pastel pink theme */
+    --background: 0 0% 100%; /* Pure white */
+    --foreground: 0 0% 13%; /* Dark gray for text */
+    --card: 0 0% 98%; /* Light gray for cards */
+    --card-foreground: 0 0% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 13%;
+    --primary: 350 80% 80%; /* Soft pastel pink */
+    --primary-foreground: 0 0% 13%;
+    --secondary: 0 0% 95%; /* Light gray */
+    --secondary-foreground: 0 0% 13%;
+    --muted: 0 0% 98%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 345 60% 65%; /* Deeper pink for CTAs */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 92%; /* Soft gray borders */
+    --input: 0 0% 100%;
+    --ring: 345 60% 65%;
+    --chart-1: 350 80% 80%;
+    --chart-2: 345 60% 65%;
+    --chart-3: 0 0% 95%;
+    --chart-4: 0 0% 98%;
+    --chart-5: 0 0% 100%;
+    --radius: 0.5rem;
+    --sidebar: 0 0% 98%; /* Light gray sidebar */
+    --sidebar-foreground: 0 0% 13%;
+    --sidebar-primary: 350 80% 80%; /* Pastel pink */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 345 60% 65%; /* Deeper pink */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 92%;
+    --sidebar-ring: 345 60% 65%;
+  }
+
+  .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 15%;
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 85% 97%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 40%;
+    --chart-1: 264 70% 50%;
+    --chart-2: 162 70% 60%;
+    --chart-3: 70 70% 70%;
+    --chart-4: 304 70% 60%;
+    --chart-5: 16 70% 65%;
+    --sidebar: 0 0% 15%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 264 70% 50%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 40%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+
+  /* Added custom font family classes */
+  .font-heading {
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .font-body {
+    font-family: "DM Sans", sans-serif;
+  }
+}
+
+/* Adding scrollbar-hide utility for carousel */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

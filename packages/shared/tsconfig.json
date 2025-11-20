@@ -1,0 +1,13 @@
+{
+  "extends": "@jess/typescript-config/react-library.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "include": [
+    "contexts/**/*.tsx",
+    "hooks/**/*.ts",
+    "lib/**/*.ts",
+    "components/**/*.tsx"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,17 @@
+# dependencies
+node_modules
+
+# env files
+.env
+.env.local
+.env*.local
+
+# next.js
+.next/
+out/
+
+# turbo
+.turbo
+
+# vercel
+.vercel

@@ -1,0 +1,38 @@
+{
+  "name": "@jess/shared",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    "./contexts/auth": "./contexts/auth-context.tsx",
+    "./contexts/cart": "./contexts/cart-context.tsx",
+    "./hooks/use-mobile": "./hooks/use-mobile.ts",
+    "./hooks/use-toast": "./hooks/use-toast.ts",
+    "./lib/utils": "./lib/utils.ts",
+    "./components/protected-route": "./components/protected-route.tsx",
+    "./components/sidebar": "./components/sidebar.tsx",
+    "./components/theme-provider": "./components/theme-provider.tsx",
+    "./types/product": "./types/product.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@jess/ui": "workspace:*",
+    "@supabase/supabase-js": "^2.39.0",
+    "clsx": "^2.1.1",
+    "next-themes": "^0.4.4",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@jess/eslint-config": "workspace:*",
+    "@jess/typescript-config": "workspace:*",
+    "@types/react": "^19",
+    "typescript": "5.9.2"
+  }
+}
