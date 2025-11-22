@@ -1,0 +1,13 @@
+/* Si tienes Tailwind, usa esto: */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Si no, deja el archivo vacío */
+:root {
+  --background: 18 7% 8%;
+  --foreground: 0 0% 98%;
+  --card: 240 4% 16%;
+  --card-foreground: 0 0% 98%;
+  /* ...pon aquí todas las variables que usaste en tailwind.config.ts... */
+}

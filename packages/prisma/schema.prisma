@@ -1,0 +1,25 @@
+// packages/prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  urlSlug     String
+  sku         String
+  basePrice   Int
+  salePrice   Int
+  stock       Int
+  category    String
+  subcategory String
+  brand       String
+  isPublished Boolean
+  images      Json
+}

@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Personalizaciones de admin aquí */
+:root {
+  --background: 18 7% 8%;
+  --foreground: 0 0% 98%;
+  --card: 240 4% 16%;
+  --card-foreground: 0 0% 98%;
+  /* ...pon aquí todas las variables que usaste en tailwind.config.ts... */
+}

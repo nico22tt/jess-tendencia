@@ -8,33 +8,33 @@ const navigationSections = [
   {
     title: "Application",
     items: [
-      { name: "Home", icon: Home, href: "/admin/dashboard" },
-      { name: "Inbox", icon: Inbox, href: "/admin/inbox" },
-      { name: "Calendar", icon: Calendar, href: "/admin/calendar" },
-      { name: "Search", icon: Search, href: "/admin/search" },
-      { name: "Settings", icon: Settings, href: "/admin/settings" },
+      { name: "Home", icon: Home, href: "/dashboard" },
+      { name: "Inbox", icon: Inbox, href: "/dashboard/inbox" },
+      { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
+      { name: "Search", icon: Search, href: "/dashboard/search" },
+      { name: "Settings", icon: Settings, href: "/dashboard/settings" },
     ],
   },
   {
     title: "Products",
     items: [
-      { name: "See All Products", icon: Package, href: "/admin/products" },
-      { name: "Add Product", icon: Plus, href: "/admin/products/add" },
-      { name: "Add Category", icon: Plus, href: "/admin/categories/add" },
+      { name: "See All Products", icon: Package, href: "/dashboard/products" },
+      { name: "Add Product", icon: Plus, href: "/dashboard/products/add" },
+      { name: "Add Category", icon: Plus, href: "/dashboard/categories/add" },
     ],
   },
   {
     title: "Users",
     items: [
-      { name: "See All Users", icon: Users, href: "/admin/users" },
-      { name: "Add User", icon: Plus, href: "/admin/users/add" },
+      { name: "See All Users", icon: Users, href: "/dashboard/users" },
+      { name: "Add User", icon: Plus, href: "/dashboard/users/add" },
     ],
   },
   {
     title: "Orders/Payments",
     items: [
-      { name: "See All Transactions", icon: CreditCard, href: "/admin/transactions" },
-      { name: "Add Order", icon: ShoppingCart, href: "/admin/orders/add" },
+      { name: "See All Transactions", icon: CreditCard, href: "/dashboard/transactions" },
+      { name: "Add Order", icon: ShoppingCart, href: "/dashboard/orders/add" },
     ],
   },
 ]

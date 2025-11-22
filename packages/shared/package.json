@@ -7,6 +7,7 @@
     "./contexts/cart": "./contexts/cart-context.tsx",
     "./hooks/use-mobile": "./hooks/use-mobile.ts",
     "./hooks/use-toast": "./hooks/use-toast.ts",
+    "./lib/supabase": "./lib/supabase.ts",
     "./lib/utils": "./lib/utils.ts",
     "./components/protected-route": "./components/protected-route.tsx",
     "./components/sidebar": "./components/sidebar.tsx",

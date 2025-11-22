@@ -1,29 +1,14 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { Button } 
-
-from "@jess/ui/button"
-import { Input } 
-
-from "@jess/ui/input"
-import { Label } 
-
-from "@jess/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } 
-
-from "@jess/ui/card"
-import { Alert, AlertDescription } 
-
-from "@jess/ui/alert"
+import React, { useState } from "react"
+import { useAuth } from "@jess/shared/contexts/auth-context"
+import { Button } from "@jess/ui/button"
+import { Input } from "@jess/ui/input"
+import { Label } from "@jess/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@jess/ui/card"
+import { Alert, AlertDescription } from "@jess/ui/alert"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
-import { useAuth } 
-from "@jess/shared/contexts/auth"
-
-
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -55,15 +40,18 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    console.log('SUBMIT') // <-- Aquí lo agregas
     if (!validateForm()) return
 
     try {
       await login(formData.email, formData.password)
-    } catch (error) {
-      setErrors({ general: "Error al iniciar sesión. Verifica tus credenciales." })
+      // La redirección la maneja el contexto
+    } catch (error: any) {
+      setErrors({ general: error.message || "Error al iniciar sesión. Verifica tus credenciales." })
     }
   }
+
+
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -87,7 +75,6 @@ export default function LoginPage() {
                   <AlertDescription className="text-xs">{errors.general}</AlertDescription>
                 </Alert>
               )}
-
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Correo Electrónico
@@ -109,7 +96,6 @@ export default function LoginPage() {
                   </Alert>
                 )}
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                   Contraseña
@@ -138,7 +124,6 @@ export default function LoginPage() {
                   </Alert>
                 )}
               </div>
-
               <Button
                 type="submit"
                 className="w-full bg-pink-500 hover:bg-pink-600 text-white font-medium py-2.5"
@@ -147,12 +132,10 @@ export default function LoginPage() {
                 {isLoading ? "Ingresando..." : "Ingresar"}
               </Button>
             </form>
-
             <div className="text-center space-y-4">
               <Link href="/forgot-password" className="text-sm text-pink-600 hover:text-pink-700 hover:underline">
                 ¿Olvidaste tu contraseña?
               </Link>
-
               <div className="text-sm text-gray-600">
                 ¿No tienes cuenta?{" "}
                 <Link href="/register" className="text-pink-600 hover:text-pink-700 font-medium hover:underline">

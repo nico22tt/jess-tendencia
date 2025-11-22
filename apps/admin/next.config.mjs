@@ -5,13 +5,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
-    unoptimized: true,
-  },
+    // Permite todas las imágenes en /public para src="/placeholder.svg" y similares
+    localPatterns: [
+      { pathname: '/**' }
+    ]
+  }
 }
 
 export default nextConfig

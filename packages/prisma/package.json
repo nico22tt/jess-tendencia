@@ -1,0 +1,17 @@
+{
+  "name": "prisma",
+  "version": "1.0.0",
+  "main": "prisma-client.ts",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^7.0.0"
+  },
+  "scripts": {
+  "generate": "prisma generate"
+},
+
+  "devDependencies": {
+    "prisma": "^7.0.0"
+  }
+  
+}

@@ -147,7 +147,7 @@ export default function UsersPage() {
                 <h1 className="text-3xl font-bold text-white">Gestión de Usuarios</h1>
                 <p className="text-zinc-400 mt-1">Administra todos los usuarios de tu plataforma</p>
               </div>
-              <Link href="/admin/users/add">
+              <Link href="/dashboard/users/add">
                 <Button className="bg-pink-600 hover:bg-pink-700 text-white">
                   <Plus className="h-5 w-5 mr-2" />
                   Añadir Nuevo Usuario
@@ -231,7 +231,7 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Link href={`/admin/users/edit/${user.id}`}>
+                          <Link href={`/dashboard/users/edit/${user.id}`}>
                             <Button
                               size="sm"
                               variant="outline"

@@ -1,28 +1,19 @@
 "use client"
 
 import type React from "react"
-
+import { useAuth } from "@jess/shared/contexts/auth-context"
 import { useState } from "react"
-import { Button } 
-
-from "@jess/ui/button"
-import { Input } 
-
-from "@jess/ui/input"
-import { Label } 
-
-from "@jess/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } 
-
-from "@jess/ui/card"
-import { Alert, AlertDescription } 
-
-from "@jess/ui/alert"
+import { Button } from "@jess/ui/button"
+import { Input } from "@jess/ui/input"
+import { Label } from "@jess/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@jess/ui/card"
+import { Alert, AlertDescription } from "@jess/ui/alert"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 
 export default function RegisterPage() {
+  const { register, isLoading } = useAuth()
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,8 +23,6 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -71,14 +60,11 @@ export default function RegisterPage() {
 
     if (!validateForm()) return
 
-    setIsLoading(true)
-
-    // Mock registration - simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // In a real app, you would handle registration here
-      router.push("/login")
-    }, 1000)
+    try {
+      await register(formData.email, formData.password, formData.name)
+    } catch (error: any) {
+      setErrors({ general: error.message || "Error al crear la cuenta" })
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -98,6 +84,12 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {errors.general && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertDescription className="text-xs">{errors.general}</AlertDescription>
+                </Alert>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium text-gray-700">
                   Nombre Completo
