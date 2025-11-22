@@ -1,135 +1,196 @@
-# Turborepo starter
 
-This Turborepo starter is maintained by the Turborepo core team.
+# Jess Tendencia - E-commerce de Moda Femenina
 
-## Using this example
+Plataforma de e-commerce moderna para venta de productos de moda femenina, construida con Next.js 15, Turborepo, Prisma y Supabase.
 
-Run the following command:
+## 🚀 Características
 
-```sh
-npx create-turbo@latest
-```
+- ✅ Panel de administración completo (CRUD de productos y categorías)
+- ✅ Catálogo de productos con filtros y búsqueda
+- ✅ Gestión de inventario en tiempo real
+- ✅ Autenticación con Supabase Auth
+- ✅ Base de datos PostgreSQL en Supabase
+- 🔄 Carrito de compras (en desarrollo)
+- 🔄 Sistema de órdenes y checkout (en desarrollo)
 
-## What's inside?
+## 📦 Estructura del Monorepo
 
-This Turborepo includes the following packages/apps:
+Este proyecto usa Turborepo para gestionar múltiples aplicaciones y paquetes compartidos:
 
-### Apps and Packages
+### Aplicaciones (`apps/`)
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- **`admin`**: Panel de administración para gestionar productos, categorías y órdenes
+- **`client`**: Tienda pública donde los clientes navegan y compran productos
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+### Paquetes (`packages/`)
 
-### Utilities
+- **`@jess/ui`**: Componentes de UI compartidos (basados en shadcn/ui)
+- **`@jess/shared`**: Lógica compartida, utilidades y configuración de Prisma
+- **`@jess/prisma`**: Esquema de base de datos y cliente de Prisma
+- **`@jess/eslint-config`**: Configuración de ESLint
+- **`@jess/typescript-config`**: Configuración de TypeScript
 
-This Turborepo has some additional tools already setup for you:
+## 🛠️ Stack Tecnológico
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+- **Frontend**: Next.js 15 (App Router), React 19, TypeScript
+- **Estilos**: Tailwind CSS
+- **UI Components**: shadcn/ui, Radix UI
+- **Backend**: Next.js API Routes
+- **Base de Datos**: PostgreSQL (Supabase)
+- **ORM**: Prisma
+- **Autenticación**: Supabase Auth
+- **Monorepo**: Turborepo
+- **Package Manager**: pnpm
+
+## 🚦 Inicio Rápido
+
+### Prerrequisitos
+
+- Node.js 18+ 
+- pnpm 8+
+
+### Instalación
+
+1. **Clonar el repositorio**
+git clone https://github.com/nico22tt/jess-tendencia.git
+cd jess-tendencia
+
+text
+
+2. **Instalar dependencias**
+pnpm install
+
+text
+
+3. **Configurar variables de entorno**
+
+Crea un archivo `.env` en la raíz del proyecto:
+
+Supabase
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public"
+
+text
+
+4. **Configurar Prisma**
+cd packages/prisma
+pnpm exec prisma generate
+pnpm exec prisma db push
+
+text
+
+5. **Iniciar el servidor de desarrollo**
+cd ../..
+pnpm dev
+
+text
+
+Las aplicaciones estarán disponibles en:
+- Admin: http://localhost:3000
+- Client: http://localhost:3001
+
+## 📝 Scripts Disponibles
+
+### Desarrollo
+
+Iniciar todas las apps en modo desarrollo
+pnpm dev
+
+Iniciar solo el admin
+pnpm dev --filter=admin
+
+Iniciar solo el cliente
+pnpm dev --filter=client
+
+text
 
 ### Build
 
-To build all apps and packages, run the following command:
+Construir todas las apps
+pnpm build
 
-```
-cd my-turborepo
+Construir solo el admin
+pnpm build --filter=admin
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
+text
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
+### Base de Datos
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+Generar cliente de Prisma
+cd packages/prisma
+pnpm exec prisma generate
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+Aplicar cambios al schema
+pnpm exec prisma db push
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+Abrir Prisma Studio
+pnpm exec prisma studio
 
-### Develop
+text
 
-To develop all apps and packages, run the following command:
+### Linting y Formato
 
-```
-cd my-turborepo
+Linting
+pnpm lint
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+Formatear código
+pnpm format
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+text
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## 🗄️ Estructura de la Base de Datos
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+### Modelos principales
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+- **User**: Usuarios del sistema (admin y clientes)
+- **Category**: Categorías de productos (con soporte para subcategorías)
+- **Product**: Productos de la tienda
+- **Order**: Órdenes de compra (próximamente)
+- **OrderItem**: Items de las órdenes (próximamente)
 
-### Remote Caching
+Ver el esquema completo en [`packages/prisma/schema.prisma`](packages/prisma/schema.prisma)
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+## 🔐 Autenticación
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+El proyecto usa Supabase Auth para la autenticación:
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+- **Admin**: Login en `/login` (admin)
+- **Cliente**: Registro/Login en la app cliente
 
-```
-cd my-turborepo
+## 🚀 Deploy
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
+### Vercel (Recomendado)
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
+1. Conecta tu repositorio a Vercel
+2. Configura las variables de entorno
+3. Deploy automático en cada push a `main`
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+### Variables de entorno necesarias
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+DATABASE_URL=tu_database_url
+NEXT_PUBLIC_SUPABASE_URL=tu_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_supabase_anon_key
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+text
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
+## 📚 Documentación Adicional
 
-## Useful Links
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Turborepo Documentation](https://turborepo.com/docs)
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [Supabase Documentation](https://supabase.com/docs)
 
-Learn more about the power of Turborepo:
+## Contribuir
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+Este es un proyecto privado. Para contribuir, contacta al owner del repositorio.
+
+## 📄 Licencia
+
+Privado - Todos los derechos reservados
+
+## 👨‍💻 Autor
+
+Nicolás - [@nico22tt](https://github.com/nico22tt)
+
+---
+
+Desarrollado usando Next.js y Turborepo
