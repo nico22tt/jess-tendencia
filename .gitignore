@@ -15,3 +15,6 @@ out/
 
 # vercel
 .vercel
+
+# Prisma
+packages/prisma/generated/ 

@@ -1,17 +1,22 @@
 {
-  "name": "prisma",
+  "name": "@jess/prisma",
   "version": "1.0.0",
-  "main": "prisma-client.ts",
-  "license": "MIT",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./generated/client/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./generated/client/index.d.ts",
+      "default": "./index.ts"
+    }
+  },
   "dependencies": {
-    "@prisma/client": "^7.0.0"
+    "@prisma/client": "^6.19.0"
   },
   "scripts": {
-  "generate": "prisma generate"
-},
-
+    "generate": "prisma generate"
+  },
   "devDependencies": {
-    "prisma": "^7.0.0"
+    "prisma": "^6.19.0"
   }
-  
 }

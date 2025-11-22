@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useParams } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
 import { AdminSidebar } from "@/components/admin-sidebar"
 import { AdminHeader } from "@/components/admin-header"
 import { Button } from "@jess/ui/button"
@@ -12,84 +12,227 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@jess/ui/switch"
 import { Card } from "@jess/ui/card"
 import { Upload, X, Check, ArrowLeft } from "lucide-react"
-import Image from "next/image"
 import Link from "next/link"
 
-interface UploadedImage {
+interface Category {
   id: string
+  name: string
+}
+
+interface ProductImage {
+  id?: string
   url: string
   isMain: boolean
 }
 
-const mockProducts: Record<string, any> = {
-  "1": {
-    name: "Zapatillas Urbanas Blancas",
-    description: "Zapatillas urbanas de alta calidad con diseño moderno y cómodo para uso diario.",
-    urlSlug: "zapatillas-urbanas-blancas",
-    sku: "ZAP-001",
-    basePrice: "45990",
-    salePrice: "39990",
-    stock: "25",
-    category: "zapatillas",
-    subcategory: "urbanas",
-    brand: "nike",
-    isPublished: true,
-    images: [
-      { id: "1", url: "/white-sneakers-for-women.png", isMain: true },
-      { id: "2", url: "/pink-casual-sneakers-for-women.png", isMain: false }
-    ],
-  },
+interface Product {
+  id: string
+  name: string
+  description: string
+  urlSlug: string
+  sku: string
+  basePrice: number
+  salePrice: number | null
+  stock: number
+  categoryId: string
+  subcategory: string | null
+  brand: string
+  isPublished: boolean
+  images: ProductImage[]
 }
 
 export default function EditProductPage() {
   const params = useParams()
-  // Maneja id como string, array o indefinido
-  const id = typeof params.id === "string"
-    ? params.id
-    : Array.isArray(params.id) && params.id.length > 0
-      ? params.id[0]
-      : "1"
+  const router = useRouter()
+  const id = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : ""
 
-  const product = mockProducts[id] || mockProducts["1"]
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
-  const [productName, setProductName] = useState(product.name)
-  const [description, setDescription] = useState(product.description)
-  const [urlSlug, setUrlSlug] = useState(product.urlSlug)
-  const [sku, setSku] = useState(product.sku)
-  const [basePrice, setBasePrice] = useState(product.basePrice)
-  const [salePrice, setSalePrice] = useState(product.salePrice)
-  const [stock, setStock] = useState(product.stock)
-  const [category, setCategory] = useState(product.category)
-  const [subcategory, setSubcategory] = useState(product.subcategory)
-  const [brand, setBrand] = useState(product.brand)
-  const [isPublished, setIsPublished] = useState(product.isPublished)
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(product.images)
+  // Product form data
+  const [productName, setProductName] = useState("")
+  const [description, setDescription] = useState("")
+  const [urlSlug, setUrlSlug] = useState("")
+  const [sku, setSku] = useState("")
+  const [basePrice, setBasePrice] = useState("")
+  const [salePrice, setSalePrice] = useState("")
+  const [stock, setStock] = useState("")
+  const [category, setCategory] = useState("")
+  const [subcategory, setSubcategory] = useState("")
+  const [brand, setBrand] = useState("")
+  const [isPublished, setIsPublished] = useState(false)
+  const [uploadedImages, setUploadedImages] = useState<ProductImage[]>([])
+  const [newImageUrl, setNewImageUrl] = useState("")
 
+  // Cargar producto
+  useEffect(() => {
+    if (!id) return
+
+    const fetchProduct = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch(`/api/products/${id}`)
+        const data = await res.json()
+
+        if (data.success) {
+          const product: Product = data.data
+          setProductName(product.name)
+          setDescription(product.description)
+          setUrlSlug(product.urlSlug)
+          setSku(product.sku)
+          setBasePrice(product.basePrice.toString())
+          setSalePrice(product.salePrice ? product.salePrice.toString() : "")
+          setStock(product.stock.toString())
+          setCategory(product.categoryId)
+          setSubcategory(product.subcategory || "")
+          setBrand(product.brand)
+          setIsPublished(product.isPublished)
+          setUploadedImages(product.images || [])
+        // ✅ Generar IDs únicos para las imágenes que vienen de la BD
+        const imagesWithIds = (product.images || []).map((img, index) => ({
+          ...img,
+          id: img.id || `existing-${index}-${Date.now()}`
+        }))
+        setUploadedImages(imagesWithIds)
+      } else {
+        alert("Error al cargar el producto")
+        router.push("/dashboard/products")
+      }
+      } catch (error) {
+        console.error("Error al cargar producto:", error)
+        alert("Error al cargar el producto")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [id, router])
+
+  // Cargar categorías
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/categories')
+        const data = await res.json()
+        if (data.success) {
+          setCategories(data.data)
+        }
+      } catch (error) {
+        console.error('Error al cargar categorías:', error)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  // Agregar imagen
+  const handleAddImage = () => {
+    if (!newImageUrl.trim()) return
+
+    const newImage: ProductImage = {
+      id: Date.now().toString(),
+      url: newImageUrl,
+      isMain: uploadedImages.length === 0
+    }
+
+    setUploadedImages([...uploadedImages, newImage])
+    setNewImageUrl("")
+  }
+
+  // Establecer imagen principal
   const handleSetMainImage = (imageId: string) => {
-    setUploadedImages((prev) => prev.map((img) => ({ ...img, isMain: img.id === imageId })))
+    setUploadedImages((prev) =>
+      prev.map((img) => ({ ...img, isMain: img.id === imageId }))
+    )
   }
 
+  // Eliminar imagen
   const handleRemoveImage = (imageId: string) => {
-    setUploadedImages((prev) => prev.filter((img) => img.id !== imageId))
+    setUploadedImages((prev) => {
+      const filtered = prev.filter((img) => img.id !== imageId)
+
+      if (filtered.length > 0 && !filtered.some(img => img.isMain)) {
+        filtered[0].isMain = true
+      }
+
+      return filtered
+    })
   }
 
-  const handleSaveProduct = () => {
-    console.log("[v0] Updating product:", {
-      id,
-      productName,
-      description,
-      urlSlug,
-      sku,
-      basePrice,
-      salePrice,
-      stock,
-      category,
-      subcategory,
-      brand,
-      isPublished,
-      uploadedImages,
-    })
-    alert("Producto actualizado exitosamente (simulación)")
+  // Guardar cambios
+  const handleSaveProduct = async () => {
+    // Validaciones
+    if (!productName.trim() || !description.trim() || !urlSlug.trim() || !sku.trim() || !category || !brand.trim()) {
+      alert("Por favor completa todos los campos obligatorios")
+      return
+    }
+
+    if (!basePrice || parseFloat(basePrice) <= 0) {
+      alert("El precio base debe ser mayor a 0")
+      return
+    }
+
+    if (uploadedImages.length === 0) {
+      alert("Debes agregar al menos una imagen")
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const imagesArray = uploadedImages.map(img => ({
+        url: img.url,
+        isMain: img.isMain
+      }))
+
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: productName,
+          description,
+          urlSlug,
+          sku,
+          basePrice: parseInt(basePrice),
+          salePrice: salePrice ? parseInt(salePrice) : null,
+          stock: stock ? parseInt(stock) : 0,
+          categoryId: category,
+          subcategory: subcategory || null,
+          brand,
+          isPublished,
+          images: imagesArray
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        alert("✅ Producto actualizado exitosamente")
+        router.push('/dashboard/products')
+      } else {
+        alert("❌ Error: " + data.error)
+      }
+    } catch (error) {
+      console.error('Error al actualizar producto:', error)
+      alert("❌ Error al actualizar el producto")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-zinc-950">
+        <AdminSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <AdminHeader />
+          <main className="flex-1 flex items-center justify-center">
+            <p className="text-zinc-400">Cargando producto...</p>
+          </main>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -107,6 +250,7 @@ export default function EditProductPage() {
                     variant="outline"
                     size="sm"
                     className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                    aria-label="Volver a productos"
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Volver
@@ -117,8 +261,12 @@ export default function EditProductPage() {
                   <p className="text-zinc-400 mt-1">Actualiza la información del producto</p>
                 </div>
               </div>
-              <Button onClick={handleSaveProduct} className="bg-pink-600 hover:bg-pink-700 text-white">
-                Guardar Cambios
+              <Button
+                onClick={handleSaveProduct}
+                disabled={isSaving}
+                className="bg-pink-600 hover:bg-pink-700 text-white disabled:bg-gray-600"
+              >
+                {isSaving ? 'Guardando...' : 'Guardar Cambios'}
               </Button>
             </div>
 
@@ -131,18 +279,23 @@ export default function EditProductPage() {
                   <h2 className="text-xl font-semibold text-white mb-4">Información General</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="productName" className="text-zinc-300">Nombre del Producto</Label>
+                      <Label htmlFor="productName" className="text-zinc-300">
+                        Nombre del Producto *
+                      </Label>
                       <Input
                         id="productName"
                         value={productName}
                         onChange={(e) => setProductName(e.target.value)}
                         placeholder="Ej: Zapatillas Urbanas Blancas"
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="description" className="text-zinc-300">Descripción Larga</Label>
+                      <Label htmlFor="description" className="text-zinc-300">
+                        Descripción Larga *
+                      </Label>
                       <Textarea
                         id="description"
                         value={description}
@@ -150,17 +303,21 @@ export default function EditProductPage() {
                         placeholder="Describe el producto en detalle..."
                         rows={6}
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="urlSlug" className="text-zinc-300">URL Slug</Label>
+                      <Label htmlFor="urlSlug" className="text-zinc-300">
+                        URL Slug *
+                      </Label>
                       <Input
                         id="urlSlug"
                         value={urlSlug}
                         onChange={(e) => setUrlSlug(e.target.value)}
                         placeholder="zapatillas-urbanas-blancas"
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        required
                       />
                     </div>
                   </div>
@@ -169,46 +326,85 @@ export default function EditProductPage() {
                 {/* Images and Gallery */}
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-4">Imágenes y Galería</h2>
-                  <div className="border-2 border-dashed border-zinc-700 rounded-lg p-8 text-center hover:border-pink-600 transition-colors cursor-pointer">
-                    <Upload className="h-12 w-12 text-zinc-500 mx-auto mb-3" />
-                    <p className="text-zinc-400 mb-1">Arrastra y suelta imágenes aquí</p>
-                    <p className="text-sm text-zinc-500">o haz clic para seleccionar archivos</p>
-                  </div>
-                  <div className="mt-6">
-                    <h3 className="text-sm font-medium text-zinc-300 mb-3">Imágenes Subidas</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      {uploadedImages.map((image) => (
-                        <div key={image.id} className="relative group">
-                          <div className="aspect-square rounded-lg bg-zinc-800 overflow-hidden">
-                            <Image
-                              src={image.url || "/placeholder.svg"}
-                              alt="Product"
-                              width={200}
-                              height={200}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <Button variant="ghost" size="icon" aria-label="Eliminar imagen" onClick={() => handleRemoveImage(image.id)}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                          <button
-                            onClick={() => handleSetMainImage(image.id)}
-                            className={`mt-2 w-full py-1.5 px-3 rounded text-xs font-medium transition-colors ${
-                              image.isMain ? "bg-pink-600 text-white" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                            }`}
-                          >
-                            {image.isMain ? (
-                              <span className="flex items-center justify-center gap-1">
-                                <Check className="h-3 w-3" />
-                                Imagen Principal
-                              </span>
-                            ) : (
-                              "Establecer como Principal"
-                            )}
-                          </button>
-                        </div>
-                      ))}
+
+                  {/* Agregar imagen por URL */}
+                  <div className="space-y-2 mb-4">
+                    <Label htmlFor="imageUrl" className="text-zinc-300">
+                      URL de Imagen
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="imageUrl"
+                        value={newImageUrl}
+                        onChange={(e) => setNewImageUrl(e.target.value)}
+                        placeholder="https://ejemplo.com/imagen.jpg"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddImage()
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleAddImage}
+                        className="bg-pink-600 hover:bg-pink-700"
+                      >
+                        Agregar
+                      </Button>
                     </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <h3 className="text-sm font-medium text-zinc-300 mb-3">
+                      Imágenes Subidas ({uploadedImages.length})
+                    </h3>
+                    {uploadedImages.length === 0 ? (
+                      <p className="text-zinc-500 text-sm text-center py-8">
+                        No hay imágenes. Agrega al menos una imagen.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-4">
+                        {uploadedImages.map((image) => (
+                          <div key={image.id} className="relative group">
+                            <div className="aspect-square rounded-lg bg-zinc-800 overflow-hidden relative">
+                              <img
+                                src={image.url || "/placeholder.svg"}
+                                alt="Product"
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                onClick={() => handleRemoveImage(image.id!)}
+                                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                type="button"
+                                aria-label="Eliminar imagen"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleSetMainImage(image.id!)}
+                              className={`mt-2 w-full py-1.5 px-3 rounded text-xs font-medium transition-colors ${
+                                image.isMain
+                                  ? "bg-pink-600 text-white"
+                                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                              }`}
+                            >
+                              {image.isMain ? (
+                                <span className="flex items-center justify-center gap-1">
+                                  <Check className="h-3 w-3" />
+                                  Imagen Principal
+                                </span>
+                              ) : (
+                                "Establecer como Principal"
+                              )}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </Card>
               </div>
@@ -219,18 +415,21 @@ export default function EditProductPage() {
                   <h2 className="text-xl font-semibold text-white mb-4">Inventario y Precios</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="sku" className="text-zinc-300">SKU</Label>
+                      <Label htmlFor="sku" className="text-zinc-300">SKU *</Label>
                       <Input
                         id="sku"
                         value={sku}
                         onChange={(e) => setSku(e.target.value)}
                         placeholder="ZAP-001"
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="basePrice" className="text-zinc-300">Precio Base (CLP)</Label>
+                      <Label htmlFor="basePrice" className="text-zinc-300">
+                        Precio Base (CLP) *
+                      </Label>
                       <Input
                         id="basePrice"
                         type="number"
@@ -238,11 +437,14 @@ export default function EditProductPage() {
                         onChange={(e) => setBasePrice(e.target.value)}
                         placeholder="45990"
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="salePrice" className="text-zinc-300">Precio de Oferta (CLP)</Label>
+                      <Label htmlFor="salePrice" className="text-zinc-300">
+                        Precio de Oferta (CLP)
+                      </Label>
                       <Input
                         id="salePrice"
                         type="number"
@@ -251,6 +453,7 @@ export default function EditProductPage() {
                         placeholder="39990"
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                       />
+                      <p className="text-sm text-zinc-500 mt-1">Opcional</p>
                     </div>
 
                     <div>
@@ -260,7 +463,7 @@ export default function EditProductPage() {
                         type="number"
                         value={stock}
                         onChange={(e) => setStock(e.target.value)}
-                        placeholder="25"
+                        placeholder="0"
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                       />
                     </div>
@@ -271,46 +474,46 @@ export default function EditProductPage() {
                   <h2 className="text-xl font-semibold text-white mb-4">Clasificación</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="category" className="text-zinc-300">Categoría Principal</Label>
+                      <Label htmlFor="category" className="text-zinc-300">
+                        Categoría Principal *
+                      </Label>
                       <Select value={category} onValueChange={setCategory}>
                         <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                           <SelectValue placeholder="Selecciona una categoría" />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-800 border-zinc-700">
-                          <SelectItem value="zapatillas" className="text-white">Zapatillas</SelectItem>
-                          <SelectItem value="botas" className="text-white">Botas</SelectItem>
-                          <SelectItem value="botines" className="text-white">Botines</SelectItem>
-                          <SelectItem value="jeans" className="text-white">Jeans</SelectItem>
-                          <SelectItem value="pantuflas" className="text-white">Pantuflas</SelectItem>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id} className="text-white">
+                              {cat.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+
                     <div>
-                      <Label htmlFor="subcategory" className="text-zinc-300">Subcategoría</Label>
-                      <Select value={subcategory} onValueChange={setSubcategory}>
-                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                          <SelectValue placeholder="Selecciona una subcategoría" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-800 border-zinc-700">
-                          <SelectItem value="urbanas" className="text-white">Urbanas</SelectItem>
-                          <SelectItem value="deportivas" className="text-white">Deportivas</SelectItem>
-                          <SelectItem value="casuales" className="text-white">Casuales</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="subcategory" className="text-zinc-300">
+                        Subcategoría
+                      </Label>
+                      <Input
+                        id="subcategory"
+                        value={subcategory}
+                        onChange={(e) => setSubcategory(e.target.value)}
+                        placeholder="Ej: Urbanas, Deportivas"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      />
                     </div>
+
                     <div>
-                      <Label htmlFor="brand" className="text-zinc-300">Marca</Label>
-                      <Select value={brand} onValueChange={setBrand}>
-                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                          <SelectValue placeholder="Selecciona una marca" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-800 border-zinc-700">
-                          <SelectItem value="nike" className="text-white">Nike</SelectItem>
-                          <SelectItem value="adidas" className="text-white">Adidas</SelectItem>
-                          <SelectItem value="puma" className="text-white">Puma</SelectItem>
-                          <SelectItem value="vans" className="text-white">Vans</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="brand" className="text-zinc-300">Marca *</Label>
+                      <Input
+                        id="brand"
+                        value={brand}
+                        onChange={(e) => setBrand(e.target.value)}
+                        placeholder="Ej: Nike, Adidas"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        required
+                      />
                     </div>
                   </div>
                 </Card>
@@ -319,12 +522,20 @@ export default function EditProductPage() {
                   <h2 className="text-xl font-semibold text-white mb-4">Visibilidad</h2>
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="published" className="text-zinc-300">Estado del Producto</Label>
+                      <Label htmlFor="published" className="text-zinc-300">
+                        Estado del Producto
+                      </Label>
                       <p className="text-sm text-zinc-500 mt-1">
-                        {isPublished ? "El producto está publicado y visible" : "El producto está en borrador"}
+                        {isPublished
+                          ? "El producto está publicado y visible"
+                          : "El producto está en borrador"}
                       </p>
                     </div>
-                    <Switch id="published" checked={isPublished} onCheckedChange={setIsPublished} />
+                    <Switch
+                      id="published"
+                      checked={isPublished}
+                      onCheckedChange={setIsPublished}
+                    />
                   </div>
                 </Card>
               </div>

@@ -1,27 +1,128 @@
-import prisma from "packages/prisma/prisma-client"
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@jess/shared/lib/prisma'
 
-export async function GET() {
-  const products = await prisma.product.findMany()
-  return Response.json(products)
+// GET /api/products - Listar productos
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const categoryId = searchParams.get('categoryId')
+
+    const where = categoryId ? { categoryId } : {}
+
+    const products = await prisma.product.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: products
+    })
+  } catch (error) {
+    console.error('Error al obtener productos:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al obtener productos' },
+      { status: 500 }
+    )
+  }
 }
 
-export async function POST(request: Request) {
-  const data = await request.json()
-  const product = await prisma.product.create({ data })
-  return Response.json(product, { status: 201 })
-}
+// POST /api/products - Crear producto
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const {
+      name,
+      description,
+      urlSlug,
+      sku,
+      basePrice,
+      salePrice,
+      stock,
+      categoryId,
+      subcategory,
+      brand,
+      isPublished,
+      images
+    } = body
 
-export async function PUT(request: Request) {
-  const data = await request.json()
-  const product = await prisma.product.update({
-    where: { id: data.id },
-    data,
-  })
-  return Response.json(product, { status: 200 })
-}
+    // Validación
+    if (!name || !description || !urlSlug || !sku || !categoryId || !brand) {
+      return NextResponse.json(
+        { success: false, error: 'Faltan campos obligatorios' },
+        { status: 400 }
+      )
+    }
 
-export async function DELETE(request: Request) {
-  const { id } = await request.json()
-  await prisma.product.delete({ where: { id } })
-  return Response.json({ ok: true }, { status: 200 })
+    if (!basePrice || basePrice <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'El precio base debe ser mayor a 0' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar slug único
+    const existingSlug = await prisma.product.findUnique({
+      where: { urlSlug }
+    })
+
+    if (existingSlug) {
+      return NextResponse.json(
+        { success: false, error: 'El URL slug ya está en uso' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar SKU único
+    const existingSku = await prisma.product.findUnique({
+      where: { sku }
+    })
+
+    if (existingSku) {
+      return NextResponse.json(
+        { success: false, error: 'El SKU ya está en uso' },
+        { status: 400 }
+      )
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        description,
+        urlSlug,
+        sku,
+        basePrice: parseInt(basePrice),
+        salePrice: salePrice ? parseInt(salePrice) : null,
+        stock: stock ? parseInt(stock) : 0,
+        categoryId,
+        subcategory: subcategory || null,
+        brand,
+        isPublished: isPublished !== undefined ? isPublished : false,
+        images: images || []
+      },
+      include: {
+        category: true
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: product
+    }, { status: 201 })
+  } catch (error) {
+    console.error('Error al crear producto:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error al crear producto' },
+      { status: 500 }
+    )
+  }
 }

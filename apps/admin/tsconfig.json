@@ -5,7 +5,8 @@
     "paths": {
       "@/*": ["./*"],
       "@jess/ui/*": ["../../packages/ui/*"],
-      "@jess/shared/*": ["../../packages/shared/*"]
+      "@jess/shared/*": ["../../packages/shared/*"],
+      "@/lib/*": ["../../packages/shared/lib/*"]
     }
   },
   "include": [

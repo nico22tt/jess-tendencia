@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AdminSidebar } from "@/components/admin-sidebar"
-
 import { AdminHeader } from "@/components/admin-header"
-
 import { Button } from "@jess/ui/button"
 import { Input } from "@jess/ui/input"
 import { Label } from "@jess/ui/label"
@@ -14,27 +12,92 @@ import { Switch } from "@jess/ui/switch"
 import { Card } from "@jess/ui/card"
 import { Upload } from "lucide-react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
+
+interface Category {
+  id: string
+  name: string
+}
 
 export default function AddCategoryPage() {
+  const router = useRouter()
+  const [categories, setCategories] = useState<Category[]>([])
   const [categoryName, setCategoryName] = useState("")
   const [description, setDescription] = useState("")
   const [urlSlug, setUrlSlug] = useState("")
   const [parentCategory, setParentCategory] = useState("")
   const [displayOrder, setDisplayOrder] = useState("")
   const [isActive, setIsActive] = useState(true)
-  const [categoryImage, setCategoryImage] = useState("/placeholder.svg?height=200&width=200")
+  const [categoryImage, setCategoryImage] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSaveCategory = () => {
-    console.log("[v0] Saving category:", {
-      categoryName,
-      description,
-      urlSlug,
-      parentCategory,
-      displayOrder,
-      isActive,
-      categoryImage,
-    })
-    alert("Categoría guardada exitosamente (simulación)")
+  // Cargar categorías para el selector de padre
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/categories')
+        const data = await res.json()
+        if (data.success) {
+          setCategories(data.data)
+        }
+      } catch (error) {
+        console.error('Error al cargar categorías:', error)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  // Generar slug automáticamente
+  const handleNameChange = (name: string) => {
+    setCategoryName(name)
+    
+    const slug = name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    
+    setUrlSlug(slug)
+  }
+
+  const handleSaveCategory = async () => {
+    if (!categoryName.trim() || !urlSlug.trim()) {
+      alert("El nombre y el slug son obligatorios")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: categoryName,
+          description: description || null,
+          slug: urlSlug,
+          imageUrl: categoryImage || null,
+          parentId: parentCategory && parentCategory !== "none" ? parentCategory : null,
+          displayOrder: displayOrder ? parseInt(displayOrder) : 0,
+          isActive
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        alert("✅ Categoría creada exitosamente")
+        router.push('/dashboard/products')
+      } else {
+        alert("❌ Error: " + data.error)
+      }
+    } catch (error) {
+      console.error('Error al crear categoría:', error)
+      alert("❌ Error al crear la categoría")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -52,8 +115,12 @@ export default function AddCategoryPage() {
                 <h1 className="text-3xl font-bold text-white">Crear Nueva Categoría</h1>
                 <p className="text-zinc-400 mt-1">Organiza tus productos en categorías</p>
               </div>
-              <Button onClick={handleSaveCategory} className="bg-pink-600 hover:bg-pink-700 text-white">
-                Guardar Categoría
+              <Button 
+                onClick={handleSaveCategory} 
+                disabled={isLoading}
+                className="bg-pink-600 hover:bg-pink-700 text-white disabled:bg-gray-600"
+              >
+                {isLoading ? 'Guardando...' : 'Guardar Categoría'}
               </Button>
             </div>
 
@@ -65,15 +132,33 @@ export default function AddCategoryPage() {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="categoryName" className="text-zinc-300">
-                      Nombre de la Categoría
+                      Nombre de la Categoría *
                     </Label>
                     <Input
                       id="categoryName"
                       value={categoryName}
-                      onChange={(e) => setCategoryName(e.target.value)}
-                      placeholder="Ej: Zapatillas"
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      placeholder="Ej: Ropa de Mujer"
                       className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      required
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="urlSlug" className="text-zinc-300">
+                      URL Slug *
+                    </Label>
+                    <Input
+                      id="urlSlug"
+                      value={urlSlug}
+                      onChange={(e) => setUrlSlug(e.target.value)}
+                      placeholder="ropa-de-mujer"
+                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      required
+                    />
+                    <p className="text-sm text-zinc-500 mt-1">
+                      Se genera automáticamente, pero puedes editarlo
+                    </p>
                   </div>
 
                   <div>
@@ -86,19 +171,6 @@ export default function AddCategoryPage() {
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe la categoría..."
                       rows={4}
-                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="urlSlug" className="text-zinc-300">
-                      URL Slug
-                    </Label>
-                    <Input
-                      id="urlSlug"
-                      value={urlSlug}
-                      onChange={(e) => setUrlSlug(e.target.value)}
-                      placeholder="zapatillas"
                       className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                     />
                   </div>
@@ -123,11 +195,20 @@ export default function AddCategoryPage() {
 
                   {/* Upload Area */}
                   <div className="flex-1">
-                    <div className="border-2 border-dashed border-zinc-700 rounded-lg p-8 text-center hover:border-pink-600 transition-colors cursor-pointer">
-                      <Upload className="h-12 w-12 text-zinc-500 mx-auto mb-3" />
-                      <p className="text-zinc-400 mb-1">Arrastra y suelta una imagen aquí</p>
-                      <p className="text-sm text-zinc-500">o haz clic para seleccionar un archivo</p>
-                      <p className="text-xs text-zinc-600 mt-2">Recomendado: 800x800px, formato JPG o PNG</p>
+                    <div className="space-y-2">
+                      <Label htmlFor="imageUrl" className="text-zinc-300">
+                        URL de la Imagen
+                      </Label>
+                      <Input
+                        id="imageUrl"
+                        value={categoryImage}
+                        onChange={(e) => setCategoryImage(e.target.value)}
+                        placeholder="https://ejemplo.com/imagen.jpg"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      />
+                      <p className="text-xs text-zinc-600">
+                        Por ahora ingresa una URL de imagen. Recomendado: 800x800px
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -149,15 +230,11 @@ export default function AddCategoryPage() {
                         <SelectItem value="none" className="text-white">
                           Ninguna (Categoría principal)
                         </SelectItem>
-                        <SelectItem value="calzado" className="text-white">
-                          Calzado
-                        </SelectItem>
-                        <SelectItem value="ropa" className="text-white">
-                          Ropa
-                        </SelectItem>
-                        <SelectItem value="accesorios" className="text-white">
-                          Accesorios
-                        </SelectItem>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id} className="text-white">
+                            {cat.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <p className="text-sm text-zinc-500 mt-1">
@@ -174,7 +251,7 @@ export default function AddCategoryPage() {
                       type="number"
                       value={displayOrder}
                       onChange={(e) => setDisplayOrder(e.target.value)}
-                      placeholder="1"
+                      placeholder="0"
                       className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                     />
                     <p className="text-sm text-zinc-500 mt-1">

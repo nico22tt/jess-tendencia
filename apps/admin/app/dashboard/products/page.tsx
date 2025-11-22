@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AdminSidebar } from "@/components/admin-sidebar"
-
 import { AdminHeader } from "@/components/admin-header"
-
 import { Button } from "@jess/ui/button"
 import { Input } from "@jess/ui/input"
 import { Badge } from "@jess/ui/badge"
@@ -14,126 +12,124 @@ import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-re
 import Image from "next/image"
 import Link from "next/link"
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
 interface Product {
   id: string
   name: string
   sku: string
-  price: number
+  basePrice: number
+  salePrice: number | null
   stock: number
-  category: string
-  status: "active" | "inactive"
-  image: string
+  category: Category
+  isPublished: boolean
+  images: Array<{ url: string; isMain: boolean }>
 }
 
-const mockProducts: Product[] = [
-  {
-    id: "1",
-    name: "Zapatillas Urbanas Blancas",
-    sku: "ZAP-001",
-    price: 45990,
-    stock: 25,
-    category: "Zapatillas",
-    status: "active",
-    image: "/white-sneakers-for-women.png",
-  },
-  {
-    id: "2",
-    name: "Botas de Cuero Negro",
-    sku: "BOT-001",
-    price: 89990,
-    stock: 12,
-    category: "Botas",
-    status: "active",
-    image: "/black-high-boots-for-women.png",
-  },
-  {
-    id: "3",
-    name: "Botines Café Elegantes",
-    sku: "BTN-001",
-    price: 67990,
-    stock: 8,
-    category: "Botines",
-    status: "active",
-    image: "/brown-ankle-boots-for-women.png",
-  },
-  {
-    id: "4",
-    name: "Jeans Skinny Azul",
-    sku: "JNS-001",
-    price: 39990,
-    stock: 30,
-    category: "Jeans",
-    status: "active",
-    image: "/skinny-blue-jeans-for-women.png",
-  },
-  {
-    id: "5",
-    name: "Pantuflas Rosadas Suaves",
-    sku: "PAN-001",
-    price: 19990,
-    stock: 0,
-    category: "Pantuflas",
-    status: "inactive",
-    image: "/pink-slippers-for-women.png",
-  },
-  {
-    id: "6",
-    name: "Zapatillas Running Negras",
-    sku: "ZAP-002",
-    price: 52990,
-    stock: 18,
-    category: "Zapatillas",
-    status: "active",
-    image: "/black-running-sneakers-for-women.png",
-  },
-  {
-    id: "7",
-    name: "Botas Militares Verdes",
-    sku: "BOT-002",
-    price: 79990,
-    stock: 5,
-    category: "Botas",
-    status: "active",
-    image: "/military-style-boots-for-women.png",
-  },
-  {
-    id: "8",
-    name: "Jeans Mom Fit Claro",
-    sku: "JNS-002",
-    price: 42990,
-    stock: 22,
-    category: "Jeans",
-    status: "active",
-    image: "/light-mom-jeans-for-women.png",
-  },
-]
-
 export default function ProductsPage() {
-  const [products] = useState<Product[]>(mockProducts)
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(true)
   const itemsPerPage = 6
 
+  // Cargar productos
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch('/api/products')
+        const data = await res.json()
+        if (data.success) {
+          setProducts(data.data)
+        }
+      } catch (error) {
+        console.error('Error al cargar productos:', error)
+        alert('Error al cargar productos')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchProducts()
+  }, [])
+
+  // Cargar categorías para filtro
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/categories')
+        const data = await res.json()
+        if (data.success) {
+          setCategories(data.data)
+        }
+      } catch (error) {
+        console.error('Error al cargar categorías:', error)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  // Eliminar producto
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`¿Estás seguro de eliminar el producto "${name}"?`)) return
+
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'DELETE'
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        alert('✅ Producto eliminado')
+        // Recargar productos
+        setProducts(products.filter(p => p.id !== id))
+      } else {
+        alert('❌ Error: ' + data.error)
+      }
+    } catch (error) {
+      alert('❌ Error al eliminar producto')
+      console.error(error)
+    }
+  }
+
+  // Filtros
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter
-    const matchesStatus = statusFilter === "all" || product.status === statusFilter
+    const matchesCategory = categoryFilter === "all" || product.category.id === categoryFilter
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" ? product.isPublished : !product.isPublished)
     return matchesSearch && matchesCategory && matchesStatus
   })
 
+  // Paginación
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage)
 
+  // Formatear precio
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-CL", {
       style: "currency",
       currency: "CLP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(price)
+  }
+
+  // Obtener imagen principal
+  const getMainImage = (images: Array<{ url: string; isMain: boolean }>) => {
+    const mainImg = images.find(img => img.isMain)
+    return mainImg?.url || images[0]?.url || "/placeholder.svg"
   }
 
   return (
@@ -181,21 +177,11 @@ export default function ProductsPage() {
                     <SelectItem value="all" className="text-white">
                       Todas las categorías
                     </SelectItem>
-                    <SelectItem value="Zapatillas" className="text-white">
-                      Zapatillas
-                    </SelectItem>
-                    <SelectItem value="Botas" className="text-white">
-                      Botas
-                    </SelectItem>
-                    <SelectItem value="Botines" className="text-white">
-                      Botines
-                    </SelectItem>
-                    <SelectItem value="Jeans" className="text-white">
-                      Jeans
-                    </SelectItem>
-                    <SelectItem value="Pantuflas" className="text-white">
-                      Pantuflas
-                    </SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id} className="text-white">
+                        {cat.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 
@@ -208,130 +194,161 @@ export default function ProductsPage() {
                       Todos los estados
                     </SelectItem>
                     <SelectItem value="active" className="text-white">
-                      Activo
+                      Publicado
                     </SelectItem>
                     <SelectItem value="inactive" className="text-white">
-                      Inactivo
+                      Borrador
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Products Table */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-zinc-800 hover:bg-zinc-800/50">
-                    <TableHead className="text-zinc-400">Producto</TableHead>
-                    <TableHead className="text-zinc-400">SKU</TableHead>
-                    <TableHead className="text-zinc-400">Precio</TableHead>
-                    <TableHead className="text-zinc-400">Stock</TableHead>
-                    <TableHead className="text-zinc-400">Categoría</TableHead>
-                    <TableHead className="text-zinc-400">Estado</TableHead>
-                    <TableHead className="text-zinc-400 text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedProducts.map((product) => (
-                    <TableRow key={product.id} className="border-zinc-800 hover:bg-zinc-800/50">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0">
-                            <Image
-                              src={product.image || "/placeholder.svg"}
-                              alt={product.name}
-                              width={48}
-                              height={48}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <span className="text-white font-medium">{product.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-zinc-400">{product.sku}</TableCell>
-                      <TableCell className="text-white font-medium">{formatPrice(product.price)}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`${
-                            product.stock === 0
-                              ? "text-red-400"
-                              : product.stock < 10
-                                ? "text-yellow-400"
-                                : "text-green-400"
-                          }`}
-                        >
-                          {product.stock} unidades
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-zinc-400">{product.category}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            product.status === "active"
-                              ? "bg-green-600/20 text-green-400 border-green-600/30"
-                              : "bg-red-600/20 text-red-400 border-red-600/30"
-                          }
-                        >
-                          {product.status === "active" ? "Activo" : "Inactivo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/dashboard/products/edit/${product.id}`}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-zinc-700 text-red-400 hover:bg-zinc-800 hover:text-red-300 bg-transparent"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-zinc-400">
-                Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredProducts.length)} de{" "}
-                {filteredProducts.length} productos
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-zinc-400">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+            {/* Loading State */}
+            {isLoading ? (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
+                <p className="text-zinc-400">Cargando productos...</p>
               </div>
-            </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
+                <p className="text-zinc-400">
+                  {products.length === 0
+                    ? "No hay productos. Crea uno para comenzar."
+                    : "No se encontraron productos con los filtros aplicados."}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Products Table */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-zinc-800 hover:bg-zinc-800/50">
+                        <TableHead className="text-zinc-400">Producto</TableHead>
+                        <TableHead className="text-zinc-400">SKU</TableHead>
+                        <TableHead className="text-zinc-400">Precio</TableHead>
+                        <TableHead className="text-zinc-400">Stock</TableHead>
+                        <TableHead className="text-zinc-400">Categoría</TableHead>
+                        <TableHead className="text-zinc-400">Estado</TableHead>
+                        <TableHead className="text-zinc-400 text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedProducts.map((product) => (
+                        <TableRow key={product.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0">
+                                <img
+                                  src={getMainImage(product.images)}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <span className="text-white font-medium">{product.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-zinc-400">{product.sku}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-white font-medium">
+                                {formatPrice(product.salePrice || product.basePrice)}
+                              </span>
+                              {product.salePrice && (
+                                <span className="text-xs text-zinc-500 line-through">
+                                  {formatPrice(product.basePrice)}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`${
+                                product.stock === 0
+                                  ? "text-red-400"
+                                  : product.stock < 10
+                                    ? "text-yellow-400"
+                                    : "text-green-400"
+                              }`}
+                            >
+                              {product.stock} unidades
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-zinc-400">{product.category.name}</TableCell>
+                          <TableCell>
+                            <Badge
+                              className={
+                                product.isPublished
+                                  ? "bg-green-600/20 text-green-400 border-green-600/30"
+                                  : "bg-yellow-600/20 text-yellow-400 border-yellow-600/30"
+                              }
+                            >
+                              {product.isPublished ? "Publicado" : "Borrador"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link href={`/dashboard/products/edit/${product.id}`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                                  aria-label="Editar producto"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-zinc-700 text-red-400 hover:bg-zinc-800 hover:text-red-300 bg-transparent"
+                                onClick={() => handleDelete(product.id, product.name)}
+                                aria-label="Eliminar producto"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-zinc-400">
+                    Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredProducts.length)} de{" "}
+                    {filteredProducts.length} productos
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      aria-label="Página anterior"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm text-zinc-400">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      aria-label="Página siguiente"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>
