@@ -10,7 +10,7 @@ import { Textarea } from "@jess/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jess/ui/select"
 import { Switch } from "@jess/ui/switch"
 import { Card } from "@jess/ui/card"
-import { Upload, X, Check } from "lucide-react"
+import { Upload, X, Check, Plus, Trash2 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 
@@ -23,6 +23,14 @@ interface ProductImage {
   id: string
   url: string
   isMain: boolean
+}
+
+interface ProductVariant {
+  id: string        // ← añade esta línea
+  size: string
+  color?: string
+  stock: number
+  priceAdjustment: number
 }
 
 export default function AddProductPage() {
@@ -42,6 +50,13 @@ export default function AddProductPage() {
   const [uploadedImages, setUploadedImages] = useState<ProductImage[]>([])
   const [newImageUrl, setNewImageUrl] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  // Estados para variantes
+  const [variants, setVariants] = useState<ProductVariant[]>([])
+  const [newVariantSize, setNewVariantSize] = useState("")
+  const [newVariantColor, setNewVariantColor] = useState("")
+  const [newVariantStock, setNewVariantStock] = useState("")
+  const [newVariantPriceAdj, setNewVariantPriceAdj] = useState("")
 
   // Cargar categorías
   useEffect(() => {
@@ -80,7 +95,7 @@ export default function AddProductPage() {
     const newImage: ProductImage = {
       id: Date.now().toString(),
       url: newImageUrl,
-      isMain: uploadedImages.length === 0 // Primera imagen es la principal
+      isMain: uploadedImages.length === 0
     }
 
     setUploadedImages([...uploadedImages, newImage])
@@ -99,13 +114,41 @@ export default function AddProductPage() {
     setUploadedImages((prev) => {
       const filtered = prev.filter((img) => img.id !== imageId)
       
-      // Si eliminamos la principal, hacer la primera como principal
       if (filtered.length > 0 && !filtered.some(img => img.isMain)) {
         filtered[0].isMain = true
       }
       
       return filtered
     })
+  }
+
+  // Agregar variante
+  const handleAddVariant = () => {
+    if (!newVariantSize.trim()) {
+      alert("La talla es obligatoria")
+      return
+    }
+
+    const newVariant: ProductVariant = {
+      id: Date.now().toString(),
+      size: newVariantSize,
+      color: newVariantColor || "",
+      stock: parseInt(newVariantStock) || 0,
+      priceAdjustment: parseInt(newVariantPriceAdj) || 0
+    }
+
+    setVariants([...variants, newVariant])
+    
+    // Limpiar campos
+    setNewVariantSize("")
+    setNewVariantColor("")
+    setNewVariantStock("")
+    setNewVariantPriceAdj("")
+  }
+
+  // Eliminar variante
+  const handleRemoveVariant = (variantId: string) => {
+    setVariants(variants.filter(v => v.id !== variantId))
   }
 
   // Guardar producto
@@ -154,12 +197,13 @@ export default function AddProductPage() {
     setIsLoading(true)
 
     try {
-      // Preparar array de imágenes para JSON
+      // Preparar array de imágenes
       const imagesArray = uploadedImages.map(img => ({
         url: img.url,
         isMain: img.isMain
       }))
 
+      // Crear producto
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,7 +226,26 @@ export default function AddProductPage() {
       const data = await res.json()
 
       if (data.success) {
-        alert("✅ Producto creado exitosamente")
+        const productId = data.data.id
+
+        // Si hay variantes, crearlas
+        if (variants.length > 0) {
+          for (const variant of variants) {
+            await fetch(`/api/products/${productId}/variants`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                size: variant.size,
+                color: variant.color || null,
+                stock: variant.stock,
+                priceAdjustment: variant.priceAdjustment,
+                sku: `${sku}-${variant.size}${variant.color ? `-${variant.color}` : ''}`
+              })
+            })
+          }
+        }
+
+        alert("✅ Producto creado exitosamente" + (variants.length > 0 ? ` con ${variants.length} variantes` : ""))
         router.push('/dashboard/products')
       } else {
         alert("❌ Error: " + data.error)
@@ -219,7 +282,7 @@ export default function AddProductPage() {
 
             {/* Two Column Form */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column - Main Information */}
+              {/* Left Column */}
               <div className="space-y-6">
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-4">Información General</h2>
@@ -273,7 +336,6 @@ export default function AddProductPage() {
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-4">Imágenes y Galería</h2>
                   
-                  {/* Agregar imagen por URL */}
                   <div className="space-y-2 mb-4">
                     <Label htmlFor="imageUrl" className="text-zinc-300">
                       URL de Imagen
@@ -300,9 +362,6 @@ export default function AddProductPage() {
                         Agregar
                       </Button>
                     </div>
-                    <p className="text-xs text-zinc-600">
-                      Por ahora ingresa URLs de imágenes. Presiona Enter o click en Agregar
-                    </p>
                   </div>
 
                   <div className="mt-6">
@@ -325,14 +384,17 @@ export default function AddProductPage() {
                                 height={200}
                                 className="w-full h-full object-cover"
                               />
-                              <button
-                                onClick={() => handleRemoveImage(image.id)}
-                                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                type="button"
-                                aria-label="Eliminar imagen"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveImage(image.id)}
+                                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                  aria-label="Eliminar variante"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+
                             </div>
                             <button
                               type="button"
@@ -346,10 +408,10 @@ export default function AddProductPage() {
                               {image.isMain ? (
                                 <span className="flex items-center justify-center gap-1">
                                   <Check className="h-3 w-3" />
-                                  Imagen Principal
+                                  Principal
                                 </span>
                               ) : (
-                                "Establecer como Principal"
+                                "Establecer Principal"
                               )}
                             </button>
                           </div>
@@ -360,7 +422,7 @@ export default function AddProductPage() {
                 </Card>
               </div>
 
-              {/* Right Column - Inventory and Classification */}
+              {/* Right Column */}
               <div className="space-y-6">
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-4">Inventario y Precios</h2>
@@ -402,10 +464,9 @@ export default function AddProductPage() {
                         placeholder="39990"
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                       />
-                      <p className="text-sm text-zinc-500 mt-1">Opcional - Deja vacío si no hay oferta</p>
                     </div>
                     <div>
-                      <Label htmlFor="stock" className="text-zinc-300">Cantidad en Stock</Label>
+                      <Label htmlFor="stock" className="text-zinc-300">Stock General</Label>
                       <Input
                         id="stock"
                         type="number"
@@ -414,8 +475,111 @@ export default function AddProductPage() {
                         placeholder="0"
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                       />
+                      <p className="text-xs text-zinc-500 mt-1">
+                        Si tienes variantes, el stock se gestiona por talla
+                      </p>
                     </div>
                   </div>
+                </Card>
+
+                {/* NUEVA SECCIÓN: Variantes */}
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">
+                    Variantes de Producto (Opcional)
+                  </h2>
+                  <p className="text-sm text-zinc-400 mb-4">
+                    Agrega tallas, colores y stock específico para cada variante
+                  </p>
+
+                  {/* Formulario para agregar variante */}
+                  <div className="space-y-3 mb-4 p-4 bg-zinc-800/50 rounded-lg">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-zinc-300 text-sm">Talla *</Label>
+                        <Input
+                          value={newVariantSize}
+                          onChange={(e) => setNewVariantSize(e.target.value)}
+                          placeholder="S, M, L, 38, 40..."
+                          className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-zinc-300 text-sm">Color</Label>
+                        <Input
+                          value={newVariantColor}
+                          onChange={(e) => setNewVariantColor(e.target.value)}
+                          placeholder="Negro, Blanco..."
+                          className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-zinc-300 text-sm">Stock</Label>
+                        <Input
+                          type="number"
+                          value={newVariantStock}
+                          onChange={(e) => setNewVariantStock(e.target.value)}
+                          placeholder="10"
+                          className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-zinc-300 text-sm">Ajuste Precio</Label>
+                        <Input
+                          type="number"
+                          value={newVariantPriceAdj}
+                          onChange={(e) => setNewVariantPriceAdj(e.target.value)}
+                          placeholder="0"
+                          className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleAddVariant}
+                      className="w-full bg-zinc-700 hover:bg-zinc-600 text-white"
+                      size="sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Variante
+                    </Button>
+                  </div>
+
+                  {/* Lista de variantes */}
+                  {variants.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-zinc-300">
+                        Variantes agregadas ({variants.length})
+                      </h3>
+                      {variants.map((variant) => (
+                        <div
+                          key={variant.id}
+                          className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg"
+                        >
+                          <div className="flex-1">
+                            <p className="text-white font-medium text-sm">
+                              Talla: {variant.size}
+                              {variant.color && ` - ${variant.color}`}
+                            </p>
+                            <p className="text-xs text-zinc-400">
+                              Stock: {variant.stock} unidades
+                              {variant.priceAdjustment !== 0 && ` | Ajuste: $${variant.priceAdjustment}`}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemoveVariant(variant.id)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </Card>
 
                 <Card className="bg-zinc-900 border-zinc-800 p-6">

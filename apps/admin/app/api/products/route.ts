@@ -100,9 +100,9 @@ export async function POST(request: NextRequest) {
         description,
         urlSlug,
         sku,
-        basePrice: parseInt(basePrice),
-        salePrice: salePrice ? parseInt(salePrice) : null,
-        stock: stock ? parseInt(stock) : 0,
+        basePrice: typeof basePrice === "string" ? parseInt(basePrice) : basePrice,
+        salePrice: salePrice ? (typeof salePrice === "string" ? parseInt(salePrice) : salePrice) : null,
+        stock: stock ? (typeof stock === "string" ? parseInt(stock) : stock) : 0,
         categoryId,
         subcategory: subcategory || null,
         brand,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       include: {
         category: true
       }
-    })
+    });
 
     return NextResponse.json({
       success: true,

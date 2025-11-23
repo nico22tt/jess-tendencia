@@ -49,11 +49,11 @@ export async function PUT(
         ...(body.description && { description: body.description }),
         ...(body.urlSlug && { urlSlug: body.urlSlug }),
         ...(body.sku && { sku: body.sku }),
-        ...(body.basePrice && { basePrice: parseInt(body.basePrice) }),
+        ...(body.basePrice !== undefined && { basePrice: typeof body.basePrice === 'string' ? parseInt(body.basePrice) : body.basePrice }),
         ...(body.salePrice !== undefined && { 
-          salePrice: body.salePrice ? parseInt(body.salePrice) : null 
+          salePrice: body.salePrice ? (typeof body.salePrice === 'string' ? parseInt(body.salePrice) : body.salePrice) : null 
         }),
-        ...(body.stock !== undefined && { stock: parseInt(body.stock) }),
+        ...(body.stock !== undefined && { stock: typeof body.stock === 'string' ? parseInt(body.stock) : body.stock }),
         ...(body.categoryId && { categoryId: body.categoryId }),
         ...(body.subcategory !== undefined && { subcategory: body.subcategory }),
         ...(body.brand && { brand: body.brand }),

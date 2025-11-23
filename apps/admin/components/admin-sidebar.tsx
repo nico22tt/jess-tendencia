@@ -26,8 +26,7 @@ const navigationSections = [
   {
     title: "Users",
     items: [
-      { name: "See All Users", icon: Users, href: "/dashboard/users" },
-      { name: "Add User", icon: Plus, href: "/dashboard/users/add" },
+      { name: "See All Users", icon: Users, href: "/dashboard/users" }
     ],
   },
   {
