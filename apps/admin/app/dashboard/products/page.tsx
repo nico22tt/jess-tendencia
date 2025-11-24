@@ -127,9 +127,23 @@ export default function ProductsPage() {
   }
 
   // Obtener imagen principal
-  const getMainImage = (images: Array<{ url: string; isMain: boolean }>) => {
-    const mainImg = images.find(img => img.isMain)
-    return mainImg?.url || images[0]?.url || "/placeholder.svg"
+  const getMainImage = (images: any) => {
+    // Si images es string, intenta convertirlo a array
+    let arr: Array<{ url: string; isMain: boolean }> = []
+
+    if (Array.isArray(images)) {
+      arr = images
+    } else if (typeof images === "string") {
+      try {
+        arr = JSON.parse(images)
+      } catch { arr = [] }
+    } else if (images && typeof images === 'object') {
+      // Si es un objeto, intenta envolverlo en array
+      arr = [images]
+    }
+
+    const mainImg = arr.find(img => img.isMain)
+    return mainImg?.url || arr[0]?.url || "/placeholder.svg"
   }
 
   return (

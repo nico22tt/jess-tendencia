@@ -1,80 +1,254 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { AdminSidebar } from "@/components/admin-sidebar"
-
 import { AdminHeader } from "@/components/admin-header"
-
 import { Button } from "@jess/ui/button"
 import { Input } from "@jess/ui/input"
 import { Label } from "@jess/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jess/ui/select"
+import { Textarea } from "@jess/ui/textarea"
 import { Card } from "@jess/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@jess/ui/table"
-import { ShoppingCart, Plus, Trash2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jess/ui/select"
+import { 
+  ArrowLeft, 
+  Plus, 
+  Trash2, 
+  Search, 
+  Loader2,
+  ShoppingCart,
+  User,
+  Package,
+  MapPin
+} from "lucide-react"
+import Link from "next/link"
 
-interface OrderItem {
+interface Product {
   id: string
   name: string
-  quantity: number
-  unitPrice: number
+  sku: string
+  basePrice: number
+  stock: number
+  images: any
 }
 
-export default function AddOrderPage() {
-  // Customer Information
-  const [customerName, setCustomerName] = useState("")
-  const [customerEmail, setCustomerEmail] = useState("")
-  const [customerPhone, setCustomerPhone] = useState("")
+interface User {
+  id: string
+  name: string
+  email: string
+}
+
+interface OrderItem {
+  productId: string
+  productName: string
+  sku: string
+  quantity: number
+  unitPrice: number
+  subtotal: number
+}
+
+export default function CreateOrderPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  
+  // Estados para productos y usuarios
+  const [products, setProducts] = useState<Product[]>([])
+  const [users, setUsers] = useState<User[]>([])
+  const [loadingData, setLoadingData] = useState(true)
+  
+  // Estados del formulario
+  const [selectedUserId, setSelectedUserId] = useState("")
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
+  const [searchProduct, setSearchProduct] = useState("")
+  
+  // Datos de envío
+  const [shippingName, setShippingName] = useState("")
+  const [shippingEmail, setShippingEmail] = useState("")
+  const [shippingPhone, setShippingPhone] = useState("")
   const [shippingAddress, setShippingAddress] = useState("")
-  const [billingAddress, setBillingAddress] = useState("")
+  const [shippingCity, setShippingCity] = useState("")
+  const [shippingRegion, setShippingRegion] = useState("")
+  const [shippingZip, setShippingZip] = useState("")
+  
+  // Otros
+  const [shippingCost, setShippingCost] = useState("0")
+  const [notes, setNotes] = useState("")
+  const [paymentMethod, setPaymentMethod] = useState("cash")
+  const [orderStatus, setOrderStatus] = useState("PENDING")
 
-  // Order Products
-  const [productSearch, setProductSearch] = useState("")
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([
-    { id: "1", name: "Zapatillas Deportivas Blancas", quantity: 2, unitPrice: 45990 },
-    { id: "2", name: "Botas de Cuero Negras", quantity: 1, unitPrice: 89990 },
-  ])
+  useEffect(() => {
+    fetchData()
+  }, [])
 
-  // Payment and Summary
-  const [shippingCost, setShippingCost] = useState("5000")
-  const [paymentMethod, setPaymentMethod] = useState("")
-  const [orderStatus, setOrderStatus] = useState("")
-
-  const subtotal = orderItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
-  const total = subtotal + Number.parseInt(shippingCost || "0")
-
-  const handleAddProduct = () => {
-    if (productSearch.trim()) {
-      const newItem: OrderItem = {
-        id: Date.now().toString(),
-        name: productSearch,
-        quantity: 1,
-        unitPrice: 29990,
+  const fetchData = async () => {
+    try {
+      setLoadingData(true)
+      
+      // Cargar productos
+      const productsRes = await fetch("/api/products")
+      const productsData = await productsRes.json()
+      
+      // Cargar usuarios
+      const usersRes = await fetch("/api/users")
+      const usersData = await usersRes.json()
+      
+      if (productsData.success) {
+        setProducts(productsData.data)
       }
-      setOrderItems([...orderItems, newItem])
-      setProductSearch("")
+      
+      if (usersData.success) {
+        setUsers(usersData.data)
+      }
+    } catch (error) {
+      console.error("Error al cargar datos:", error)
+      alert("Error al cargar datos")
+    } finally {
+      setLoadingData(false)
     }
   }
 
-  const handleRemoveItem = (id: string) => {
-    setOrderItems(orderItems.filter((item) => item.id !== id))
+  const addProductToOrder = (product: Product) => {
+    const existingItem = orderItems.find(item => item.productId === product.id)
+    
+    if (existingItem) {
+      // Incrementar cantidad si ya existe
+      setOrderItems(orderItems.map(item =>
+        item.productId === product.id
+          ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * item.unitPrice }
+          : item
+      ))
+    } else {
+      // Agregar nuevo producto
+      setOrderItems([...orderItems, {
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku,
+        quantity: 1,
+        unitPrice: product.basePrice,
+        subtotal: product.basePrice
+      }])
+    }
+    
+    setSearchProduct("")
   }
 
-  const handleUpdateQuantity = (id: string, quantity: number) => {
-    if (quantity > 0) {
-      setOrderItems(orderItems.map((item) => (item.id === id ? { ...item, quantity } : item)))
+  const updateQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeProduct(productId)
+      return
+    }
+    
+    setOrderItems(orderItems.map(item =>
+      item.productId === productId
+        ? { ...item, quantity, subtotal: quantity * item.unitPrice }
+        : item
+    ))
+  }
+
+  const removeProduct = (productId: string) => {
+    setOrderItems(orderItems.filter(item => item.productId !== productId))
+  }
+
+  const calculateTotals = () => {
+    const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0)
+    const shipping = parseFloat(shippingCost) || 0
+    const tax = subtotal * 0.19 // 19% IVA (ajusta según tu país)
+    const total = subtotal + shipping + tax
+    
+    return { subtotal, shipping, tax, total }
+  }
+
+  const handleSubmit = async () => {
+    // Validaciones
+    if (!selectedUserId) {
+      alert("Selecciona un cliente")
+      return
+    }
+    
+    if (orderItems.length === 0) {
+      alert("Agrega al menos un producto")
+      return
+    }
+    
+    if (!shippingName || !shippingAddress || !shippingCity) {
+      alert("Completa los datos de envío")
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      const totals = calculateTotals()
+      
+      const orderData = {
+        userId: selectedUserId,
+        status: orderStatus,
+        items: orderItems.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        })),
+        subtotal: totals.subtotal,
+        shipping: totals.shipping,
+        tax: totals.tax,
+        total: totals.total,
+        shippingName,
+        shippingEmail,
+        shippingPhone,
+        shippingAddress,
+        shippingCity,
+        shippingRegion,
+        shippingZip,
+        paymentMethod,
+        notes
+      }
+      
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData)
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        alert("Orden creada exitosamente")
+        router.push(`/dashboard/transactions/${data.data.id}`)
+      } else {
+        alert("Error al crear orden: " + (data.error || ""))
+      }
+    } catch (error) {
+      console.error("Error:", error)
+      alert("Error al crear orden")
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleCreateOrder = () => {
-    console.log("[v0] Creating order:", {
-      customer: { customerName, customerEmail, customerPhone },
-      addresses: { shippingAddress, billingAddress },
-      items: orderItems,
-      payment: { paymentMethod, shippingCost, subtotal, total },
-      status: orderStatus,
-    })
-    alert("Pedido creado exitosamente (simulación)")
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
+    p.sku.toLowerCase().includes(searchProduct.toLowerCase())
+  )
+
+  const totals = calculateTotals()
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("es-CL", {
+      style: "currency",
+      currency: "CLP",
+      minimumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  if (loadingData) {
+    return (
+      <div className="flex h-screen bg-zinc-950">
+        <AdminSidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -85,290 +259,304 @@ export default function AddOrderPage() {
         <AdminHeader />
 
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-5xl mx-auto space-y-6">
+          <div className="max-w-6xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-pink-600/10 rounded-lg">
-                <ShoppingCart className="h-6 w-6 text-pink-600" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-white">Añadir Pedido Manualmente</h1>
-                <p className="text-zinc-400 mt-1">
-                  Crea un nuevo pedido ingresando la información del cliente y productos
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Link href="/dashboard/transactions">
+                  <Button variant="outline" size="sm" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Volver
+                  </Button>
+                </Link>
+                <div>
+                  <h1 className="text-3xl font-bold text-white">Crear Pedido Manual</h1>
+                  <p className="text-zinc-400 mt-1">Crea un pedido para un cliente existente</p>
+                </div>
               </div>
             </div>
 
-            {/* Form Card */}
-            <Card className="bg-zinc-900 border-zinc-800 p-8">
-              <div className="space-y-8">
-                {/* Section 1: Customer Information */}
-                <div>
-                  <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-600/20 text-pink-600 text-sm font-bold">
-                      1
-                    </span>
-                    Información del Cliente
-                  </h2>
-                  <div className="space-y-4 pl-10">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="customerName" className="text-zinc-300">
-                          Nombre del Cliente <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="customerName"
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          placeholder="Ej: Valentina Rodríguez"
-                          className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                          required
-                        />
-                      </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Columna izquierda - Productos y datos */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Seleccionar Cliente */}
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <User className="h-5 w-5 text-pink-600" />
+                    <h2 className="text-xl font-semibold text-white">Cliente</h2>
+                  </div>
+                  <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                    <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                      <SelectValue placeholder="Selecciona un cliente" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-800 border-zinc-700">
+                      {users.map(user => (
+                        <SelectItem key={user.id} value={user.id} className="text-white">
+                          {user.name} ({user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Card>
 
-                      <div>
-                        <Label htmlFor="customerEmail" className="text-zinc-300">
-                          Email <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="customerEmail"
-                          type="email"
-                          value={customerEmail}
-                          onChange={(e) => setCustomerEmail(e.target.value)}
-                          placeholder="cliente@ejemplo.com"
-                          className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                          required
-                        />
-                      </div>
+                {/* Agregar Productos */}
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Package className="h-5 w-5 text-pink-600" />
+                    <h2 className="text-xl font-semibold text-white">Productos</h2>
+                  </div>
+                  
+                  {/* Buscador de productos */}
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                    <Input
+                      type="text"
+                      placeholder="Buscar producto por nombre o SKU..."
+                      value={searchProduct}
+                      onChange={(e) => setSearchProduct(e.target.value)}
+                      className="pl-9 bg-zinc-800 border-zinc-700 text-white"
+                    />
+                  </div>
+
+                  {/* Resultados de búsqueda */}
+                  {searchProduct && (
+                    <div className="mb-4 max-h-48 overflow-y-auto bg-zinc-800 rounded-lg border border-zinc-700">
+                      {filteredProducts.length === 0 ? (
+                        <p className="text-zinc-500 text-center py-4">No se encontraron productos</p>
+                      ) : (
+                        filteredProducts.slice(0, 5).map(product => (
+                          <button
+                            key={product.id}
+                            onClick={() => addProductToOrder(product)}
+                            className="w-full text-left p-3 hover:bg-zinc-700 transition-colors border-b border-zinc-700 last:border-0"
+                          >
+                            <p className="text-white font-medium">{product.name}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-zinc-400">SKU: {product.sku}</span>
+                              <span className="text-xs text-zinc-400">•</span>
+                              <span className="text-xs text-pink-400">{formatCurrency(product.basePrice)}</span>
+                              <span className="text-xs text-zinc-400">•</span>
+                              <span className="text-xs text-zinc-400">Stock: {product.stock}</span>
+                            </div>
+                          </button>
+                        ))
+                      )}
                     </div>
+                  )}
 
+                  {/* Lista de productos agregados */}
+                  <div className="space-y-3">
+                    {orderItems.length === 0 ? (
+                      <p className="text-zinc-500 text-center py-8">No hay productos agregados</p>
+                    ) : (
+                      orderItems.map(item => (
+                        <div key={item.productId} className="flex items-center gap-4 p-4 bg-zinc-800 rounded-lg">
+                          <div className="flex-1">
+                            <p className="text-white font-medium">{item.productName}</p>
+                            <p className="text-sm text-zinc-400">SKU: {item.sku}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value))}
+                              className="w-20 bg-zinc-700 border-zinc-600 text-white text-center"
+                            />
+                            <span className="text-zinc-400">×</span>
+                            <span className="text-white font-medium w-24 text-right">
+                              {formatCurrency(item.unitPrice)}
+                            </span>
+                          </div>
+                          <div className="text-right w-28">
+                            <p className="text-white font-semibold">{formatCurrency(item.subtotal)}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeProduct(item.productId)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+
+                {/* Dirección de envío */}
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <MapPin className="h-5 w-5 text-pink-600" />
+                    <h2 className="text-xl font-semibold text-white">Dirección de Envío</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="customerPhone" className="text-zinc-300">
-                        Teléfono
-                      </Label>
+                      <Label className="text-zinc-300">Nombre completo</Label>
                       <Input
-                        id="customerPhone"
-                        type="tel"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="+56 9 1234 5678"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        value={shippingName}
+                        onChange={(e) => setShippingName(e.target.value)}
+                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        placeholder="Juan Pérez"
                       />
                     </div>
-
                     <div>
-                      <Label htmlFor="shippingAddress" className="text-zinc-300">
-                        Dirección de Envío <span className="text-red-500">*</span>
-                      </Label>
+                      <Label className="text-zinc-300">Email</Label>
                       <Input
-                        id="shippingAddress"
+                        type="email"
+                        value={shippingEmail}
+                        onChange={(e) => setShippingEmail(e.target.value)}
+                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        placeholder="juan@example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-zinc-300">Teléfono</Label>
+                      <Input
+                        value={shippingPhone}
+                        onChange={(e) => setShippingPhone(e.target.value)}
+                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        placeholder="+56 9 1234 5678"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-zinc-300">Ciudad</Label>
+                      <Input
+                        value={shippingCity}
+                        onChange={(e) => setShippingCity(e.target.value)}
+                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        placeholder="Santiago"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-zinc-300">Región</Label>
+                      <Input
+                        value={shippingRegion}
+                        onChange={(e) => setShippingRegion(e.target.value)}
+                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        placeholder="Metropolitana"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-zinc-300">Código Postal</Label>
+                      <Input
+                        value={shippingZip}
+                        onChange={(e) => setShippingZip(e.target.value)}
+                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        placeholder="8320000"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-zinc-300">Dirección</Label>
+                      <Input
                         value={shippingAddress}
                         onChange={(e) => setShippingAddress(e.target.value)}
-                        placeholder="Calle Principal 123, Depto 4B, Santiago"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="billingAddress" className="text-zinc-300">
-                        Dirección de Facturación
-                      </Label>
-                      <Input
-                        id="billingAddress"
-                        value={billingAddress}
-                        onChange={(e) => setBillingAddress(e.target.value)}
-                        placeholder="Misma que dirección de envío"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        placeholder="Av. Providencia 1234, Depto 501"
                       />
                     </div>
                   </div>
-                </div>
-
-                {/* Section 2: Order Products */}
-                <div className="pt-6 border-t border-zinc-800">
-                  <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-600/20 text-pink-600 text-sm font-bold">
-                      2
-                    </span>
-                    Productos de la Orden
-                  </h2>
-                  <div className="space-y-4 pl-10">
-                    {/* Product Search */}
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <Label htmlFor="productSearch" className="text-zinc-300">
-                          Buscar Producto
-                        </Label>
-                        <Input
-                          id="productSearch"
-                          value={productSearch}
-                          onChange={(e) => setProductSearch(e.target.value)}
-                          placeholder="Buscar por nombre o SKU..."
-                          className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                          onKeyPress={(e) => e.key === "Enter" && handleAddProduct()}
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button onClick={handleAddProduct} className="bg-pink-600 hover:bg-pink-700 text-white">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Añadir Producto
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Order Items Table */}
-                    <div className="border border-zinc-800 rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-zinc-800/50 hover:bg-zinc-800/50">
-                            <TableHead className="text-zinc-300">Producto</TableHead>
-                            <TableHead className="text-zinc-300 text-center">Cantidad</TableHead>
-                            <TableHead className="text-zinc-300 text-right">Precio Unitario</TableHead>
-                            <TableHead className="text-zinc-300 text-right">Subtotal</TableHead>
-                            <TableHead className="text-zinc-300 text-center">Acciones</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {orderItems.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center text-zinc-500 py-8">
-                                No hay productos añadidos. Busca y añade productos para continuar.
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            orderItems.map((item) => (
-                              <TableRow key={item.id} className="border-zinc-800">
-                                <TableCell className="text-white font-medium">{item.name}</TableCell>
-                                <TableCell className="text-center">
-                                  <Input
-                                    type="number"
-                                    value={item.quantity}
-                                    onChange={(e) => handleUpdateQuantity(item.id, Number.parseInt(e.target.value))}
-                                    className="w-20 bg-zinc-800 border-zinc-700 text-white text-center mx-auto"
-                                    min="1"
-                                  />
-                                </TableCell>
-                                <TableCell className="text-white text-right">
-                                  ${item.unitPrice.toLocaleString("es-CL")}
-                                </TableCell>
-                                <TableCell className="text-white text-right font-semibold">
-                                  ${(item.quantity * item.unitPrice).toLocaleString("es-CL")}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveItem(item.id)}
-                                    className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 3: Summary and Payment */}
-                <div className="pt-6 border-t border-zinc-800">
-                  <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-600/20 text-pink-600 text-sm font-bold">
-                      3
-                    </span>
-                    Resumen y Pago
-                  </h2>
-                  <div className="space-y-6 pl-10">
-                    {/* Order Summary */}
-                    <div className="bg-zinc-800/50 rounded-lg p-6 space-y-3">
-                      <div className="flex justify-between text-zinc-300">
-                        <span>Subtotal:</span>
-                        <span className="font-semibold">${subtotal.toLocaleString("es-CL")}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-zinc-300">
-                        <span>Costo de Envío:</span>
-                        <Input
-                          type="number"
-                          value={shippingCost}
-                          onChange={(e) => setShippingCost(e.target.value)}
-                          className="w-32 bg-zinc-800 border-zinc-700 text-white text-right"
-                          placeholder="0"
-                        />
-                      </div>
-                      <div className="pt-3 border-t border-zinc-700 flex justify-between text-white text-lg">
-                        <span className="font-bold">Total:</span>
-                        <span className="font-bold text-pink-600">${total.toLocaleString("es-CL")}</span>
-                      </div>
-                    </div>
-
-                    {/* Payment Method */}
-                    <div>
-                      <Label htmlFor="paymentMethod" className="text-zinc-300">
-                        Método de Pago <span className="text-red-500">*</span>
-                      </Label>
-                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                          <SelectValue placeholder="Selecciona un método de pago" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-800 border-zinc-700">
-                          <SelectItem value="card" className="text-white">
-                            Tarjeta de Crédito/Débito
-                          </SelectItem>
-                          <SelectItem value="cash" className="text-white">
-                            Efectivo
-                          </SelectItem>
-                          <SelectItem value="transfer" className="text-white">
-                            Transferencia Bancaria
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Order Status */}
-                    <div>
-                      <Label htmlFor="orderStatus" className="text-zinc-300">
-                        Estado Inicial del Pedido <span className="text-red-500">*</span>
-                      </Label>
-                      <Select value={orderStatus} onValueChange={setOrderStatus}>
-                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                          <SelectValue placeholder="Selecciona el estado inicial" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-800 border-zinc-700">
-                          <SelectItem value="pending_payment" className="text-white">
-                            Pendiente de Pago
-                          </SelectItem>
-                          <SelectItem value="paid" className="text-white">
-                            Pagado
-                          </SelectItem>
-                          <SelectItem value="processing" className="text-white">
-                            En Proceso
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <div className="pt-6">
-                  <Button
-                    onClick={handleCreateOrder}
-                    className="w-full bg-pink-600 hover:bg-pink-700 text-white text-lg py-6"
-                    size="lg"
-                    disabled={
-                      orderItems.length === 0 || !customerName || !customerEmail || !paymentMethod || !orderStatus
-                    }
-                  >
-                    <ShoppingCart className="h-5 w-5 mr-2" />
-                    Confirmar y Crear Pedido
-                  </Button>
-                </div>
+                </Card>
               </div>
-            </Card>
+
+              {/* Columna derecha - Resumen */}
+              <div className="space-y-6">
+                {/* Totales */}
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">Resumen</h2>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-zinc-400">
+                      <span>Subtotal:</span>
+                      <span>{formatCurrency(totals.subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-zinc-400">
+                      <span>Envío:</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={shippingCost}
+                        onChange={(e) => setShippingCost(e.target.value)}
+                        className="w-32 bg-zinc-800 border-zinc-700 text-white text-right"
+                      />
+                    </div>
+                    <div className="flex justify-between text-zinc-400">
+                      <span>IVA (19%):</span>
+                      <span>{formatCurrency(totals.tax)}</span>
+                    </div>
+                    <div className="pt-3 border-t border-zinc-700 flex justify-between text-white text-lg font-bold">
+                      <span>Total:</span>
+                      <span className="text-pink-600">{formatCurrency(totals.total)}</span>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Opciones adicionales */}
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">Opciones</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-zinc-300">Estado inicial</Label>
+                      <Select value={orderStatus} onValueChange={setOrderStatus}>
+                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-800 border-zinc-700">
+                          <SelectItem value="PENDING" className="text-white">Pendiente</SelectItem>
+                          <SelectItem value="PAID" className="text-white">Pagado</SelectItem>
+                          <SelectItem value="PROCESSING" className="text-white">Procesando</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-zinc-300">Método de pago</Label>
+                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-800 border-zinc-700">
+                          <SelectItem value="cash" className="text-white">Efectivo</SelectItem>
+                          <SelectItem value="transfer" className="text-white">Transferencia</SelectItem>
+                          <SelectItem value="credit_card" className="text-white">Tarjeta</SelectItem>
+                          <SelectItem value="debit_card" className="text-white">Débito</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-zinc-300">Notas (opcional)</Label>
+                      <Textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        placeholder="Notas adicionales sobre el pedido..."
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Botón crear */}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading || orderItems.length === 0}
+                  className="w-full bg-pink-600 hover:bg-pink-700 text-white"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creando...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Crear Pedido
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
         </main>
       </div>

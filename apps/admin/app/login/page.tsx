@@ -1,96 +1,147 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { useAuth } from "@jess/shared/contexts/auth-context"
+import React, { useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@utils/supabase/client"
+import { Button } from "@jess/ui/button"
+import { Input } from "@jess/ui/input"
+import { Label } from "@jess/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@jess/ui/card"
+import { Alert, AlertDescription } from "@jess/ui/alert"
+import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+import Link from "next/link"
 
-export default function AdminLoginTest() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const { login, isLoading, user } = useAuth()
-  const [error, setError] = useState<string | null>(null)
+export default function AdminLoginPage() {
+  const [formData, setFormData] = useState({ email: "", password: "" })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
 
-  // Redirigir al dashboard si ya está logueado como admin
-  if (user && user.role === "admin") {
-    // Si usas el App Router, considera usar next/navigation useRouter para mejor manejo.
-    window.location.href = "/dashboard" 
-    return null
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+    if (!formData.email) {
+      newErrors.email = "El correo electrónico es requerido"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "El correo electrónico no es válido"
+    }
+    if (!formData.password) {
+      newErrors.password = "La contraseña es requerida"
+    } else if (formData.password.length < 6) {
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres"
+    }
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
-    try {
-      await login(email, password)
-    } catch (err: any) {
-      // Nota: Si el error es manejado en el contexto, se mostrará aquí
-      setError(err.message ?? "Error al iniciar sesión")
+    if (!validateForm()) return
+    setIsLoading(true)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    })
+    setIsLoading(false)
+    if (error) {
+      setErrors({ general: error.message || "Error al iniciar sesión. Verifica tus credenciales." })
+      return
+    }
+    const role = data.user?.user_metadata?.role
+    if (role === "admin") {
+      router.push("/dashboard")
+      router.refresh()
+    } else {
+      setErrors({
+        general: "Acceso denegado. Sólo cuentas de administrador pueden ingresar aquí.",
+      })
+      await supabase.auth.signOut() // Opcional: fuerza logout para clientes
+    }
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }))
     }
   }
 
   return (
-    // Contenedor principal: min-h-screen, centrado, fondo bg-zinc-900 (equivalente a #18181b)
-    <div className="min-h-screen flex justify-center items-center bg-zinc-900 p-4">
-      
-      <form
-        onSubmit={handleSubmit}
-        // Estilos del formulario: fondo blanco, padding, redondeado, sombra, ancho limitado
-        className="bg-white p-8 sm:p-10 rounded-xl shadow-2xl w-full max-w-sm"
-      >
-        <h2 className="mb-6 text-xl font-semibold text-zinc-900 text-center">
-          Login Administrador
-        </h2>
-        
-        {/* Input Email */}
-        <input
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          placeholder="Email"
-          type="email"
-          // Estilos del input: w-full, mb-4 (1rem), p-3 (0.75rem), text-base, border, redondeado
-          className="w-full mb-4 p-3 text-base border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500 transition"
-          autoComplete="username"
-          required
-        />
-        
-        {/* Input Password */}
-        <input
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder="Password"
-          type="password"
-          // Estilos del input: w-full, mb-6 (1.5rem), p-3, text-base, border, redondeado
-          className="w-full mb-6 p-3 text-base border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500 transition"
-          autoComplete="current-password"
-          required
-        />
-        
-        {/* Botón de Ingreso */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          // Estilos del botón: w-full, fondo rosa (bg-pink-500), texto blanco, padding, fw-medium (font-medium), redondeado
-          className="w-full bg-pink-500 text-white p-3 font-medium rounded-lg mb-4 text-base transition duration-300 hover:bg-pink-600 disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {isLoading ? "Ingresando..." : "Login"}
-        </button>
-        
-        {/* Mensaje de Error */}
-        {error &&
-          // Estilos del error: color rojo (text-red-500), text-sm (0.95rem), centrado
-          <div className="text-red-500 text-sm mb-4 text-center">
-            {error}
-          </div>
-        }
-        
-        {/* Sección de Usuario (Mantenida por si la necesitas en desarrollo, pero con clases Tailwind) */}
-        {user &&
-          // Estilos del usuario: fondo gris claro (bg-gray-100), padding, redondeado, text-sm, color oscuro
-          <div className="bg-gray-100 p-3 rounded-md text-sm text-zinc-900 mt-4">
-            Usuario: {user.email} <br />
-            Rol: {user.role}
-          </div>
-        }
-      </form>
+    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-white to-zinc-800 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="text-center space-y-2">
+            <CardTitle className="text-2xl font-bold text-gray-900">Ingreso administrador</CardTitle>
+            <CardDescription className="text-gray-600">Solo administradores</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {errors.general && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertDescription className="text-xs">{errors.general}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  Correo Electrónico
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="admin@email.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    className="pl-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                  />
+                </div>
+                {errors.email && (
+                  <Alert variant="destructive" className="py-2">
+                    <AlertDescription className="text-xs">{errors.email}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Contraseña
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    className="pl-10 pr-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <Alert variant="destructive" className="py-2">
+                    <AlertDescription className="text-xs">{errors.password}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-pink-500 hover:bg-pink-600 text-white font-medium py-2.5"
+                disabled={isLoading}
+              >
+                {isLoading ? "Ingresando..." : "Ingresar"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

@@ -1,13 +1,20 @@
 {
   "extends": "@jess/typescript-config/react-library.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",
+    "baseUrl": ".", // habilita rutas relativas y absolutas
+    "paths": {
+      "@/*": ["./*"],                   // permite imports como @/archivos-locales
+      "@utils/*": ["../../packages/shared/utils/*"] // para importar utilidades compartidas
+    }
   },
   "include": [
     "contexts/**/*.tsx",
     "hooks/**/*.ts",
     "lib/**/*.ts",
-    "components/**/*.tsx"
+    "components/**/*.tsx",
+    "app/**/*.tsx",
+    "app/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

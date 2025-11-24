@@ -1,15 +1,15 @@
-"use client"
+'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, Heart, ChevronDown, User, LogOut, UserCircle, Package } from "lucide-react"
 import { Button } from "@jess/ui/button"
 import { Input } from "@jess/ui/input"
 import { cn } from "@jess/shared/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
-import { useAuth } from "@jess/shared/contexts/auth"
 import { CartSheet } from "@/components/cart-sheet"
-
+import { createClient } from "@utils/supabase/client"
+import { useRouter } from "next/navigation"
 
 interface MenuItem {
   id: string
@@ -26,7 +26,7 @@ const menuItems: MenuItem[] = [
       { name: "Zapatillas", href: "/zapatillas" },
       { name: "Botas", href: "/botas" },
       { name: "Botines", href: "/botines" },
-      { name: "Pantuflas", href: "/pantuflas" }, // Added Pantuflas to Calzado subcategories
+      { name: "Pantuflas", href: "/pantuflas" },
     ],
   },
   {
@@ -43,7 +43,23 @@ const menuItems: MenuItem[] = [
 
 export function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
-  const { user, logout } = useAuth()
+  const [user, setUser] = useState<any>(null)
+  const supabase = createClient()
+  const router = useRouter()
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    fetchUser()
+  }, [supabase])
+
+  const logout = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    router.push("/login")
+  }
 
   const handleMouseEnter = (itemId: string) => {
     setActiveDropdown(itemId)
@@ -68,8 +84,6 @@ export function Header() {
               />
             </Link>
           </div>
-
-          {/* Desktop Navigation Menu */}
           <nav className="hidden lg:flex items-center gap-6">
             {menuItems.map((item) => (
               <div
@@ -107,8 +121,6 @@ export function Header() {
                     )}
                   </button>
                 )}
-
-                {/* Dropdown Menu */}
                 {item.subcategories && (
                   <div
                     className={cn(
@@ -136,8 +148,6 @@ export function Header() {
             ))}
           </nav>
         </div>
-
-        {/* Search, Favorites, Cart and Auth */}
         <div className="flex items-center gap-4">
           <div className="relative max-w-sm hidden md:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -147,17 +157,14 @@ export function Header() {
             <Heart className="h-5 w-5" />
           </Button>
           <CartSheet />
-
-          {/* Authentication Section */}
           {user ? (
             <div className="relative" onMouseEnter={() => handleMouseEnter("user")} onMouseLeave={handleMouseLeave}>
               <Button variant="ghost" className="flex items-center gap-2 text-foreground hover:text-primary">
                 <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-pink-600" />
                 </div>
-                <span className="hidden md:block text-sm font-medium">{user.name}</span>
+                <span className="hidden md:block text-sm font-medium">{user.user_metadata?.name}</span>
               </Button>
-
               <div
                 className={cn(
                   "absolute top-full right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-pink-100 overflow-hidden transition-all duration-200 ease-out",
@@ -167,10 +174,9 @@ export function Header() {
                 )}
               >
                 <div className="px-4 py-3 border-b border-pink-100">
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                  <p className="text-sm font-medium text-gray-900">{user.user_metadata?.name}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
-
                 <Link
                   href="/mi-cuenta"
                   className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-25 transition-all duration-150"
@@ -178,7 +184,6 @@ export function Header() {
                   <UserCircle className="h-4 w-4" />
                   Mi cuenta
                 </Link>
-
                 <Link
                   href="/mis-pedidos"
                   className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-25 transition-all duration-150"
@@ -186,7 +191,6 @@ export function Header() {
                   <Package className="h-4 w-4" />
                   Mis pedidos
                 </Link>
-
                 <Link
                   href="/favoritos"
                   className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-25 transition-all duration-150"
@@ -194,7 +198,6 @@ export function Header() {
                   <Heart className="h-4 w-4" />
                   Favoritos
                 </Link>
-
                 <div className="border-t border-pink-100">
                   <button
                     onClick={logout}

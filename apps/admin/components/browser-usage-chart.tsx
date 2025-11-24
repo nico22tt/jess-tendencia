@@ -1,40 +1,87 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card } from "@jess/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts"
 
-const data = [
-  { name: "Chrome", value: 45, color: "#6366f1" },
-  { name: "Safari", value: 25, color: "#a855f7" },
-  { name: "Firefox", value: 18, color: "#ec4899" },
-  { name: "Edge", value: 12, color: "#8b5cf6" },
-]
-
-const totalVisitors = data.reduce((sum, item) => sum + item.value, 0) * 10
+// Colores fijos para los navegadores conocidos y otros
+const BROWSER_COLORS: Record<string, string> = {
+  Chrome: "#6366f1",
+  Safari: "#a855f7",
+  Firefox: "#ec4899",
+  Edge: "#8b5cf6",
+  Otros: "#06b6d4"
+}
 
 export function BrowserUsageChart() {
+  const [data, setData] = useState<{ name: string; value: number }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch("/api/stats/browsers")
+        const browsers = await res.json()
+        setData(browsers)
+      } catch {
+        setData([])
+      }
+      setLoading(false)
+    }
+    fetchData()
+    const interval = setInterval(fetchData, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const totalVisitors = data.reduce((sum, item) => sum + item.value, 0)
+
   return (
-    <Card className="bg-zinc-900 border-zinc-800 p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Browser Usage</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
-          <Legend
-            verticalAlign="bottom"
-            height={36}
-            formatter={(value, entry: any) => (
-              <span className="text-zinc-300 text-sm">{`${value} (${entry.payload.value}%)`}</span>
-            )}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+    <Card className="bg-zinc-900 border-zinc-800 p-6 h-full flex flex-col">
+      <h3 className="text-lg font-semibold text-white mb-4">Uso de navegadores</h3>
+      <div className="flex-1">
+        {loading ? (
+          <div className="w-full h-60 flex items-center justify-center text-zinc-400">
+            Cargando datos...
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={5}
+                dataKey="value"
+                label={({ name, percent }) =>
+                  `${name} (${(percent * 100).toFixed(0)}%)`
+                }
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={BROWSER_COLORS[entry.name] ?? "#06b6d4"}
+                  />
+                ))}
+              </Pie>
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                formatter={(value, entry: any) => (
+                  <span className="text-zinc-300 text-sm">
+                    {`${value} (${entry.payload.value} visitas)`}
+                  </span>
+                )}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        )}
+      </div>
       <div className="text-center mt-4">
-        <p className="text-2xl font-bold text-white">{totalVisitors.toLocaleString()}</p>
-        <p className="text-sm text-zinc-400">Total Visitors</p>
+        <p className="text-xl font-bold text-white">{totalVisitors.toLocaleString()}</p>
+        <p className="text-sm text-zinc-400">Visitantes totales</p>
       </div>
     </Card>
   )

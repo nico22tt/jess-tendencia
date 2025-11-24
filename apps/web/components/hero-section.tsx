@@ -1,21 +1,26 @@
-"use client"
+'use client'
 
-import { Button } 
-
-from "@jess/ui/button"
-import { useAuth } 
-from "@jess/shared/contexts/auth"
-
-
+import { useState, useEffect } from "react"
+import { Button } from "@jess/ui/button"
+import { createClient } from "@utils/supabase/client"
 
 export function HeroSection() {
-  const { user } = useAuth()
+  const [user, setUser] = useState<any>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    fetchUser()
+  }, [supabase])
 
   return (
     <section className="relative h-[70vh] flex items-center justify-center overflow-hidden">
       {/* Imagen de fondo */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="hero-bg"
         style={{
           backgroundImage: `url('/elegant-fashion-model-wearing-trendy-outfit-in-sof.png')`,
         }}
@@ -27,8 +32,12 @@ export function HeroSection() {
       <div className="relative z-10 text-center text-white px-6 max-w-2xl mt-32">
         {user ? (
           <>
-            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4 leading-tight">¡Hola, {user.name}!</h2>
-            <p className="text-2xl md:text-3xl mb-6 text-white/95 font-medium">¿Lista para renovar tu estilo?</p>
+            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4 leading-tight">
+              ¡Hola, {user.user_metadata?.name || user.email}!
+            </h2>
+            <p className="text-2xl md:text-3xl mb-6 text-white/95 font-medium">
+              ¿Lista para renovar tu estilo?
+            </p>
             <p className="text-lg mb-8 text-white/80">
               Descubre las últimas tendencias seleccionadas especialmente para ti
             </p>
@@ -44,7 +53,6 @@ export function HeroSection() {
             </p>
           </>
         )}
-        {/* </CHANGE> */}
 
         <Button
           size="lg"

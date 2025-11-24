@@ -8,7 +8,18 @@ import { Input } from "@jess/ui/input"
 import { Badge } from "@jess/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@jess/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jess/ui/select"
-import { Plus, Search, Eye, Edit, ChevronLeft, ChevronRight } from "lucide-react"
+import { 
+  Plus, 
+  Search, 
+  Eye, 
+  ChevronLeft, 
+  ChevronRight, 
+  Package, 
+  Truck, 
+  CheckCircle,
+  Clock,
+  Loader2
+} from "lucide-react"
 import Link from "next/link"
 
 interface Order {
@@ -85,6 +96,14 @@ export default function TransactionsPage() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage)
 
+  // Estadísticas
+  const stats = {
+    total: orders.length,
+    pending: orders.filter(o => o.status === 'PENDING').length,
+    shipped: orders.filter(o => o.status === 'SHIPPED').length,
+    delivered: orders.filter(o => o.status === 'DELIVERED').length,
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-CL", {
       year: "numeric",
@@ -129,17 +148,65 @@ export default function TransactionsPage() {
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-white">Gestión de Pedidos y Transacciones</h1>
-                <p className="text-zinc-400 mt-1">Monitorea y administra todos los pedidos de tu tienda</p>
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-pink-600/10 rounded-lg">
+                  <Package className="h-6 w-6 text-pink-600" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white">Gestión de Pedidos</h1>
+                  <p className="text-zinc-400 mt-1">Monitorea y administra todos los pedidos de tu tienda</p>
+                </div>
               </div>
-              <Link href="/dashboard/orders/add">
-                <Button className="bg-pink-600 hover:bg-pink-700 text-white">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Crear Pedido Manualmente
-                </Button>
-              </Link>
+                <Link href="/dashboard/orders/add">
+                  <Button className="bg-pink-600 hover:bg-pink-700 text-white">
+                    <Plus className="h-5 w-5 mr-2" />
+                    Crear Pedido Manual
+                  </Button>
+                </Link>
+
             </div>
+
+            {/* Stats Cards */}
+            {!isLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-zinc-400">Total Órdenes</p>
+                      <p className="text-2xl font-bold text-white">{stats.total}</p>
+                    </div>
+                    <Package className="h-8 w-8 text-zinc-600" />
+                  </div>
+                </div>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-zinc-400">Pendientes</p>
+                      <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
+                    </div>
+                    <Clock className="h-8 w-8 text-yellow-400" />
+                  </div>
+                </div>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-zinc-400">Enviadas</p>
+                      <p className="text-2xl font-bold text-purple-400">{stats.shipped}</p>
+                    </div>
+                    <Truck className="h-8 w-8 text-purple-400" />
+                  </div>
+                </div>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-zinc-400">Entregadas</p>
+                      <p className="text-2xl font-bold text-green-400">{stats.delivered}</p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-green-400" />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Filters */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
@@ -192,13 +259,18 @@ export default function TransactionsPage() {
             {/* Loading / Empty State */}
             {isLoading ? (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
+                <Loader2 className="h-8 w-8 text-pink-600 animate-spin mx-auto mb-4" />
                 <p className="text-zinc-400">Cargando órdenes...</p>
               </div>
             ) : filteredOrders.length === 0 ? (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
-                <p className="text-zinc-400">
+                <Package className="h-16 w-16 text-zinc-700 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-zinc-400 mb-2">
+                  No hay órdenes
+                </h3>
+                <p className="text-zinc-500">
                   {orders.length === 0
-                    ? "No hay órdenes aún. Crea una para comenzar."
+                    ? "No hay órdenes registradas aún."
                     : "No se encontraron órdenes con los filtros aplicados."}
                 </p>
               </div>
@@ -208,7 +280,7 @@ export default function TransactionsPage() {
                 <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-zinc-800 hover:bg-zinc-800/50">
+                      <TableRow className="border-zinc-800 hover:bg-zinc-900">
                         <TableHead className="text-zinc-400">ID de Pedido</TableHead>
                         <TableHead className="text-zinc-400">Cliente</TableHead>
                         <TableHead className="text-zinc-400">Total</TableHead>
@@ -224,7 +296,7 @@ export default function TransactionsPage() {
                           <TableCell>
                             <Link
                               href={`/dashboard/transactions/${order.id}`}
-                              className="text-pink-400 hover:text-pink-300 font-medium underline"
+                              className="text-pink-400 hover:text-pink-300 font-medium hover:underline"
                             >
                               {order.order_number}
                             </Link>
@@ -239,26 +311,24 @@ export default function TransactionsPage() {
                             {formatCurrency(order.total)}
                           </TableCell>
                           <TableCell className="text-zinc-400">
-                            {order.order_items.length} productos
+                            {order.order_items.length} {order.order_items.length === 1 ? 'producto' : 'productos'}
                           </TableCell>
                           <TableCell>{getOrderStatusBadge(order.status)}</TableCell>
                           <TableCell className="text-zinc-400">
                             {formatDate(order.created_at)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Link href={`/dashboard/transactions/${order.id}`}>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
-                                  aria-label="Ver detalles de la orden"
-                                >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Ver
-                                </Button>
-                              </Link>
-                            </div>
+                            <Link href={`/dashboard/transactions/${order.id}`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                                aria-label="Ver detalles de la orden"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver
+                              </Button>
+                            </Link>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -270,7 +340,7 @@ export default function TransactionsPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-zinc-400">
                     Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredOrders.length)} de{" "}
-                    {filteredOrders.length} órdenes
+                    {filteredOrders.length} {filteredOrders.length === 1 ? 'orden' : 'órdenes'}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button

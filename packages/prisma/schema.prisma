@@ -6,9 +6,14 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["auth", "public"]
+  schemas  = [ "public", "auth"]
 }
 
+// -----------------------------------------------------------
+// Modelos del Esquema de E-commerce (public)
+// -----------------------------------------------------------
+
+// El modelo User del esquema 'public' extiende al usuario de 'auth'.
 model User {
   id        String    @id @db.Uuid
   email     String    @unique
@@ -17,27 +22,34 @@ model User {
   role      String    @default("client")
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+  
+  // Relaciones
   orders    orders[]
-  users     users     @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  
+  // SUGERENCIA: Renombrar esta relación para mayor claridad.
+  // Es la relación 1:1 con el registro de autenticación (auth.users).
+  authRecord users @relation("AuthToUserExtension", fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("users")
   @@schema("public")
 }
 
 model Category {
-  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String
-  description  String?
-  slug         String     @unique
-  createdAt    DateTime?  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime?  @default(now()) @map("updated_at") @db.Timestamptz(6)
-  imageUrl     String?    @map("image_url")
-  parentId     String?    @map("parent_id") @db.Uuid
-  displayOrder Int?       @default(0) @map("display_order")
-  isActive     Boolean?   @default(true) @map("is_active")
-  parent       Category?  @relation("CategoryChildren", fields: [parentId], references: [id], onUpdate: NoAction)
-  children     Category[] @relation("CategoryChildren")
-  ProductVariants     Product[]
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  description    String?
+  slug           String     @unique
+  createdAt      DateTime?  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  imageUrl       String?    @map("image_url")
+  parentId       String?    @map("parent_id") @db.Uuid
+  displayOrder   Int?       @default(0) @map("display_order")
+  isActive       Boolean?   @default(true) @map("is_active")
+  
+  // Relaciones de autoconsumo (Parent/Children)
+  parent         Category?  @relation("CategoryChildren", fields: [parentId], references: [id], onUpdate: NoAction)
+  children       Category[] @relation("CategoryChildren")
+  products       Product[]
 
   @@index([displayOrder], map: "idx_categories_display_order")
   @@index([isActive], map: "idx_categories_is_active")
@@ -52,6 +64,8 @@ model Product {
   description      String
   urlSlug          String             @unique @map("url_slug")
   sku              String             @unique
+  // SUGERENCIA: Usar Int (centavos) para dinero es aceptable, 
+  // pero Decimal proporciona mayor precisión si es necesario.
   basePrice        Int                @map("base_price")
   salePrice        Int?               @map("sale_price")
   stock            Int?               @default(0)
@@ -59,14 +73,150 @@ model Product {
   subcategory      String?
   brand            String
   isPublished      Boolean?           @default(false) @map("is_published")
+  // Flexible para almacenar URLs o metadatos de imágenes
   images           Json
   createdAt        DateTime?          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime?          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  
+  // Relaciones
+  notifications    Notification[]
   order_items      order_items[]
   product_variants product_variants[]
   category         Category           @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stockMovements   StockMovement[]
 
   @@map("products")
+  @@schema("public")
+}
+
+model order_items {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id   String    @db.Uuid
+  product_id String    @db.Uuid
+  quantity   Int
+  // Campos de precio son Int (asumimos que son la unidad más pequeña, e.g. centavos)
+  unit_price Int
+  subtotal   Int
+  createdAt  DateTime? @default(now()) @db.Timestamptz(6)
+  
+  // Relaciones
+  orders     orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([order_id], map: "idx_order_items_order_id")
+  @@index([product_id], map: "idx_order_items_product_id")
+  @@schema("public")
+}
+
+/// Este modelo contiene restricciones CHECK y/o RLS
+model orders {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_number     String         @unique
+  user_id          String         @db.Uuid
+  status           String         @default("PENDING")
+  subtotal         Int
+  shipping         Int?           @default(0)
+  tax              Int?           @default(0)
+  total            Int
+  shipping_name    String
+  shipping_email   String
+  shipping_phone   String
+  shipping_address String
+  shipping_city    String
+  shipping_region  String
+  shipping_zip     String
+  notes            String?
+  tracking_number  String?
+  payment_method   String?
+  createdAt        DateTime?      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime?      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  
+  // Relaciones
+  notifications    Notification[]
+  order_items      order_items[]
+  users            User           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([createdAt(sort: Desc)], map: "idx_orders_created_at")
+
+  @@index([order_number], map: "idx_orders_order_number")
+  @@index([status], map: "idx_orders_status")
+  @@index([user_id], map: "idx_orders_user_id")
+  @@schema("public")
+}
+
+/// Este modelo contiene RLS
+model product_variants {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id       String    @db.Uuid
+  sku              String    @unique
+  size             String?
+  color            String?
+  stock            Int?      @default(0)
+  price_adjustment Int?      @default(0)
+  is_active        Boolean?  @default(true)
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime? @default(now()) @db.Timestamptz(6)
+  
+  // Relaciones
+  products         Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([product_id, size, color], map: "unique_variant")
+  @@index([product_id], map: "idx_product_variants_product_id")
+  @@index([sku], map: "idx_product_variants_sku")
+  @@schema("public")
+}
+
+model StockMovement {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId     String    @map("product_id") @db.Uuid
+  type          String
+  amount        Int
+  previousStock Int       @map("previous_stock")
+  newStock      Int       @map("new_stock")
+  reason        String?
+  userId        String?   @map("user_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  // Relaciones
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([productId], map: "idx_stock_movements_product_id")
+  @@index([createdAt(sort: Desc)], map: "idx_stock_movements_created_at")
+  @@map("stock_movements")
+  @@schema("public")
+}
+
+model Notification {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type      String
+  title     String
+  message   String
+  productId String?   @map("product_id") @db.Uuid
+  orderId   String?   @map("order_id") @db.Uuid
+  isRead    Boolean?  @default(false) @map("is_read")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  // Relaciones
+  order     orders?   @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product   Product?  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([createdAt(sort: Desc)], map: "idx_notifications_created_at")
+  @@index([isRead], map: "idx_notifications_is_read")
+  @@index([type], map: "idx_notifications_type")
+  @@index([productId], map: "idx_notifications_product_id")
+  @@map("notifications")
+  @@schema("public")
+}
+
+model PageVisit {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  path       String
+  timestamp  DateTime  @default(now()) @db.Timestamptz(6)
+  ip         String?
+  user_agent String?
+
+  @@index([timestamp], map: "idx_page_visits_timestamp")
+  @@map("page_visits")
   @@schema("public")
 }
 
@@ -452,81 +602,11 @@ model users {
   oauth_consents              oauth_consents[]
   one_time_tokens             one_time_tokens[]
   sessions                    sessions[]
-  users                       User?
+  userExtension User?   @relation("AuthToUserExtension")
 
   @@index([instance_id])
   @@index([is_anonymous])
   @@schema("auth")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model order_items {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  order_id   String    @db.Uuid
-  product_id String    @db.Uuid
-  quantity   Int
-  unit_price Int
-  subtotal   Int
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  orders     orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  products   Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([order_id], map: "idx_order_items_order_id")
-  @@index([product_id], map: "idx_order_items_product_id")
-  @@schema("public")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model orders {
-  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  order_number     String        @unique
-  user_id          String        @db.Uuid
-  status           String        @default("PENDING")
-  subtotal         Int
-  shipping         Int?          @default(0)
-  tax              Int?          @default(0)
-  total            Int
-  shipping_name    String
-  shipping_email   String
-  shipping_phone   String
-  shipping_address String
-  shipping_city    String
-  shipping_region  String
-  shipping_zip     String
-  notes            String?
-  tracking_number  String?
-  payment_method   String?
-  created_at       DateTime?     @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime?     @default(now()) @db.Timestamptz(6)
-  order_items      order_items[]
-  users            User          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([created_at(sort: Desc)], map: "idx_orders_created_at")
-  @@index([order_number], map: "idx_orders_order_number")
-  @@index([status], map: "idx_orders_status")
-  @@index([user_id], map: "idx_orders_user_id")
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model product_variants {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  product_id       String    @db.Uuid
-  sku              String    @unique
-  size             String?
-  color            String?
-  stock            Int?      @default(0)
-  price_adjustment Int?      @default(0)
-  is_active        Boolean?  @default(true)
-  created_at       DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime? @default(now()) @db.Timestamptz(6)
-  products         Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([product_id, size, color], map: "unique_variant")
-  @@index([product_id], map: "idx_product_variants_product_id")
-  @@index([sku], map: "idx_product_variants_sku")
-  @@schema("public")
 }
 
 enum aal_level {

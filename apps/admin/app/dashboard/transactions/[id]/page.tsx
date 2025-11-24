@@ -204,7 +204,12 @@ export default function TransactionDetailPage() {
                   </div>
                   <div className="space-y-4">
                     {order.order_items.map((item) => {
-                      const productImage = item.products.images?.[0] || '/placeholder.png'
+                     const productImage = Array.isArray(item.products.images) 
+                        ? item.products.images[0] 
+                        : typeof item.products.images === 'string' 
+                          ? JSON.parse(item.products.images)[0] 
+                          : '/placeholder.png'
+
                       return (
                         <div key={item.id} className="flex gap-4 p-4 bg-zinc-800/50 rounded-lg">
                           <img 

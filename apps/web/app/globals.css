@@ -79,11 +79,13 @@
   }
 
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   body {
-    @apply bg-background text-foreground font-body;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "DM Sans", sans-serif;
   }
 
   /* Added custom font family classes */
@@ -100,10 +102,28 @@
 @layer utilities {
   .scrollbar-hide {
     -ms-overflow-style: none;
-    scrollbar-width: none;
+  }
+
+  /* Use feature query for Firefox-only property to avoid errors in browsers that don't support it */
+  @supports (scrollbar-width: none) {
+    .scrollbar-hide {
+      scrollbar-width: none;
+    }
   }
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+}
+.hero-bg {
+  background-image: url('/elegant-fashion-model-wearing-trendy-outfit-in-sof.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.product-card-bg {
+  background-image: url('/fashionable-clothing-items-arranged-on-pastel-pink.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }

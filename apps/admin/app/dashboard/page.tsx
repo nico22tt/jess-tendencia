@@ -1,94 +1,65 @@
+import { redirect } from "next/navigation"
+import { createServerClient } from "@utils/supabase/server"
+import { AdminSidebar } from "@/components/admin-sidebar"
+import { AdminHeader } from "@/components/admin-header"
+import { RevenueChart } from "@/components/revenue-chart"
+import { LatestTransactions } from "@/components/latest-transactions"
+import { BrowserUsageChart } from "@/components/browser-usage-chart"
+import { TodoList } from "@/components/todo-list"
+import { VisitorsChart } from "@/components/visitors-chart"
+import { PopularProducts } from "@/components/popular-products"
 
-"use client"
+export default async function AdminDashboard() {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@jess/shared/contexts/auth-context"
-import { AdminSidebar } from "@/components/admin-sidebar";
-import { AdminHeader } from "@/components/admin-header";
-import { RevenueChart } from "@/components/revenue-chart";
-import { LatestTransactions } from "@/components/latest-transactions";
-import { BrowserUsageChart } from "@/components/browser-usage-chart";
-import { TodoList } from "@/components/todo-list";
-import { VisitorsChart } from "@/components/visitors-chart";
-import { PopularProducts } from "@/components/popular-products";
-
-export default function AdminDashboard() {
-  const { user, isLoading } = useAuth()
-  const router = useRouter()
-
-// apps/admin/app/dashboard/page.tsx
-  useEffect(() => {
-    if (!isLoading && (!user || user.role !== 'admin')) {
-      // Redirigir al login de web si no es admin
-      window.location.href = 'http://localhost:3000/login'
-    }
-  }, [user, isLoading])
-
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <div className="text-white">Cargando...</div>
-      </div>
-    )
+  // Si no hay usuario autenticado, redirige al login admin
+  if (!user) {
+    redirect("/login")
   }
 
-  if (!user || user.role !== 'admin') {
-    return null
+  // Verifica el rol directamente desde user_metadata
+  const role = user.user_metadata?.role
+  if (role !== "admin") {
+    redirect("/login")
   }
 
-  return (
-    <div className="flex min-h-screen bg-zinc-950">
-      {/* Sidebar */}
-      <AdminSidebar />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <AdminHeader />
-
-        {/* Dashboard Content */}
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="max-w-[1600px] mx-auto space-y-6">
-            {/* Top Row - Charts and Transactions */}
-            <div className="grid grid-cols-12 gap-6">
-              {/* Revenue Chart - 40% width */}
-              <div className="col-span-5">
-                <RevenueChart />
-              </div>
-
-              {/* Latest Transactions - 25% width */}
-              <div className="col-span-3">
-                <LatestTransactions />
-              </div>
-
-              {/* Browser Usage - 25% width */}
-              <div className="col-span-4">
-                <BrowserUsageChart />
-              </div>
+return (
+  <div className=" bg-zinc-950">
+    <AdminSidebar className="fixed left-0 top-0 h-screen z-20" />
+    <div className="ml-64 flex-1 flex flex-col">
+      <AdminHeader user={user} />
+      <main className="flex-1 p-6 ">
+        <div className="max-w-[1600px] mx-auto space-y-6">
+          {/* Top row: two main charts, equal size */}
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-6">
+              <RevenueChart />
             </div>
-
-            {/* Bottom Row - Lists and Products */}
-            <div className="grid grid-cols-12 gap-6">
-              {/* Todo List */}
-              <div className="col-span-3">
-                <TodoList />
-              </div>
-
-              {/* Total Visitors Chart */}
-              <div className="col-span-5">
-                <VisitorsChart />
-              </div>
-
-              {/* Popular Products */}
-              <div className="col-span-4">
-                <PopularProducts />
-              </div>
+            <div className="col-span-6">
+              <VisitorsChart />
             </div>
           </div>
-        </main>
-      </div>
+
+          {/* Bottom row: horizontal cards */}
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-3">
+              <LatestTransactions />
+            </div>
+            <div className="col-span-3">
+              <PopularProducts />
+            </div>
+            <div className="col-span-3">
+              <BrowserUsageChart />
+            </div>
+            <div className="col-span-3">
+              <TodoList />
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
-  )
+  </div>
+)
+
 }

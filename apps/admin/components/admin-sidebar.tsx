@@ -9,43 +9,48 @@ const navigationSections = [
     title: "Application",
     items: [
       { name: "Home", icon: Home, href: "/dashboard" },
-      { name: "Inbox", icon: Inbox, href: "/dashboard/inbox" },
-      { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
-      { name: "Search", icon: Search, href: "/dashboard/search" },
+      { name: "Notificaciones", icon: Inbox, href: "/dashboard/notifications" },
+      { name: "Calendario", icon: Calendar, href: "/dashboard/calendar" },
+      { name: "Buscar", icon: Search, href: "/dashboard/search" },
       { name: "Settings", icon: Settings, href: "/dashboard/settings" },
     ],
   },
   {
     title: "Products",
     items: [
-      { name: "See All Products", icon: Package, href: "/dashboard/products" },
-      { name: "Add Product", icon: Plus, href: "/dashboard/products/add" },
-      { name: "Add Category", icon: Plus, href: "/dashboard/categories/add" },
+      { name: "Gestionar Inventario", icon: Package, href: "/dashboard/inventory" },
+      { name: "Ver todos los Productos", icon: Package, href: "/dashboard/products" },
+      { name: "Crear nuevo Producto", icon: Plus, href: "/dashboard/products/add" },
+      { name: "Crear nueva Categoria", icon: Plus, href: "/dashboard/categories/add" },
     ],
   },
   {
     title: "Users",
     items: [
-      { name: "See All Users", icon: Users, href: "/dashboard/users" }
+      { name: "Ver todos los Usuarios", icon: Users, href: "/dashboard/users" }
     ],
   },
   {
     title: "Orders/Payments",
     items: [
-      { name: "See All Transactions", icon: CreditCard, href: "/dashboard/transactions" },
-      { name: "Add Order", icon: ShoppingCart, href: "/dashboard/orders/add" },
+      { name: "Ver Transacciones", icon: CreditCard, href: "/dashboard/transactions" },
+      { name: "Crear Orden de Compra", icon: ShoppingCart, href: "/dashboard/orders/add" },
     ],
   },
 ]
 
-export function AdminSidebar() {
+type Props = {
+  className?: string
+}
+
+export function AdminSidebar({ className }: Props) {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+    <aside className={cn("w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col", className)}>
       {/* Logo/Title */}
       <div className="p-6 border-b border-zinc-800">
-        <h1 className="text-2xl font-bold text-white">Lama Dev</h1>
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
       </div>
 
       {/* Navigation */}

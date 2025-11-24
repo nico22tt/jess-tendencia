@@ -1,132 +1,150 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@jess/shared/lib/prisma'
+import { NextRequest, NextResponse } from "next/server"
+import prisma from "@jess/shared/lib/prisma"
+import { createNotification } from "@jess/shared/lib/notifications"
 
-// GET /api/orders/:id
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     const order = await prisma.orders.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         users: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         order_items: {
           include: {
-            products: true
-          }
-        }
-      }
+            products: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                images: true,
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!order) {
       return NextResponse.json(
-        { success: false, error: 'Orden no encontrada' },
+        { success: false, error: "Orden no encontrada" },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: order
-    })
+    return NextResponse.json({ success: true, data: order })
   } catch (error) {
-    console.error('Error al obtener orden:', error)
+    console.error("Error al obtener orden:", error)
     return NextResponse.json(
-      { success: false, error: 'Error al obtener orden' },
+      { success: false, error: "Error al obtener orden" },
       { status: 500 }
     )
   }
 }
 
-// PUT /api/orders/:id
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
+    const { status } = body
 
-    const order = await prisma.orders.update({
-      where: { id: params.id },
-      data: {
-        ...(body.status && { status: body.status }),
-        ...(body.trackingNumber !== undefined && { tracking_number: body.trackingNumber }),
-        ...(body.notes !== undefined && { notes: body.notes })
-      },
-      include: {
-        users: true,
-        order_items: {
-          include: {
-            products: true
-          }
-        }
-      }
-    })
-
-    return NextResponse.json({
-      success: true,
-      data: order
-    })
-  } catch (error) {
-    console.error('Error al actualizar orden:', error)
-    return NextResponse.json(
-      { success: false, error: 'Error al actualizar orden' },
-      { status: 500 }
-    )
-  }
-}
-
-// DELETE /api/orders/:id
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const order = await prisma.orders.findUnique({
-      where: { id: params.id },
-      include: { order_items: true }
-    })
-
-    if (!order) {
+    if (!status) {
       return NextResponse.json(
-        { success: false, error: 'Orden no encontrada' },
+        { success: false, error: "Estado requerido" },
+        { status: 400 }
+      )
+    }
+
+    // Validar contra el constraint del DB
+    const allowed = [
+      "PENDING",
+      "PAID",
+      "PROCESSING",
+      "SHIPPED",
+      "DELIVERED",
+      "CANCELLED",
+      "REFUNDED",
+    ]
+
+    if (!allowed.includes(status)) {
+      return NextResponse.json(
+        { success: false, error: "Estado inválido" },
+        { status: 400 }
+      )
+    }
+
+    const currentOrder = await prisma.orders.findUnique({
+      where: { id },
+      include: {
+        users: {
+          select: { name: true, email: true },
+        },
+      },
+    })
+
+    if (!currentOrder) {
+      return NextResponse.json(
+        { success: false, error: "Orden no encontrada" },
         { status: 404 }
       )
     }
 
-    // Restaurar stock si la orden no fue entregada
-    if (order.status !== 'DELIVERED' && order.status !== 'CANCELLED') {
-      for (const item of order.order_items) {
-        await prisma.product.update({
-          where: { id: item.product_id },
-          data: {
-            stock: {
-              increment: item.quantity
-            }
-          }
-        })
-      }
+    const updatedOrder = await prisma.orders.update({
+      where: { id },
+      data: {
+        status,
+        updatedAt: new Date(),
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        order_items: {
+          include: {
+            products: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                images: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    // Notificación si el estado cambió
+    if (currentOrder.status !== status) {
+      await createNotification({
+        type: "order_status",
+        title: "Estado de orden actualizado",
+        message: `La orden #${currentOrder.order_number} cambió de "${currentOrder.status}" a "${status}"`,
+        orderId: id,
+      })
     }
 
-    await prisma.orders.delete({
-      where: { id: params.id }
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Orden eliminada correctamente'
-    })
+    return NextResponse.json({ success: true, data: updatedOrder })
   } catch (error) {
-    console.error('Error al eliminar orden:', error)
+    console.error("Error al actualizar orden:", error)
     return NextResponse.json(
-      { success: false, error: 'Error al eliminar orden' },
+      { success: false, error: "Error al actualizar orden" },
       { status: 500 }
     )
   }

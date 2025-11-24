@@ -1,7 +1,8 @@
-"use client"
+'use client'
 
 import React, { useState } from "react"
-import { useAuth } from "@jess/shared/contexts/auth-context"
+import { useRouter } from "next/navigation"
+import { createClient } from "@utils/supabase/client"
 import { Button } from "@jess/ui/button"
 import { Input } from "@jess/ui/input"
 import { Label } from "@jess/ui/label"
@@ -11,46 +12,51 @@ import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
+  const [formData, setFormData] = useState({ email: "", password: "" })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showPassword, setShowPassword] = useState(false)
-  const { login, isLoading } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-
     if (!formData.email) {
       newErrors.email = "El correo electrónico es requerido"
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "El correo electrónico no es válido"
     }
-
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida"
     } else if (formData.password.length < 6) {
       newErrors.password = "La contraseña debe tener al menos 6 caracteres"
     }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('SUBMIT') // <-- Aquí lo agregas
     if (!validateForm()) return
-
-    try {
-      await login(formData.email, formData.password)
-      // La redirección la maneja el contexto
-    } catch (error: any) {
+    setIsLoading(true)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    })
+    setIsLoading(false)
+    if (error) {
       setErrors({ general: error.message || "Error al iniciar sesión. Verifica tus credenciales." })
+      return
+    }
+    const role = data.user?.user_metadata?.role
+    if (role === "admin") {
+      window.location.href = "http://localhost:3001/dashboard"
+      // Nota: no uses router.push aquí para puertos distintos
+    } else {
+      router.push("/mi-cuenta")
+      router.refresh()
     }
   }
-
 
 
   const handleInputChange = (field: string, value: string) => {

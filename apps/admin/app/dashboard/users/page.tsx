@@ -71,12 +71,6 @@ export default function UsersPage() {
                 <h1 className="text-3xl font-bold text-white">Gestión de Usuarios</h1>
                 <p className="text-zinc-400 mt-1">Administra todos los usuarios de tu plataforma</p>
               </div>
-              <Link href="/dashboard/users/add">
-                <Button className="bg-pink-600 hover:bg-pink-700 text-white">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Añadir Nuevo Usuario
-                </Button>
-              </Link>
             </div>
 
             {/* Filters */}

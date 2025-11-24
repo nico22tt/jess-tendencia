@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import { AuthProvider } from "@jess/shared/contexts/auth"
 import { CartProvider } from "@jess/shared/contexts/cart"
 import { MainLayout } from "@/components/main-layout"
 
@@ -15,11 +14,11 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const shouldExcludeLayout = excludedRoutes.some((route) => pathname?.startsWith(route))
 
   return (
-    <AuthProvider>
+    
       <CartProvider>
         {/* Conditionally apply MainLayout based on route */}
         {shouldExcludeLayout ? children : <MainLayout>{children}</MainLayout>}
       </CartProvider>
-    </AuthProvider>
+    
   )
 }

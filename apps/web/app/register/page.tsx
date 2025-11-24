@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { useAuth } from "@jess/shared/contexts/auth-context"
-import { useState } from "react"
+import React, { useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@utils/supabase/client"
 import { Button } from "@jess/ui/button"
 import { Input } from "@jess/ui/input"
 import { Label } from "@jess/ui/label"
@@ -12,8 +12,6 @@ import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
 import Link from "next/link"
 
 export default function RegisterPage() {
-  const { register, isLoading } = useAuth()
-  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,48 +21,53 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-
     if (!formData.name.trim()) {
       newErrors.name = "El nombre es requerido"
     } else if (formData.name.trim().length < 2) {
       newErrors.name = "El nombre debe tener al menos 2 caracteres"
     }
-
     if (!formData.email) {
       newErrors.email = "El correo electrónico es requerido"
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "El correo electrónico no es válido"
     }
-
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida"
     } else if (formData.password.length < 6) {
       newErrors.password = "La contraseña debe tener al menos 6 caracteres"
     }
-
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = "Confirma tu contraseña"
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Las contraseñas no coinciden"
     }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!validateForm()) return
-
-    try {
-      await register(formData.email, formData.password, formData.name)
-    } catch (error: any) {
+    setIsLoading(true)
+    const { data, error } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: { data: { name: formData.name } }
+    })
+    setIsLoading(false)
+    if (error) {
       setErrors({ general: error.message || "Error al crear la cuenta" })
+      return
     }
+    // Opcional: guardar el nombre en tabla profile/users si lo requieres
+    router.push("/mi-cuenta")
+    router.refresh()
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -89,11 +92,8 @@ export default function RegisterPage() {
                   <AlertDescription className="text-xs">{errors.general}</AlertDescription>
                 </Alert>
               )}
-
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                  Nombre Completo
-                </Label>
+                <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nombre Completo</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
@@ -111,11 +111,8 @@ export default function RegisterPage() {
                   </Alert>
                 )}
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  Correo Electrónico
-                </Label>
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">Correo Electrónico</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
@@ -133,11 +130,8 @@ export default function RegisterPage() {
                   </Alert>
                 )}
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Contraseña
-                </Label>
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">Contraseña</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
@@ -162,11 +156,8 @@ export default function RegisterPage() {
                   </Alert>
                 )}
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-                  Confirmar Contraseña
-                </Label>
+                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirmar Contraseña</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
@@ -191,7 +182,6 @@ export default function RegisterPage() {
                   </Alert>
                 )}
               </div>
-
               <Button
                 type="submit"
                 className="w-full bg-pink-500 hover:bg-pink-600 text-white font-medium py-2.5"
@@ -200,7 +190,6 @@ export default function RegisterPage() {
                 {isLoading ? "Creando cuenta..." : "Crear Cuenta"}
               </Button>
             </form>
-
             <div className="text-center">
               <div className="text-sm text-gray-600">
                 ¿Ya tienes cuenta?{" "}
