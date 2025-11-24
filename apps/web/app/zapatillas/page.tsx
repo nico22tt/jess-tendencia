@@ -1,3 +1,4 @@
+// app/zapatillas/page.tsx
 import { ProductGrid } from "@/components/product-grid"
 import { ProductFilters } from "@/components/product-filters"
 import { CategoryPageLayout } from "@/components/category-page-layout"
@@ -25,13 +26,14 @@ export const metadata: Metadata = {
 
 export default function ZapatillasPage() {
   return (
-    <CategoryPageLayout title="Zapatillas" description="Explora nuestra selección de zapatillas con estilo y comodidad">
+    <CategoryPageLayout
+      title="Zapatillas"
+      description="Explora nuestra selección de zapatillas con estilo y comodidad"
+    >
       <div className="sticky top-[72px] z-40 bg-white py-4 -mx-6 px-6 shadow-sm mb-0.5">
-        <ProductFilters />
+        <ProductFilters categorySlug="zapatillas" />
       </div>
-
-      {/* Products Grid - Full Width */}
-      <ProductGrid />
+      <ProductGrid categorySlug="zapatillas" />
     </CategoryPageLayout>
   )
 }
