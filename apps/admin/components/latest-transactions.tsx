@@ -1,37 +1,60 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card } from "@jess/ui/card"
 import Image from "next/image"
 
-const transactions = [
-  { id: 1, name: "John Doe", amount: "$1.4K", avatar: "/placeholder.svg?height=40&width=40" },
-  { id: 2, name: "Jane Smith", amount: "$2.1K", avatar: "/placeholder.svg?height=40&width=40" },
-  { id: 3, name: "Mike Johnson", amount: "$890", avatar: "/placeholder.svg?height=40&width=40" },
-  { id: 4, name: "Sarah Williams", amount: "$3.2K", avatar: "/placeholder.svg?height=40&width=40" },
-  { id: 5, name: "Tom Brown", amount: "$1.8K", avatar: "/placeholder.svg?height=40&width=40" },
-  { id: 6, name: "Emily Davis", amount: "$950", avatar: "/placeholder.svg?height=40&width=40" },
-]
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 }).format(value)
+
+interface Transaction {
+  id: string
+  name: string
+  amount: number
+  orderNumber: string
+  date: string
+}
 
 export function LatestTransactions() {
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch("/api/stats/transactions")
+        const json = await res.json()
+        setTransactions(json)
+      } catch {
+        setTransactions([])
+      }
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
   return (
-    <Card className="bg-zinc-900 border-zinc-800 p-6">
+    <Card className="bg-zinc-900 border-zinc-800 p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-white mb-4">Latest Transactions</h3>
-      <div className="space-y-4">
-        {transactions.map((transaction) => (
-          <div key={transaction.id} className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Image
-                src={transaction.avatar || "/placeholder.svg"}
-                alt={transaction.name}
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-              <span className="text-sm text-zinc-300">{transaction.name}</span>
+      <div className="flex-1 overflow-auto space-y-4">
+        {loading ? (
+          <div className="text-zinc-400 text-sm">Cargando...</div>
+        ) : transactions.length === 0 ? (
+          <div className="text-zinc-400 text-sm">No hay transacciones recientes</div>
+        ) : (
+          transactions.map((transaction) => (
+            <div key={transaction.id} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-300 font-semibold">
+                  {transaction.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm text-zinc-300">{transaction.name}</span>
+              </div>
+              <span className="text-sm font-semibold text-white">{formatCurrency(transaction.amount)}</span>
             </div>
-            <span className="text-sm font-semibold text-white">{transaction.amount}</span>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </Card>
   )

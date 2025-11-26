@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 export interface CartItem {
-  id: string | number  // ← CAMBIAR ESTA LÍNEA
+  id: string | number
   name: string
   price: number
   quantity: number
@@ -11,12 +11,11 @@ export interface CartItem {
   size?: string
 }
 
-
 interface CartContextType {
   items: CartItem[]
   addItem: (item: CartItem) => void
-  removeItem: (id: string) => void
-  updateQuantity: (id: string, quantity: number) => void
+  removeItem: (uid: string) => void
+  updateQuantity: (uid: string, quantity: number) => void
   clearCart: () => void
   totalItems: number
   subtotal: number
@@ -25,44 +24,53 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+// Inicializa el estado leyendo localStorage en el primer render
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([])
-
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem("jess-tendencia-cart")
-    if (savedCart) {
-      setItems(JSON.parse(savedCart))
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window !== "undefined") {
+      const savedCart = localStorage.getItem("jess-tendencia-cart")
+      return savedCart ? JSON.parse(savedCart) : []
     }
-  }, [])
+    return []
+  })
 
-  // Save cart to localStorage whenever it changes
+  // Guarda el carrito en localStorage cada vez que cambian los items
   useEffect(() => {
     localStorage.setItem("jess-tendencia-cart", JSON.stringify(items))
   }, [items])
 
   const addItem = (item: CartItem) => {
     setItems((prevItems) => {
-      const existingItem = prevItems.find((i) => i.id === item.id && i.size === item.size)
+      const existingItem = prevItems.find(
+        (i) => i.id === item.id && i.size === item.size
+      )
       if (existingItem) {
         return prevItems.map((i) =>
-          i.id === item.id && i.size === item.size ? { ...i, quantity: i.quantity + item.quantity } : i,
+          i.id === item.id && i.size === item.size
+            ? { ...i, quantity: i.quantity + item.quantity }
+            : i
         )
       }
       return [...prevItems, item]
     })
   }
 
-  const removeItem = (id: string) => {
-    setItems((prevItems) => prevItems.filter((item) => item.id !== id))
+  const removeItem = (uid: string) => {
+    setItems((prevItems) =>
+      prevItems.filter((item) => `${item.id}-${item.size}` !== uid)
+    )
   }
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = (uid: string, quantity: number) => {
     if (quantity <= 0) {
-      removeItem(id)
+      removeItem(uid)
       return
     }
-    setItems((prevItems) => prevItems.map((item) => (item.id === id ? { ...item, quantity } : item)))
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        `${item.id}-${item.size}` === uid ? { ...item, quantity } : item
+      )
+    )
   }
 
   const clearCart = () => {
@@ -71,7 +79,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const total = subtotal // Can add shipping, taxes, etc. here
+  const total = subtotal // Puedes agregar envíos, descuentos, impuestos aquí
 
   return (
     <CartContext.Provider

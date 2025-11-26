@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { AuthProvider } from "@jess/shared/contexts/auth-context"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -48,7 +47,7 @@ export default function RootLayout({
             --chart-5: 198 89% 48%;
           }
         `}</style>
-        <AuthProvider>{children}</AuthProvider>
+        {children}
       </body>
     </html>
   )

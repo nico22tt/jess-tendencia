@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@jess/shared/lib/prisma'
 
-// GET /api/categories - Listar todas las categorías
 export async function GET() {
   try {
     const categories = await prisma.category.findMany({
@@ -26,10 +25,7 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      data: categories
-    })
+    return NextResponse.json({ success: true, data: categories })
   } catch (error) {
     console.error('Error al obtener categorías:', error)
     return NextResponse.json(
@@ -39,13 +35,10 @@ export async function GET() {
   }
 }
 
-// POST /api/categories - Crear nueva categoría
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { name, description, slug, imageUrl, parentId, displayOrder, isActive } = body
+    const { name, description, slug, imageUrl, parentId, displayOrder, isActive } = await request.json()
 
-    // Validación básica
     if (!name || !slug) {
       return NextResponse.json(
         { success: false, error: 'Nombre y slug son requeridos' },
@@ -53,12 +46,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar si el slug ya existe
-    const existingCategory = await prisma.category.findUnique({
-      where: { slug }
-    })
-
-    if (existingCategory) {
+    const exists = await prisma.category.findUnique({ where: { slug } })
+    if (exists) {
       return NextResponse.json(
         { success: false, error: 'El slug ya está en uso' },
         { status: 400 }
@@ -73,14 +62,11 @@ export async function POST(request: NextRequest) {
         imageUrl: imageUrl || null,
         parentId: parentId || null,
         displayOrder: displayOrder ? parseInt(displayOrder) : 0,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive ?? true,
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      data: category
-    }, { status: 201 })
+    return NextResponse.json({ success: true, data: category }, { status: 201 })
   } catch (error) {
     console.error('Error al crear categoría:', error)
     return NextResponse.json(

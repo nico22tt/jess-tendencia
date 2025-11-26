@@ -1,25 +1,14 @@
+// components/product-filters.tsx
 "use client"
 
 import { useState } from "react"
-import { Button } 
-
-from "@jess/ui/button"
-import { Checkbox } 
-
-from "@jess/ui/checkbox"
-import { Input } 
-
-from "@jess/ui/input"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } 
-
-from "@jess/ui/sheet"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } 
-
-from "@jess/ui/accordion"
+import { Button } from "@jess/ui/button"
+import { Checkbox } from "@jess/ui/checkbox"
+import { Input } from "@jess/ui/input"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@jess/ui/sheet"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@jess/ui/accordion"
 import { Filter, X, Search, Star } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } 
-
-from "@jess/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jess/ui/select"
 
 const sizes = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"]
 const visibleSizes = 8
@@ -66,14 +55,12 @@ function FilterContent() {
   const [brandSearch, setBrandSearch] = useState("")
   const [minPrice, setMinPrice] = useState("")
   const [maxPrice, setMaxPrice] = useState("")
-  const [activeFiltersCount] = useState(0)
 
   const displayedSizes = showAllSizes ? sizes : sizes.slice(0, visibleSizes)
   const filteredBrands = brands.filter((brand) => brand.name.toLowerCase().includes(brandSearch.toLowerCase()))
 
   return (
     <div className="flex flex-col h-full">
-      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <Accordion
           type="multiple"
@@ -238,7 +225,11 @@ function FilterContent() {
   )
 }
 
-export function ProductFilters() {
+interface ProductFiltersProps {
+  categorySlug?: string
+}
+
+export function ProductFilters({ categorySlug }: ProductFiltersProps) {
   const [activeFiltersCount] = useState(0)
 
   return (

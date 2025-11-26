@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@jess/shared/lib/prisma'
 
-// GET /api/products/:id
+// GET /api/products/[id] - Obtener producto por ID
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -10,7 +10,13 @@ export async function GET(
     const product = await prisma.product.findUnique({
       where: { id: params.id },
       include: {
-        category: true
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        }
       }
     })
 
@@ -21,10 +27,7 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: product
-    })
+    return NextResponse.json({ success: true, data: product })
   } catch (error) {
     console.error('Error al obtener producto:', error)
     return NextResponse.json(
@@ -34,38 +37,23 @@ export async function GET(
   }
 }
 
-// PUT /api/products/:id
+// PUT /api/products/[id] - Actualizar producto
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json()
+    const data = await request.json()
 
     const product = await prisma.product.update({
       where: { id: params.id },
-      data: {
-        ...(body.name && { name: body.name }),
-        ...(body.description && { description: body.description }),
-        ...(body.urlSlug && { urlSlug: body.urlSlug }),
-        ...(body.sku && { sku: body.sku }),
-        ...(body.basePrice && { basePrice: parseInt(body.basePrice) }),
-        ...(body.salePrice !== undefined && { 
-          salePrice: body.salePrice ? parseInt(body.salePrice) : null 
-        }),
-        ...(body.stock !== undefined && { stock: parseInt(body.stock) }),
-        ...(body.categoryId && { categoryId: body.categoryId }),
-        ...(body.subcategory !== undefined && { subcategory: body.subcategory }),
-        ...(body.brand && { brand: body.brand }),
-        ...(body.isPublished !== undefined && { isPublished: body.isPublished }),
-        ...(body.images && { images: body.images })
+      data,
+      include: {
+        category: true
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      data: product
-    })
+    return NextResponse.json({ success: true, data: product })
   } catch (error) {
     console.error('Error al actualizar producto:', error)
     return NextResponse.json(
@@ -75,7 +63,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/products/:id
+// DELETE /api/products/[id] - Eliminar producto
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -85,10 +73,7 @@ export async function DELETE(
       where: { id: params.id }
     })
 
-    return NextResponse.json({
-      success: true,
-      message: 'Producto eliminado correctamente'
-    })
+    return NextResponse.json({ success: true, message: 'Producto eliminado' })
   } catch (error) {
     console.error('Error al eliminar producto:', error)
     return NextResponse.json(

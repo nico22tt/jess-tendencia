@@ -2,10 +2,13 @@
   "extends": "@jess/typescript-config/nextjs.json",
   "compilerOptions": {
     "plugins": [{ "name": "next" }],
+    "baseUrl": ".",                               // Habilita rutas absolutas base
     "paths": {
-      "@/*": ["./*"],
-      "@jess/ui/*": ["../../packages/ui/*"],
-      "@jess/shared/*": ["../../packages/shared/*"]
+      "@/*": ["./*"],                             // Archivos locales en la app web
+      "@jess/ui/*": ["../../packages/ui/*"],      // UI components compartidos
+      "@jess/shared/*": ["../../packages/shared/*"], // Paquete compartido general
+      "@utils/*": ["../../packages/shared/utils/*"], // Utilidades Supabase/globales
+      "@lib/*": ["../../packages/shared/lib/*"]      // Librerías o helpers compartidos
     }
   },
   "include": [
@@ -14,5 +17,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

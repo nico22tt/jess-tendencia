@@ -2,25 +2,9 @@
 
 import { ProductCard } from "@/components/product-card"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } 
-
-from "@jess/ui/button"
+import { Button } from "@jess/ui/button"
 import { useRef } from "react"
-
-interface Product {
-  id: number
-  name: string
-  price: number
-  originalPrice?: number
-  discount?: number
-  image: string
-  images?: string[]
-  label?: string
-  labelType?: "new" | "sale"
-  rating?: number
-  reviewCount?: number
-  variants?: { id: number; image: string; color: string }[]
-}
+import type { Product } from "@jess/shared/types/product"
 
 interface ProductCarouselProps {
   products: Product[]
@@ -30,14 +14,19 @@ interface ProductCarouselProps {
 
 export function ProductCarousel({
   products,
-  category = "zapatillas",
+  category = "productos",
   title = "Productos Relacionados",
 }: ProductCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
+  // Si no hay productos, no renderizar nada
+  if (!products || products.length === 0) {
+    return null
+  }
+
   const scroll = (direction: "left" | "right") => {
     if (scrollContainerRef.current) {
-      const scrollAmount = 300
+      const scrollAmount = 320 // Ajustado para card width + gap
       const newScrollPosition =
         scrollContainerRef.current.scrollLeft + (direction === "left" ? -scrollAmount : scrollAmount)
       scrollContainerRef.current.scrollTo({
@@ -58,7 +47,8 @@ export function ProductCarousel({
               variant="outline"
               size="icon"
               onClick={() => scroll("left")}
-              className="h-10 w-10 rounded-full border-gray-300 hover:border-pink-500 hover:text-pink-600"
+              className="h-10 w-10 rounded-full border-gray-300 hover:border-pink-500 hover:text-pink-600 transition-colors"
+              aria-label="Desplazar a la izquierda"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -66,7 +56,8 @@ export function ProductCarousel({
               variant="outline"
               size="icon"
               onClick={() => scroll("right")}
-              className="h-10 w-10 rounded-full border-gray-300 hover:border-pink-500 hover:text-pink-600"
+              className="h-10 w-10 rounded-full border-gray-300 hover:border-pink-500 hover:text-pink-600 transition-colors"
+              aria-label="Desplazar a la derecha"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
@@ -76,16 +67,39 @@ export function ProductCarousel({
         {/* Scrollable Product Grid */}
         <div
           ref={scrollContainerRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
+          style={{ 
+            scrollbarWidth: "none", 
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch"
+          }}
         >
           {products.map((product) => (
-            <div key={product.id} className="flex-none w-64">
+            <div key={product.id} className="flex-none w-72">
               <ProductCard product={product} category={category} />
             </div>
           ))}
         </div>
+
+        {/* Indicador visual de más productos */}
+        {products.length > 4 && (
+          <div className="flex justify-center mt-4 gap-1">
+            {Array.from({ length: Math.ceil(products.length / 4) }).map((_, idx) => (
+              <div
+                key={idx}
+                className="h-1.5 w-8 rounded-full bg-gray-300 transition-colors hover:bg-pink-500"
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* CSS para ocultar scrollbar */}
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   )
 }

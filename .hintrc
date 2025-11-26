@@ -3,6 +3,8 @@
     "development"
   ],
   "hints": {
-    "typescript-config/strict": "off"
+    "typescript-config/strict": "off",
+    "no-inline-styles": "off",
+    "compat-api/css": "off"
   }
 }

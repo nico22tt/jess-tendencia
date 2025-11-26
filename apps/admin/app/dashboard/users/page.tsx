@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect,useState } from "react"
 import { AdminSidebar } from "@/components/admin-sidebar"
 
 import { AdminHeader } from "@/components/admin-header"
@@ -22,96 +22,20 @@ interface User {
   status: "active" | "inactive"
 }
 
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "Valentina González",
-    email: "valentina@example.com",
-    role: "client",
-    registrationDate: "2024-01-15",
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "María Rodríguez",
-    email: "maria@example.com",
-    role: "client",
-    registrationDate: "2024-02-20",
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Admin Principal",
-    email: "admin@test.com",
-    role: "admin",
-    registrationDate: "2023-12-01",
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "Carolina Silva",
-    email: "carolina@example.com",
-    role: "client",
-    registrationDate: "2024-03-10",
-    status: "active",
-  },
-  {
-    id: "5",
-    name: "Sofía Martínez",
-    email: "sofia@example.com",
-    role: "client",
-    registrationDate: "2024-01-28",
-    status: "inactive",
-  },
-  {
-    id: "6",
-    name: "Isabella Torres",
-    email: "isabella@example.com",
-    role: "client",
-    registrationDate: "2024-02-14",
-    status: "active",
-  },
-  {
-    id: "7",
-    name: "Camila López",
-    email: "camila@example.com",
-    role: "client",
-    registrationDate: "2024-03-05",
-    status: "active",
-  },
-  {
-    id: "8",
-    name: "Admin Secundario",
-    email: "admin2@test.com",
-    role: "admin",
-    registrationDate: "2024-01-10",
-    status: "active",
-  },
-  {
-    id: "9",
-    name: "Fernanda Pérez",
-    email: "fernanda@example.com",
-    role: "client",
-    registrationDate: "2024-02-25",
-    status: "active",
-  },
-  {
-    id: "10",
-    name: "Daniela Castro",
-    email: "daniela@example.com",
-    role: "client",
-    registrationDate: "2024-03-12",
-    status: "inactive",
-  },
-]
-
 export default function UsersPage() {
-  const [users] = useState<User[]>(mockUsers)
+  const [users, setUsers] = useState<User[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 8
 
+  useEffect(() => {
+    fetch("/api/users")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setUsers(data.data)
+      })
+  }, [])
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -147,12 +71,6 @@ export default function UsersPage() {
                 <h1 className="text-3xl font-bold text-white">Gestión de Usuarios</h1>
                 <p className="text-zinc-400 mt-1">Administra todos los usuarios de tu plataforma</p>
               </div>
-              <Link href="/dashboard/users/add">
-                <Button className="bg-pink-600 hover:bg-pink-700 text-white">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Añadir Nuevo Usuario
-                </Button>
-              </Link>
             </div>
 
             {/* Filters */}

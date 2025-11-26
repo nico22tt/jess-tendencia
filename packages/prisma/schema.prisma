@@ -10,14 +10,16 @@ datasource db {
 }
 
 model User {
-  id        String    @id @db.Uuid
-  email     String    @unique
-  name      String
-  avatarUrl String?   @map("avatar_url")
-  role      String    @default("client")
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
-  users     users     @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id             String           @id @db.Uuid
+  email          String           @unique
+  name           String
+  avatarUrl      String?          @map("avatar_url")
+  role           String           @default("client")
+  createdAt      DateTime?        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  cart_items     cart_items[]
+  orders         orders[]
+  user_addresses user_addresses[]
 
   @@map("users")
   @@schema("public")
@@ -46,24 +48,151 @@ model Category {
 }
 
 model Product {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  description String
-  urlSlug     String    @unique @map("url_slug")
-  sku         String    @unique
-  basePrice   Int       @map("base_price")
-  salePrice   Int?      @map("sale_price")
-  stock       Int?      @default(0)
-  categoryId  String    @map("category_id") @db.Uuid
-  subcategory String?
-  brand       String
-  isPublished Boolean?  @default(false) @map("is_published")
-  images      Json
-  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
-  category    Category  @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  description      String
+  urlSlug          String             @unique @map("url_slug")
+  sku              String             @unique
+  basePrice        Int                @map("base_price")
+  salePrice        Int?               @map("sale_price")
+  stock            Int?               @default(0)
+  categoryId       String             @map("category_id") @db.Uuid
+  subcategory      String?
+  brand            String
+  isPublished      Boolean?           @default(false) @map("is_published")
+  images           Json
+  createdAt        DateTime?          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime?          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  cart_items       cart_items[]
+  notifications    Notification[]
+  order_items      order_items[]
+  product_variants product_variants[]
+  category         Category           @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stockMovements   StockMovement[]
 
   @@map("products")
+  @@schema("public")
+}
+
+model order_items {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id   String    @db.Uuid
+  product_id String    @db.Uuid
+  quantity   Int
+  unit_price Int
+  subtotal   Int
+  createdAt  DateTime? @default(now()) @db.Timestamptz(6)
+  orders     orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([order_id], map: "idx_order_items_order_id")
+  @@index([product_id], map: "idx_order_items_product_id")
+  @@schema("public")
+}
+
+/// Este modelo contiene restricciones CHECK y/o RLS
+model orders {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_number     String          @unique
+  user_id          String          @db.Uuid
+  status           String          @default("PENDING")
+  subtotal         Int
+  shipping         Int?            @default(0)
+  tax              Int?            @default(0)
+  total            Int
+  shipping_name    String
+  shipping_email   String
+  shipping_phone   String
+  shipping_address String
+  shipping_city    String
+  shipping_region  String
+  shipping_zip     String
+  notes            String?
+  tracking_number  String?
+  payment_method   String?
+  createdAt        DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime?       @default(now()) @map("updated_at") @db.Timestamptz(6)
+  amount           Decimal?        @db.Decimal
+  user_address_id  String?         @db.Uuid
+  notifications    Notification[]
+  order_items      order_items[]
+  user_addresses   user_addresses? @relation(fields: [user_address_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users            User            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([createdAt(sort: Desc)], map: "idx_orders_created_at")
+  @@index([order_number], map: "idx_orders_order_number")
+  @@index([status], map: "idx_orders_status")
+  @@index([user_id], map: "idx_orders_user_id")
+  @@schema("public")
+}
+
+/// Este modelo contiene RLS
+model product_variants {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id       String    @db.Uuid
+  sku              String    @unique
+  size             String?
+  color            String?
+  stock            Int?      @default(0)
+  price_adjustment Int?      @default(0)
+  is_active        Boolean?  @default(true)
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime? @default(now()) @db.Timestamptz(6)
+  products         Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([product_id, size, color], map: "unique_variant")
+  @@index([product_id], map: "idx_product_variants_product_id")
+  @@index([sku], map: "idx_product_variants_sku")
+  @@schema("public")
+}
+
+model StockMovement {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  type          String
+  amount        Int
+  previousStock Int      @map("previous_stock")
+  newStock      Int      @map("new_stock")
+  reason        String?
+  userId        String?  @map("user_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([productId], map: "idx_stock_movements_product_id")
+  @@index([createdAt(sort: Desc)], map: "idx_stock_movements_created_at")
+  @@map("stock_movements")
+  @@schema("public")
+}
+
+model Notification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type      String
+  title     String
+  message   String
+  productId String?  @map("product_id") @db.Uuid
+  orderId   String?  @map("order_id") @db.Uuid
+  isRead    Boolean? @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  order     orders?  @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([createdAt(sort: Desc)], map: "idx_notifications_created_at")
+  @@index([isRead], map: "idx_notifications_is_read")
+  @@index([type], map: "idx_notifications_type")
+  @@index([productId], map: "idx_notifications_product_id")
+  @@map("notifications")
+  @@schema("public")
+}
+
+model PageVisit {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  path       String
+  timestamp  DateTime @default(now()) @db.Timestamptz(6)
+  ip         String?
+  user_agent String?
+
+  @@index([timestamp], map: "idx_page_visits_timestamp")
+  @@map("page_visits")
   @@schema("public")
 }
 
@@ -208,6 +337,7 @@ model oauth_authorizations {
   created_at            DateTime                   @default(now()) @db.Timestamptz(6)
   expires_at            DateTime                   @default(dbgenerated("(now() + '00:03:00'::interval)")) @db.Timestamptz(6)
   approved_at           DateTime?                  @db.Timestamptz(6)
+  nonce                 String?
   oauth_clients         oauth_clients              @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users                 users?                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -357,6 +487,7 @@ model sessions {
   oauth_client_id        String?          @db.Uuid
   refresh_token_hmac_key String?
   refresh_token_counter  BigInt?
+  scopes                 String?
   mfa_amr_claims         mfa_amr_claims[]
   refresh_tokens         refresh_tokens[]
   oauth_clients          oauth_clients?   @relation(fields: [oauth_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -449,11 +580,45 @@ model users {
   oauth_consents              oauth_consents[]
   one_time_tokens             one_time_tokens[]
   sessions                    sessions[]
-  users                       User?
 
   @@index([instance_id])
   @@index([is_anonymous])
   @@schema("auth")
+}
+
+model user_addresses {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String    @db.Uuid
+  alias          String
+  recipient_name String?
+  phone_number   String?
+  address_line_1 String
+  address_line_2 String?
+  city           String
+  region         String
+  zip_code       String
+  is_default     Boolean?  @default(false)
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
+  orders         orders[]
+  users          User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cart_items {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  product_id String    @db.Uuid
+  quantity   Int       @default(1)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  products   Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, product_id], map: "cart_items_user_product_unique")
+  @@schema("public")
 }
 
 enum aal_level {
