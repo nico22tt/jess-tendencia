@@ -1,13 +1,12 @@
-'use client'
+"use client"
 
 import { useState, useEffect } from "react"
-import { Search, Heart, ChevronDown, User, LogOut, UserCircle, Package } from "lucide-react"
+import { Search, Heart, ChevronDown, User, LogOut, UserCircle, Package, ShoppingCart } from "lucide-react"
 import { Button } from "@jess/ui/button"
 import { Input } from "@jess/ui/input"
 import { cn } from "@jess/shared/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
-import { CartSheet } from "@/components/cart-sheet"
 import { createClient } from "@utils/supabase/client"
 import { useRouter } from "next/navigation"
 
@@ -44,6 +43,7 @@ const menuItems: MenuItem[] = [
 export function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [totalItems, setTotalItems] = useState<number>(2) // reemplaza por tu fuente real
   const supabase = createClient()
   const router = useRouter()
 
@@ -53,6 +53,8 @@ export function Header() {
       setUser(user)
     }
     fetchUser()
+    // Simula obtención real del total de ítems si lo haces asíncrono
+    // setTotalItems(await fetchCartItems());
   }, [supabase])
 
   const logout = async () => {
@@ -156,7 +158,25 @@ export function Header() {
           <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
             <Heart className="h-5 w-5" />
           </Button>
-          <CartSheet />
+          {/* Ícono de carrito como Link */}
+          <Link href="/carrito" className="relative">
+            <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" aria-label="Ver carrito">
+              <ShoppingCart className="h-6 w-6" />
+              {totalItems > 0 && (
+                <span
+                  className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-pink-500 text-white text-[10px] font-semibold flex items-center justify-center border-2 border-white"
+                  style={{
+                    minWidth: "16px",
+                    minHeight: "16px",
+                    lineHeight: "16px",
+                    padding: "0 2px"
+                  }}
+                >
+                  {totalItems}
+                </span>
+              )}
+            </Button>
+          </Link>
           {user ? (
             <div className="relative" onMouseEnter={() => handleMouseEnter("user")} onMouseLeave={handleMouseLeave}>
               <Button variant="ghost" className="flex items-center gap-2 text-foreground hover:text-primary">

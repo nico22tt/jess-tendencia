@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Card } from "@jess/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts"
 
-// Colores fijos para los navegadores conocidos y otros
+// Colores para los diferentes navegadores y otros
 const BROWSER_COLORS: Record<string, string> = {
   Chrome: "#6366f1",
   Safari: "#a855f7",
@@ -23,7 +23,8 @@ export function BrowserUsageChart() {
       try {
         const res = await fetch("/api/stats/browsers")
         const browsers = await res.json()
-        setData(browsers)
+        // Aseguramos que browsers es un array, si no, dejamos []
+        setData(Array.isArray(browsers) ? browsers : [])
       } catch {
         setData([])
       }
@@ -34,7 +35,10 @@ export function BrowserUsageChart() {
     return () => clearInterval(interval)
   }, [])
 
-  const totalVisitors = data.reduce((sum, item) => sum + item.value, 0)
+  // Seguridad: evitamos el error de .reduce is not a function
+  const totalVisitors = Array.isArray(data)
+    ? data.reduce((sum, item) => sum + item.value, 0)
+    : 0
 
   return (
     <Card className="bg-zinc-900 border-zinc-800 p-6 h-full flex flex-col">

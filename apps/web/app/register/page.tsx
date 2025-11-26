@@ -10,6 +10,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@jess
 import { Alert, AlertDescription } from "@jess/ui/alert"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
 import Link from "next/link"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
+
+const allowedDomains = [
+  "gmail.com", "hotmail.com", "outlook.com", "yahoo.com"
+]
+
+function isAllowedEmail(email: string) {
+  const domain = email.split("@")[1]?.toLowerCase()
+  return allowedDomains.includes(domain)
+}
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -22,6 +33,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [successMsg, setSuccessMsg] = useState("")
   const router = useRouter()
   const supabase = createClient()
 
@@ -36,6 +48,8 @@ export default function RegisterPage() {
       newErrors.email = "El correo electrónico es requerido"
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "El correo electrónico no es válido"
+    } else if (!isAllowedEmail(formData.email)) {
+      newErrors.email = "Solo se permiten emails populares (Gmail, Hotmail, Yahoo, Outlook)"
     }
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida"
@@ -55,19 +69,43 @@ export default function RegisterPage() {
     e.preventDefault()
     if (!validateForm()) return
     setIsLoading(true)
+    setErrors({})
+    setSuccessMsg("")
+
+    // Registro vía supabase.auth
     const { data, error } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
-      options: { data: { name: formData.name } }
+      options: { data: { name: formData.name, role: "client" } }
     })
+
     setIsLoading(false)
     if (error) {
       setErrors({ general: error.message || "Error al crear la cuenta" })
       return
     }
-    // Opcional: guardar el nombre en tabla profile/users si lo requieres
-    router.push("/mi-cuenta")
-    router.refresh()
+
+    // Sincroniza con la tabla pública si el registro fue exitoso
+    if (data.user) {
+      await fetch("/api/public-users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: data.user.id,
+          email: formData.email,
+          name: formData.name,
+          avatarUrl: data.user.user_metadata?.avatar_url || null,
+          role: "client"
+        })
+      })
+    }
+
+    if (data.user && !data.session) {
+      setSuccessMsg("Te enviamos un enlace de confirmación a tu email. Por favor verifica tu correo antes de iniciar sesión.")
+      return
+    }
+
+    router.replace('/mi-cuenta')
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -78,129 +116,136 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-25 via-white to-pink-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-2xl font-bold text-gray-900">Crear Cuenta</CardTitle>
-            <CardDescription className="text-gray-600">Únete a la comunidad de Jess Tendencia</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {errors.general && (
-                <Alert variant="destructive" className="py-2">
-                  <AlertDescription className="text-xs">{errors.general}</AlertDescription>
-                </Alert>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nombre Completo</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Tu nombre completo"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="pl-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
-                  />
-                </div>
-                {errors.name && (
-                  <Alert variant="destructive" className="py-2">
-                    <AlertDescription className="text-xs">{errors.name}</AlertDescription>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-pink-25 via-white to-pink-50">
+      <Header />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="text-center space-y-2">
+              <CardTitle className="text-2xl font-bold text-gray-900">Crear Cuenta</CardTitle>
+              <CardDescription className="text-gray-600">Únete a la comunidad de Jess Tendencia</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {successMsg && (
+                  <Alert className="py-2 bg-green-50 border-green-400">
+                    <AlertDescription className="text-xs text-green-800">{successMsg}</AlertDescription>
                   </Alert>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">Correo Electrónico</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="pl-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
-                  />
-                </div>
-                {errors.email && (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {errors.general && (
                   <Alert variant="destructive" className="py-2">
-                    <AlertDescription className="text-xs">{errors.email}</AlertDescription>
+                    <AlertDescription className="text-xs">{errors.general}</AlertDescription>
                   </Alert>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">Contraseña</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
-                    className="pl-10 pr-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nombre Completo</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Tu nombre completo"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      className="pl-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                      autoComplete="name"
+                    />
+                  </div>
+                  {errors.name && (
+                    <Alert variant="destructive" className="py-2"><AlertDescription className="text-xs">{errors.name}</AlertDescription></Alert>
+                  )}
                 </div>
-                {errors.password && (
-                  <Alert variant="destructive" className="py-2">
-                    <AlertDescription className="text-xs">{errors.password}</AlertDescription>
-                  </Alert>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirmar Contraseña</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                    className="pl-10 pr-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">Correo Electrónico</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="tu@email.com"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      className="pl-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                      autoComplete="email"
+                    />
+                  </div>
+                  {errors.email && (
+                    <Alert variant="destructive" className="py-2"><AlertDescription className="text-xs">{errors.email}</AlertDescription></Alert>
+                  )}
                 </div>
-                {errors.confirmPassword && (
-                  <Alert variant="destructive" className="py-2">
-                    <AlertDescription className="text-xs">{errors.confirmPassword}</AlertDescription>
-                  </Alert>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">Contraseña</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange("password", e.target.value)}
+                      className="pl-10 pr-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <Alert variant="destructive" className="py-2"><AlertDescription className="text-xs">{errors.password}</AlertDescription></Alert>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirmar Contraseña</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                      className="pl-10 pr-10 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <Alert variant="destructive" className="py-2"><AlertDescription className="text-xs">{errors.confirmPassword}</AlertDescription></Alert>
+                  )}
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-pink-500 hover:bg-pink-600 text-white font-medium py-2.5"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creando cuenta..." : "Crear Cuenta"}
+                </Button>
+              </form>
+              <div className="text-center">
+                <div className="text-sm text-gray-600">
+                  ¿Ya tienes cuenta?{" "}
+                  <Link href="/login" className="text-pink-600 hover:text-pink-700 font-medium hover:underline">
+                    Iniciar sesión
+                  </Link>
+                </div>
               </div>
-              <Button
-                type="submit"
-                className="w-full bg-pink-500 hover:bg-pink-600 text-white font-medium py-2.5"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creando cuenta..." : "Crear Cuenta"}
-              </Button>
-            </form>
-            <div className="text-center">
-              <div className="text-sm text-gray-600">
-                ¿Ya tienes cuenta?{" "}
-                <Link href="/login" className="text-pink-600 hover:text-pink-700 font-medium hover:underline">
-                  Iniciar sesión
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+      <Footer />
     </div>
   )
 }

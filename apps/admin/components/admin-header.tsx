@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Bell, User, LogOut } from "lucide-react"
+import { Bell, LogOut } from "lucide-react"
 import { Button } from "@jess/ui/button"
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@jess/ui/dropdown-menu"
+import { createClient } from "@utils/supabase/client"
 
 type AdminHeaderProps = {
   user?: any
@@ -21,6 +22,7 @@ type AdminHeaderProps = {
 export function AdminHeader({ user, profile }: AdminHeaderProps) {
   const router = useRouter()
   const [unreadCount, setUnreadCount] = useState(0)
+  const supabase = createClient()
 
   useEffect(() => {
     fetchUnreadCount()
@@ -41,24 +43,22 @@ export function AdminHeader({ user, profile }: AdminHeaderProps) {
   }
 
   const handleLogout = async () => {
-    // Si tienes funcionalidad logout implementada, aquí llamas al método correspondiente (supabase o api)
-    router.push("/")
+    await supabase.auth.signOut()
+    router.replace("/login")
   }
 
   return (
-    <header className="bg-zinc-900 border-b border-zinc-800 px-6 py-4">
+    <header className="bg-zinc-900 border-b border-zinc-800 px-6 py-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">Admin</h2>
-          {/* Datos del usuario (opcional) */}
+          <h2 className="text-2xl font-semibold text-white">Admin</h2>
           {user && (
             <p className="text-sm text-zinc-400">
               {user.email} {profile?.role ? <span className="text-pink-500">({profile.role})</span> : ""}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-4">
-          {/* Botón de Notificaciones */}
+        <div className="flex items-center gap-4 pr-4">
           <Button
             variant="ghost"
             size="icon"
@@ -72,7 +72,6 @@ export function AdminHeader({ user, profile }: AdminHeaderProps) {
               </span>
             )}
           </Button>
-          {/* Menú de Usuario */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -80,17 +79,13 @@ export function AdminHeader({ user, profile }: AdminHeaderProps) {
                 size="icon"
                 className="text-zinc-400 hover:text-white hover:bg-zinc-800"
               >
-                <User className="h-5 w-5" />
+                <LogOut className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
-              <DropdownMenuLabel className="text-white">Mi Cuenta</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-white">Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-zinc-800" />
-              <DropdownMenuItem className="text-zinc-300 focus:bg-zinc-800 focus:text-white">
-                <User className="h-4 w-4 mr-2" />
-                Perfil
-              </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="text-zinc-300 focus:bg-zinc-800 focus:text-white"
                 onClick={handleLogout}
               >

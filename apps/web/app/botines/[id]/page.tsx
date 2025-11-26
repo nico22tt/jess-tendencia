@@ -16,16 +16,20 @@ const ProductCarousel = dynamic(
   { ssr: false }
 )
 
-const getDisplayPrice = (product: Product): number => {
-  if (typeof product.salePrice === "number" && product.salePrice > 0) return product.salePrice
-  if (typeof product.basePrice === "number") return product.basePrice
-  return typeof product.price === "number" ? product.price : 0
-}
-const getOriginalPrice = (product: Product): number | undefined => {
-  if (typeof product.basePrice === "number" && typeof product.salePrice === "number" && product.salePrice > 0)
-    return product.basePrice
-  return product.originalPrice
-}
+const getDisplayPrice = (product: Product): number =>
+  typeof product.salePrice === "number" && product.salePrice > 0
+    ? product.salePrice
+    : typeof product.basePrice === "number"
+      ? product.basePrice
+      : typeof product.price === "number"
+        ? product.price
+        : 0
+
+const getOriginalPrice = (product: Product): number | undefined =>
+  typeof product.basePrice === "number" && typeof product.salePrice === "number" && product.salePrice > 0
+    ? product.basePrice
+    : product.originalPrice
+
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("es-CL", {
     style: "currency",
@@ -37,15 +41,15 @@ type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
 type Props = { params: Params } | { params: ParamsPromise }
 
-export default function BootPage(props: Props) {
+export default function BotinPage(props: Props) {
   const paramsObj: Params =
     typeof (props.params as any)?.then === "function"
       ? use(props.params as ParamsPromise)
       : (props.params as Params)
 
   const [selectedImage, setSelectedImage] = useState(0)
-  const [selectedVariant, setSelectedVariant] = useState<number | null>(null)
-  const [selectedSize, setSelectedSize] = useState<string>("")
+  const [selectedVariant, setSelectedVariant] = useState(0)
+  const [selectedSize, setSelectedSize] = useState("")
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
@@ -85,11 +89,11 @@ export default function BootPage(props: Props) {
     allImages.unshift(product.image)
   }
   if (!allImages.length) allImages.push("/placeholder.svg")
-  const sizes = product.sizes && product.sizes.length ? product.sizes : ["36", "37", "38", "39", "40"]
+  const sizes = product.sizes ?? ["Único"]
 
   const handleAddToCart = () => {
     if (sizes.length > 1 && !selectedSize) {
-      alert("Por favor selecciona una talla")
+      alert("Por favor selecciona una opción")
       return
     }
     addItem({
@@ -146,15 +150,13 @@ export default function BootPage(props: Props) {
               </div>
             )}
           </div>
-
+            
           {/* Info Panel */}
           <div className="lg:col-span-2 space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-3">{product.name}</h1>
               {product.brand && (
-                <p className="text-sm text-gray-600 mb-3">
-                  Marca: <span className="font-semibold">{product.brand}</span>
-                </p>
+                <p className="text-sm text-gray-600 mb-3">Marca: <span className="font-semibold">{product.brand}</span></p>
               )}
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex items-center">
@@ -165,6 +167,7 @@ export default function BootPage(props: Props) {
                 <span className="text-sm text-gray-600 font-medium">4.5/5.0 (127 opiniones)</span>
               </div>
             </div>
+            
             <div className="flex items-center gap-3">
               <span className="text-4xl font-bold text-pink-600">{formatPrice(getDisplayPrice(product))}</span>
               {getOriginalPrice(product) && (
@@ -179,7 +182,7 @@ export default function BootPage(props: Props) {
               )}
             </div>
 
-            {/* Colores/variantes */}
+            {/* Variantes */}
             {product.product_variants && product.product_variants.length > 0 && (
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-2 block">Color</label>
@@ -202,10 +205,10 @@ export default function BootPage(props: Props) {
               </div>
             )}
 
-            {/* Selector de talla */}
+            {/* Selector de talla/tamaño */}
             {sizes.length > 1 && (
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Talla</label>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">Tamaño</label>
                 <div className="flex gap-2 flex-wrap">
                   {sizes.map((size: string) => (
                     <button
@@ -223,6 +226,7 @@ export default function BootPage(props: Props) {
                 </div>
               </div>
             )}
+
             {/* Cantidad y botones */}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -230,7 +234,7 @@ export default function BootPage(props: Props) {
                 <div className="flex items-center border rounded-md">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="p-2 hover:bg-gray-100"
+                    className="p-2 hover:bg-gray-100 transition-colors"
                     title="Disminuir cantidad"
                   >
                     <Minus className="h-4 w-4" />
@@ -238,7 +242,7 @@ export default function BootPage(props: Props) {
                   <span className="px-4 font-semibold">{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="p-2 hover:bg-gray-100"
+                    className="p-2 hover:bg-gray-100 transition-colors"
                     title="Aumentar cantidad"
                   >
                     <Plus className="h-4 w-4" />
@@ -247,31 +251,32 @@ export default function BootPage(props: Props) {
               </div>
               <Button
                 onClick={handleAddToCart}
-                className="w-full bg-pink-600 hover:bg-pink-700 text-white gap-2 font-semibold py-6 text-lg"
+                className="w-full bg-pink-600 hover:bg-pink-700 text-white gap-2 font-semibold py-6 text-lg transition-colors"
               >
                 <ShoppingCart className="h-5 w-5" />
                 Agregar al carro
               </Button>
               <Button
                 variant="outline"
-                className="w-full gap-2 py-6 text-lg border-pink-600 text-pink-600 hover:bg-pink-50"
+                className="w-full gap-2 py-6 text-lg border-pink-600 text-pink-600 hover:bg-pink-50 transition-colors"
               >
                 <Heart className="h-5 w-5" />
                 Agregar a favoritos
               </Button>
             </div>
+
             {/* Beneficios */}
             <div className="border-t pt-6 space-y-3">
               <div className="flex items-center gap-3 text-sm">
-                <Truck className="h-5 w-5 text-pink-600" />
+                <Truck className="h-5 w-5 text-pink-600 flex-shrink-0" />
                 <span>Envío gratis en compras sobre $50.000</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <RotateCcw className="h-5 w-5 text-pink-600" />
+                <RotateCcw className="h-5 w-5 text-pink-600 flex-shrink-0" />
                 <span>Devoluciones gratis hasta 30 días</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Shield className="h-5 w-5 text-pink-600" />
+                <Shield className="h-5 w-5 text-pink-600 flex-shrink-0" />
                 <span>Compra 100% segura</span>
               </div>
             </div>
@@ -282,9 +287,11 @@ export default function BootPage(props: Props) {
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">
-              <AccordionTrigger className="text-lg font-semibold">Descripción Completa</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-semibold">Descripción</AccordionTrigger>
               <AccordionContent>
-                <p className="text-gray-700 whitespace-pre-line">{product.description || "Descripción no disponible."}</p>
+                <p className="text-gray-700 whitespace-pre-line">
+                  {product.description || "Descripción no disponible."}
+                </p>
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="details">
@@ -305,7 +312,7 @@ export default function BootPage(props: Props) {
         {relatedProducts.length > 0 && (
           <ProductCarousel 
             products={relatedProducts} 
-            category="botas"
+            category="botines"
             title="Productos Relacionados"
           />
         )}

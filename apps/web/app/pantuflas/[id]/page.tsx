@@ -37,7 +37,7 @@ type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
 type Props = { params: Params } | { params: ParamsPromise }
 
-export default function BootPage(props: Props) {
+export default function SlipperProductPage(props: Props) {
   const paramsObj: Params =
     typeof (props.params as any)?.then === "function"
       ? use(props.params as ParamsPromise)
@@ -85,10 +85,14 @@ export default function BootPage(props: Props) {
     allImages.unshift(product.image)
   }
   if (!allImages.length) allImages.push("/placeholder.svg")
-  const sizes = product.sizes && product.sizes.length ? product.sizes : ["36", "37", "38", "39", "40"]
+
+  // Extrae tallas reales; por defecto, "Único"
+  const sizes: string[] = (product.sizes?.filter(Boolean) ?? []).length ? product.sizes.filter(Boolean) : ["Único"]
+  // Solo mostrar el selector si hay más de 1 talla y no todas son "Único"
+  const showSizeSelector = sizes.length > 1 && !sizes.every((t: string) => t.toLowerCase().includes("único"))
 
   const handleAddToCart = () => {
-    if (sizes.length > 1 && !selectedSize) {
+    if (showSizeSelector && !selectedSize) {
       alert("Por favor selecciona una talla")
       return
     }
@@ -202,8 +206,8 @@ export default function BootPage(props: Props) {
               </div>
             )}
 
-            {/* Selector de talla */}
-            {sizes.length > 1 && (
+            {/* Selector de tallas solo si hay más de una y no son todas "Único" */}
+            {showSizeSelector && (
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-2 block">Talla</label>
                 <div className="flex gap-2 flex-wrap">
@@ -278,13 +282,37 @@ export default function BootPage(props: Props) {
           </div>
         </div>
 
-        {/* Descripción y detalles */}
+        {/* Descripción, detalles y GUÍA DE TALLAS */}
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">
               <AccordionTrigger className="text-lg font-semibold">Descripción Completa</AccordionTrigger>
               <AccordionContent>
                 <p className="text-gray-700 whitespace-pre-line">{product.description || "Descripción no disponible."}</p>
+              </AccordionContent>
+            </AccordionItem>
+            {/* Guía de tallas SOLO cuando es útil */}
+            <AccordionItem value="sizeguide">
+              <AccordionTrigger className="text-lg font-semibold">Guía de Tallas</AccordionTrigger>
+              <AccordionContent>
+                {product.category?.name?.toLowerCase() === "pantuflas" && showSizeSelector ? (
+                  <table className="w-full text-sm text-left text-gray-500 mb-4">
+                    <thead className="text-xs uppercase bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-2">Talla (CL)</th>
+                        <th className="px-4 py-2">Largo de pie (cm)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td className="px-4 py-2">35-36</td><td className="px-4 py-2">22-23</td></tr>
+                      <tr><td className="px-4 py-2">37-38</td><td className="px-4 py-2">23.5-24.5</td></tr>
+                      <tr><td className="px-4 py-2">39-40</td><td className="px-4 py-2">25-26</td></tr>
+                      <tr><td className="px-4 py-2">41-42</td><td className="px-4 py-2">26-27</td></tr>
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-gray-500">Este producto no requiere guía de tallas.</p>
+                )}
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="details">
@@ -305,7 +333,7 @@ export default function BootPage(props: Props) {
         {relatedProducts.length > 0 && (
           <ProductCarousel 
             products={relatedProducts} 
-            category="botas"
+            category="pantuflas"
             title="Productos Relacionados"
           />
         )}

@@ -37,7 +37,20 @@ type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
 type Props = { params: Params } | { params: ParamsPromise }
 
-export default function ProductPage(props: Props) {
+// Helper para obtener stock por talla/talla-variant:
+function getStockBySize(product: Product, size: string): number | null {
+  if (product.product_variants && Array.isArray(product.product_variants)) {
+    const match = product.product_variants.find(
+      (v: any) => (v.size && v.size.toString() === size.toString())
+    )
+    return match?.stock ?? null
+  }
+  // fallback general
+  if (product.stock !== undefined) return product.stock
+  return null
+}
+
+export default function JeansProductPage(props: Props) {
   const paramsObj: Params =
     typeof (props.params as any)?.then === "function"
       ? use(props.params as ParamsPromise)
@@ -74,7 +87,6 @@ export default function ProductPage(props: Props) {
 
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
-  // Images
   const allImages = Array.isArray(product.images)
     ? product.images.filter(img => typeof img === "string" && img.trim())
     : []
@@ -86,9 +98,25 @@ export default function ProductPage(props: Props) {
     allImages.unshift(product.image)
   }
   if (!allImages.length) allImages.push("/placeholder.svg")
-  // Tallas dinámicas
-  const sizes: string[] = (product.sizes?.filter(Boolean) ?? []).length ? product.sizes.filter(Boolean) : ["35", "36", "37", "38", "39", "40", "41", "42"];
-  const showSizeSelector = sizes.length > 1 && !sizes.every((t: string) => t.toLowerCase().includes("único"));
+
+  // Tallas dinámicas; busca en variants o sizes
+  let sizes: string[] = []
+  if (product.product_variants && product.product_variants.length) {
+    sizes = Array.from(
+      new Set(
+        product.product_variants
+          .map((v: any) => v.size)
+          .filter(Boolean)
+      )
+    )
+  } else if (product.sizes && product.sizes.length) {
+    sizes = product.sizes.filter(Boolean)
+  } else {
+    sizes = ["34", "36", "38", "40", "42"]
+  }
+
+  // Mustra selector si hay al menos una talla cargada
+  const showSizeSelector = sizes.length > 0 && !sizes.every((t: string) => t.toLowerCase().includes("único"));
 
   const handleAddToCart = () => {
     if (showSizeSelector && !selectedSize) {
@@ -149,7 +177,6 @@ export default function ProductPage(props: Props) {
               </div>
             )}
           </div>
-
           {/* Info Panel */}
           <div className="lg:col-span-2 space-y-6">
             <div>
@@ -181,7 +208,6 @@ export default function ProductPage(props: Props) {
                 </>
               )}
             </div>
-
             {/* Colores/variantes */}
             {product.product_variants && product.product_variants.length > 0 && (
               <div>
@@ -204,25 +230,43 @@ export default function ProductPage(props: Props) {
                 </div>
               </div>
             )}
-
             {/* Selector de talla */}
             {showSizeSelector && (
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Talla</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-semibold text-gray-700">Talla</label>
+                  {/* Extiende aquí: botón guía de tallas/drawer si quieres */}
+                </div>
                 <div className="flex gap-2 flex-wrap">
-                  {sizes.map((size: string) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-4 py-2 border-2 rounded-md transition-all ${
-                        selectedSize === size
-                          ? "border-pink-500 bg-pink-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                  {sizes.map((size: string) => {
+                    const stock = getStockBySize(product, size)
+                    const outOfStock = stock !== null && stock <= 0
+
+                    return (
+                      <button
+                        key={size}
+                        onClick={() => !outOfStock && setSelectedSize(size)}
+                        className={`px-4 py-2 border-2 rounded-md transition-all relative group
+                          ${
+                            selectedSize === size && !outOfStock
+                              ? "border-pink-500 bg-pink-50"
+                              : outOfStock
+                              ? "border-gray-200 bg-gray-100 text-gray-400 line-through cursor-not-allowed"
+                              : "border-gray-200 hover:border-gray-300"
+                          }
+                        `}
+                        disabled={outOfStock}
+                        title={outOfStock ? "Sin stock" : undefined}
+                      >
+                        {size}
+                        {outOfStock && (
+                          <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-gray-800 text-xs text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none">
+                            Sin stock
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -251,7 +295,8 @@ export default function ProductPage(props: Props) {
               <Button
                 onClick={handleAddToCart}
                 className="w-full bg-pink-600 hover:bg-pink-700 text-white gap-2 font-semibold py-6 text-lg"
-              >
+                disabled={showSizeSelector && (selectedSize === "" || (getStockBySize(product, selectedSize) ?? 0) <= 0)}
+>
                 <ShoppingCart className="h-5 w-5" />
                 Agregar al carro
               </Button>
@@ -281,7 +326,7 @@ export default function ProductPage(props: Props) {
           </div>
         </div>
 
-        {/* Descripción y detalles y GUÍA DE TALLAS */}
+        {/* Descripción, detalles y GUÍA DE TALLAS */}
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">
@@ -291,28 +336,113 @@ export default function ProductPage(props: Props) {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="sizeguide">
-              <AccordionTrigger className="text-lg font-semibold">Guía de Tallas</AccordionTrigger>
+              <AccordionItem value="sizeguide">
+                <AccordionTrigger className="text-lg font-semibold">Guía de Tallas</AccordionTrigger>
+                <AccordionContent>
+                  {product.category?.name?.toLowerCase() === "jeans" ? (
+                    <>
+                      <div className="mb-4">
+                        <div className="font-bold text-base mb-2">Guía de tallas de jeans</div>
+                        <table className="w-full text-sm text-left text-gray-700 mb-4 border-collapse">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-4 py-2">TALLA</th>
+                              <th className="px-4 py-2">CINTURA (CM)</th>
+                              <th className="px-4 py-2">CADERA (CM)</th>
+                              <th className="px-4 py-2">MUSLO (CM)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr><td className="px-4 py-2">36</td><td className="px-4 py-2">64-68</td><td className="px-4 py-2">94-98</td><td className="px-4 py-2">55-58</td></tr>
+                            <tr><td className="px-4 py-2">38</td><td className="px-4 py-2">68-70</td><td className="px-4 py-2">98-100</td><td className="px-4 py-2">57-60</td></tr>
+                            <tr><td className="px-4 py-2">40</td><td className="px-4 py-2">70-72</td><td className="px-4 py-2">100-102</td><td className="px-4 py-2">58-61</td></tr>
+                            <tr><td className="px-4 py-2">42</td><td className="px-4 py-2">72-74</td><td className="px-4 py-2">102-104</td><td className="px-4 py-2">60-62</td></tr>
+                            <tr><td className="px-4 py-2">44</td><td className="px-4 py-2">74-78</td><td className="px-4 py-2">104-108</td><td className="px-4 py-2">61-64</td></tr>
+                            <tr><td className="px-4 py-2">46</td><td className="px-4 py-2">78-82</td><td className="px-4 py-2">108-112</td><td className="px-4 py-2">63-66</td></tr>
+                            <tr><td className="px-4 py-2">48</td><td className="px-4 py-2">82-86</td><td className="px-4 py-2">112-118</td><td className="px-4 py-2">66-69</td></tr>
+                            <tr><td className="px-4 py-2">50</td><td className="px-4 py-2">86-94</td><td className="px-4 py-2">118-126</td><td className="px-4 py-2">69-72</td></tr>
+                            <tr><td className="px-4 py-2">52</td><td className="px-4 py-2">94-100</td><td className="px-4 py-2">126-132</td><td className="px-4 py-2">72-73</td></tr>
+                            <tr><td className="px-4 py-2">54</td><td className="px-4 py-2">100-108</td><td className="px-4 py-2">134-138</td><td className="px-4 py-2">76-77</td></tr>
+                          </tbody>
+                        </table>
+                        <div className="text-xs text-gray-500 bg-gray-50 border rounded px-3 py-2 mb-3">
+                          Ten en cuenta que esta es una tabla referencial y puede variar levemente según el modelo o material.
+                        </div>
+                      </div>
+                      <div className="flex flex-col md:flex-row items-center gap-4">
+                        {/* Puedes poner aquí una imagen referencial si la tienes. Bórrala si no quieres imagen */}
+                        {/* 
+                        <img 
+                          src="/guia-medidas-americanino.png"
+                          alt="Referencia de medidas"
+                          className="w-48 border rounded bg-white mb-4 md:mb-0"
+                          style={{maxWidth:'180px'}}
+                        />
+                        */}
+                        <div>
+                          <div className="font-bold mb-1">Cómo tomar tus medidas:</div>
+                          <ul className="text-xs text-gray-600 space-y-1 list-disc pl-5">
+                            <li><strong>Cintura:</strong> Rodea con la cinta métrica la parte más angosta de tu torso.</li>
+                            <li><strong>Cadera:</strong> Mide el contorno más ancho de la zona de la cadera/pelvis.</li>
+                            <li><strong>Muslo:</strong> Mide el muslo en su parte más ancha.</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-gray-500">Este producto no requiere guía de tallas.</p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
               <AccordionContent>
-                {product.category?.name?.toLowerCase() === "zapatillas" && showSizeSelector ? (
-                  <table className="w-full text-sm text-left text-gray-500 mb-4">
-                    <thead className="text-xs uppercase bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-2">Talla</th>
-                        <th className="px-4 py-2">Longitud (cm)</th>
-                        <th className="px-4 py-2">Ancho (cm)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr><td className="px-4 py-2">35</td><td className="px-4 py-2">22.5</td><td className="px-4 py-2">8.5</td></tr>
-                      <tr><td className="px-4 py-2">36</td><td className="px-4 py-2">23.0</td><td className="px-4 py-2">8.7</td></tr>
-                      <tr><td className="px-4 py-2">37</td><td className="px-4 py-2">23.5</td><td className="px-4 py-2">8.9</td></tr>
-                      <tr><td className="px-4 py-2">38</td><td className="px-4 py-2">24.0</td><td className="px-4 py-2">9.1</td></tr>
-                      <tr><td className="px-4 py-2">39</td><td className="px-4 py-2">24.5</td><td className="px-4 py-2">9.3</td></tr>
-                      <tr><td className="px-4 py-2">40</td><td className="px-4 py-2">25.0</td><td className="px-4 py-2">9.5</td></tr>
-                      <tr><td className="px-4 py-2">41</td><td className="px-4 py-2">25.5</td><td className="px-4 py-2">9.6</td></tr>
-                      <tr><td className="px-4 py-2">42</td><td className="px-4 py-2">26.0</td><td className="px-4 py-2">9.7</td></tr>
-                    </tbody>
-                  </table>
+                {product.category?.name?.toLowerCase() === "jeans" ? (
+                  <>
+                    <div className="mb-4">
+                      <div className="font-bold text-base mb-2">Tabla referencial Americanino</div>
+                      <table className="w-full text-sm text-left text-gray-500 mb-4">
+                        <thead className="text-xs uppercase bg-gray-100">
+                          <tr>
+                            <th className="px-4 py-2">Talla</th>
+                            <th className="px-4 py-2">Cintura (cm)</th>
+                            <th className="px-4 py-2">Cadera (cm)</th>
+                            <th className="px-4 py-2">Muslo (cm)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr><td className="px-4 py-2">36</td><td className="px-4 py-2">64-68</td><td className="px-4 py-2">94-98</td><td className="px-4 py-2">55-58</td></tr>
+                          <tr><td className="px-4 py-2">38</td><td className="px-4 py-2">68-70</td><td className="px-4 py-2">98-100</td><td className="px-4 py-2">57-60</td></tr>
+                          <tr><td className="px-4 py-2">40</td><td className="px-4 py-2">70-72</td><td className="px-4 py-2">100-102</td><td className="px-4 py-2">58-61</td></tr>
+                          <tr><td className="px-4 py-2">42</td><td className="px-4 py-2">72-74</td><td className="px-4 py-2">102-104</td><td className="px-4 py-2">60-62</td></tr>
+                          <tr><td className="px-4 py-2">44</td><td className="px-4 py-2">74-78</td><td className="px-4 py-2">104-108</td><td className="px-4 py-2">61-64</td></tr>
+                          <tr><td className="px-4 py-2">46</td><td className="px-4 py-2">78-82</td><td className="px-4 py-2">108-112</td><td className="px-4 py-2">63-66</td></tr>
+                          <tr><td className="px-4 py-2">48</td><td className="px-4 py-2">82-86</td><td className="px-4 py-2">112-118</td><td className="px-4 py-2">66-69</td></tr>
+                          <tr><td className="px-4 py-2">50</td><td className="px-4 py-2">86-94</td><td className="px-4 py-2">118-126</td><td className="px-4 py-2">69-72</td></tr>
+                          <tr><td className="px-4 py-2">52</td><td className="px-4 py-2">94-100</td><td className="px-4 py-2">126-132</td><td className="px-4 py-2">72-73</td></tr>
+                          <tr><td className="px-4 py-2">54</td><td className="px-4 py-2">100-108</td><td className="px-4 py-2">134-138</td><td className="px-4 py-2">76-77</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex flex-col md:flex-row items-center gap-3">
+                      <img 
+                        src="/guia-medidas-americanino.png"
+                        alt="Cómo tomar tus medidas"
+                        className="w-48 border rounded bg-white mb-4 md:mb-0"
+                        style={{maxWidth:'180px'}}
+                      />
+                      <div>
+                        <div className="font-bold mb-1">Cómo tomar las medidas:</div>
+                        <ul className="text-xs text-gray-600 space-y-1 list-disc pl-5">
+                          <li><strong>Cintura:</strong> Mide alrededor de la parte más estrecha del torso.</li>
+                          <li><strong>Cadera:</strong> Mide el contorno más ancho de la cadera/pelvis.</li>
+                          <li><strong>Muslo:</strong> Mide la parte más ancha del muslo.</li>
+                          <li><strong>Largo pierna:</strong> Mide desde la entrepierna hasta el tobillo.</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4">
+                      Ten en cuenta que es una tabla referencial y puede variar según marca o modelo.
+                    </p>
+                  </>
                 ) : (
                   <p className="text-gray-500">Este producto no requiere guía de tallas.</p>
                 )}
@@ -336,7 +466,7 @@ export default function ProductPage(props: Props) {
         {relatedProducts.length > 0 && (
           <ProductCarousel 
             products={relatedProducts} 
-            category="zapatillas"
+            category="jeans"
             title="Productos Relacionados"
           />
         )}

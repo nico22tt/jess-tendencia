@@ -21,11 +21,13 @@ const getDisplayPrice = (product: Product): number => {
   if (typeof product.basePrice === "number") return product.basePrice
   return typeof product.price === "number" ? product.price : 0
 }
+
 const getOriginalPrice = (product: Product): number | undefined => {
   if (typeof product.basePrice === "number" && typeof product.salePrice === "number" && product.salePrice > 0)
     return product.basePrice
   return product.originalPrice
 }
+
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("es-CL", {
     style: "currency",
@@ -37,15 +39,14 @@ type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
 type Props = { params: Params } | { params: ParamsPromise }
 
-export default function BootPage(props: Props) {
+export default function AccesorioPage(props: Props) {
   const paramsObj: Params =
     typeof (props.params as any)?.then === "function"
       ? use(props.params as ParamsPromise)
       : (props.params as Params)
 
   const [selectedImage, setSelectedImage] = useState(0)
-  const [selectedVariant, setSelectedVariant] = useState<number | null>(null)
-  const [selectedSize, setSelectedSize] = useState<string>("")
+  const [selectedVariant, setSelectedVariant] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
@@ -60,7 +61,7 @@ export default function BootPage(props: Props) {
       })
       .then(data => {
         setProduct(data.data)
-        if (data.data?.category?.slug) {
+        if (data.data?.category?.id) {
           fetch(`/api/products?categorySlug=${data.data.category.slug}`)
             .then(res => res.json())
             .then(related => {
@@ -85,13 +86,8 @@ export default function BootPage(props: Props) {
     allImages.unshift(product.image)
   }
   if (!allImages.length) allImages.push("/placeholder.svg")
-  const sizes = product.sizes && product.sizes.length ? product.sizes : ["36", "37", "38", "39", "40"]
 
   const handleAddToCart = () => {
-    if (sizes.length > 1 && !selectedSize) {
-      alert("Por favor selecciona una talla")
-      return
-    }
     addItem({
       id: product.id,
       name: product.name,
@@ -152,9 +148,7 @@ export default function BootPage(props: Props) {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-3">{product.name}</h1>
               {product.brand && (
-                <p className="text-sm text-gray-600 mb-3">
-                  Marca: <span className="font-semibold">{product.brand}</span>
-                </p>
+                <p className="text-sm text-gray-600 mb-3">Marca: <span className="font-semibold">{product.brand}</span></p>
               )}
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex items-center">
@@ -165,6 +159,7 @@ export default function BootPage(props: Props) {
                 <span className="text-sm text-gray-600 font-medium">4.5/5.0 (127 opiniones)</span>
               </div>
             </div>
+
             <div className="flex items-center gap-3">
               <span className="text-4xl font-bold text-pink-600">{formatPrice(getDisplayPrice(product))}</span>
               {getOriginalPrice(product) && (
@@ -179,7 +174,7 @@ export default function BootPage(props: Props) {
               )}
             </div>
 
-            {/* Colores/variantes */}
+            {/* Variantes de color si existen */}
             {product.product_variants && product.product_variants.length > 0 && (
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-2 block">Color</label>
@@ -202,27 +197,6 @@ export default function BootPage(props: Props) {
               </div>
             )}
 
-            {/* Selector de talla */}
-            {sizes.length > 1 && (
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Talla</label>
-                <div className="flex gap-2 flex-wrap">
-                  {sizes.map((size: string) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-4 py-2 border-2 rounded-md transition-all ${
-                        selectedSize === size
-                          ? "border-pink-500 bg-pink-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
             {/* Cantidad y botones */}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -245,6 +219,7 @@ export default function BootPage(props: Props) {
                   </button>
                 </div>
               </div>
+
               <Button
                 onClick={handleAddToCart}
                 className="w-full bg-pink-600 hover:bg-pink-700 text-white gap-2 font-semibold py-6 text-lg"
@@ -252,6 +227,7 @@ export default function BootPage(props: Props) {
                 <ShoppingCart className="h-5 w-5" />
                 Agregar al carro
               </Button>
+
               <Button
                 variant="outline"
                 className="w-full gap-2 py-6 text-lg border-pink-600 text-pink-600 hover:bg-pink-50"
@@ -260,6 +236,7 @@ export default function BootPage(props: Props) {
                 Agregar a favoritos
               </Button>
             </div>
+
             {/* Beneficios */}
             <div className="border-t pt-6 space-y-3">
               <div className="flex items-center gap-3 text-sm">
@@ -282,9 +259,9 @@ export default function BootPage(props: Props) {
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">
-              <AccordionTrigger className="text-lg font-semibold">Descripción Completa</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-semibold">Descripción</AccordionTrigger>
               <AccordionContent>
-                <p className="text-gray-700 whitespace-pre-line">{product.description || "Descripción no disponible."}</p>
+                <p className="text-gray-700">{product.description || "Descripción no disponible."}</p>
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="details">
@@ -292,8 +269,8 @@ export default function BootPage(props: Props) {
               <AccordionContent>
                 <ul className="space-y-2 text-gray-700">
                   <li><strong>SKU:</strong> {product.sku}</li>
-                  {product.brand && <li><strong>Marca:</strong> {product.brand}</li>}
-                  {product.category?.name && <li><strong>Categoría:</strong> {product.category.name}</li>}
+                  <li><strong>Marca:</strong> {product.brand}</li>
+                  <li><strong>Categoría:</strong> {product.category?.name}</li>
                   {product.stock !== undefined && <li><strong>Stock disponible:</strong> {product.stock} unidades</li>}
                 </ul>
               </AccordionContent>
@@ -303,11 +280,10 @@ export default function BootPage(props: Props) {
 
         {/* Productos relacionados */}
         {relatedProducts.length > 0 && (
-          <ProductCarousel 
-            products={relatedProducts} 
-            category="botas"
-            title="Productos Relacionados"
-          />
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Productos relacionados</h2>
+            <ProductCarousel products={relatedProducts} category="accesorios" />
+          </div>
         )}
       </div>
     </main>

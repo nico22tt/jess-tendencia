@@ -49,7 +49,7 @@ export function AdminSidebar({ className }: Props) {
   return (
     <aside className={cn("w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col", className)}>
       {/* Logo/Title */}
-      <div className="p-6 border-b border-zinc-800">
+      <div className="p-6 border-b border-zinc-800 py-6">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
       </div>
 

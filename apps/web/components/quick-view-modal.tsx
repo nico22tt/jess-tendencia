@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShoppingCart, X, ExternalLink, Image as ImageIcon } from "lucide-react"
 import { useCart } from "@jess/shared/contexts/cart"
 import type { Product } from "@jess/shared/types/product"
+import { shouldShowSizeSelector } from "@jess/shared/lib/product-helpers"
 
 interface QuickViewModalProps {
   product: Product
@@ -46,8 +47,9 @@ export function QuickViewModal({
 
   // Siempre hay al menos un string seguro:
   const safeImage =
-    (allImages[selectedImage] && typeof allImages[selectedImage] === "string" && allImages[selectedImage].trim()) ?
-    allImages[selectedImage] : "/placeholder.svg"
+    (allImages[selectedImage] && typeof allImages[selectedImage] === "string" && allImages[selectedImage].trim())
+      ? allImages[selectedImage]
+      : "/placeholder.svg"
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("es-CL", {
@@ -56,6 +58,14 @@ export function QuickViewModal({
       minimumFractionDigits: 0,
     }).format(typeof price === "number" ? price / 100 : 0)
 
+  // --- NUEVO: Centraliza obtención de tallas y lógica ---
+  const sizes: string[] =
+    Array.isArray(product.sizes) && product.sizes.length > 0
+      ? product.sizes.filter(Boolean)
+      : []
+
+  const showSizeSelector = shouldShowSizeSelector(product.category?.name) && sizes.length > 0
+
   const handleAddToCart = () => {
     addItem({
       id: product.id,
@@ -63,10 +73,9 @@ export function QuickViewModal({
       price: typeof product.price === "number" ? product.price : 0,
       image: safeImage,
       quantity: 1,
+      ...(showSizeSelector && selectedSize ? { size: selectedSize } : {})
     })
   }
-
-  const sizes = ["35", "36", "37", "38", "39", "40", "41", "42"]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -190,22 +199,24 @@ export function QuickViewModal({
               </div>
             )}
 
-            {/* Size Selector */}
-            <div className="mb-6">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Talla</label>
-              <Select value={selectedSize} onValueChange={setSelectedSize}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Elige tu talla" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sizes.map((size) => (
-                    <SelectItem key={size} value={size}>
-                      Talla {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Size Selector solo si aplica */}
+            {showSizeSelector && (
+              <div className="mb-6">
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Talla</label>
+                <Select value={selectedSize} onValueChange={setSelectedSize}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Elige tu talla" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sizes.map((size) => (
+                      <SelectItem key={size} value={size}>
+                        Talla {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Add to Cart Button */}
             <Button

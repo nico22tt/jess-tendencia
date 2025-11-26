@@ -17,7 +17,8 @@ export function RevenueChart() {
       try {
         const res = await fetch("/api/stats/revenue")
         const json = await res.json()
-        setData(json)
+        // Asegúrate que siempre se setea un array
+        setData(Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : []))
       } catch {
         setData([])
       }

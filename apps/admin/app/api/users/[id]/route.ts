@@ -13,7 +13,7 @@ export async function GET(
         id: true,
         email: true,
         name: true,
-        avatarUrl: true,    // camelCase correcto
+        avatarUrl: true,
         role: true,
         createdAt: true,
         updatedAt: true
@@ -51,8 +51,8 @@ export async function PUT(
     const user = await prisma.user.update({
       where: { id: params.id },
       data: {
-        ...(body.name && { name: body.name }),
-        ...(body.role && { role: body.role }),
+        ...(body.name !== undefined && { name: body.name }),
+        ...(body.role !== undefined && { role: body.role }),
         ...(body.avatarUrl !== undefined && { avatarUrl: body.avatarUrl })
       }
     })

@@ -59,19 +59,25 @@ export async function GET(
       images = []
     }
 
-    // Tallas únicas desde variants
-    const sizes = [
-      ...new Set(
-        (product.product_variants ?? [])
-          .map((v: any) => v.size)
-          .filter(Boolean)
-      ),
-    ]
+    // Categorías que realmente tienen tallas
+    const categoriesWithSizes = ["jeans", "zapatillas", "botas", "botines", "pantuflas"];
+    const categoryName = product.category?.name?.toLowerCase() || "";
+
+    let sizes: string[] = [];
+    if (categoriesWithSizes.includes(categoryName)) {
+      sizes = [
+        ...new Set(
+          (product.product_variants ?? [])
+            .map((v: any) => v.size)
+            .filter(Boolean)
+        ),
+      ];
+    }
 
     const safeProduct = {
       ...product,
       images,
-      sizes,
+      ...(sizes.length ? { sizes } : {}) // solo agrega sizes si corresponde y existe
     }
 
     return NextResponse.json({
