@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@jess/shared/lib/prisma"
 import { createNotification, getStockStatusType } from "@jess/shared/lib/notifications"
+import type { PrismaClient } from "@prisma/client"
 
 export async function POST(
   request: NextRequest,
@@ -41,14 +42,12 @@ export async function POST(
       newStock = amount
     }
 
-    const minStock = 10 // TODO: obtener de la BD cuando agregues el campo
+    const minStock = 10
 
-    // Usar transacción para actualizar stock y crear historial
-    const result = await prisma.$transaction(async (tx) => {
-      // Actualizar stock del producto
+    const result = await prisma.$transaction(async (tx: PrismaClient) => {
       const updatedProduct = await tx.product.update({
         where: { id },
-        data: { 
+        data: {
           stock: newStock,
           updatedAt: new Date()
         },
@@ -61,7 +60,6 @@ export async function POST(
         }
       })
 
-      // Crear registro de historial
       await tx.stockMovement.create({
         data: {
           productId: id,
@@ -69,22 +67,26 @@ export async function POST(
           amount: type === "subtract" ? -amount : amount,
           previousStock,
           newStock,
-          reason: note || (type === "add" ? "Entrada manual" : type === "subtract" ? "Salida manual" : "Ajuste manual"),
+          reason:
+            note ||
+            (type === "add"
+              ? "Entrada manual"
+              : type === "subtract"
+              ? "Salida manual"
+              : "Ajuste manual"),
           userId: null
         }
       })
 
-      // Crear notificación de ajuste
       await tx.notification.create({
         data: {
           type: "stock_adjusted",
           title: "Inventario ajustado",
           message: `Se ajustó el stock de "${product.name}" (SKU: ${product.sku}) de ${previousStock} a ${newStock} unidades`,
-          productId: id,
+          productId: id
         }
       })
 
-      // Crear notificación si el stock está bajo, crítico o agotado
       const stockStatusType = getStockStatusType(newStock, minStock)
       if (stockStatusType) {
         let statusTitle = ""
@@ -106,7 +108,7 @@ export async function POST(
             type: stockStatusType,
             title: statusTitle,
             message: statusMessage,
-            productId: id,
+            productId: id
           }
         })
       }
@@ -119,7 +121,7 @@ export async function POST(
       data: {
         id: result.id,
         stock: result.stock,
-        lastUpdated: result.updatedAt 
+        lastUpdated: result.updatedAt
           ? result.updatedAt.toISOString().split("T")[0]
           : new Date().toISOString().split("T")[0]
       }

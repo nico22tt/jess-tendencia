@@ -17,30 +17,30 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             sku: true,
-          }
-        }
-      }
+          },
+        },
+      },
     })
 
     const unreadCount = await prisma.notification.count({
-      where: { isRead: false }
+      where: { isRead: false },
     })
 
     return NextResponse.json({
       success: true,
       data: {
-        notifications: notifications.map(n => ({
+        notifications: notifications.map((n) => ({
           id: n.id,
           type: n.type,
           title: n.title,
           message: n.message,
           productId: n.productId,
-          product: n.product,
+          product: n.product, // ahora sí existe
           isRead: n.isRead,
           createdAt: n.createdAt.toISOString(),
         })),
-        unreadCount
-      }
+        unreadCount,
+      },
     })
   } catch (error) {
     console.error("Error fetching notifications:", error)

@@ -1,3 +1,4 @@
+// apps/admin/app/api/inventory/variants/route.ts
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@jess/shared/lib/prisma"
 
@@ -14,26 +15,22 @@ export async function GET(request: NextRequest) {
         price_adjustment: true,
         is_active: true,
         products: {
-          select: {
-            name: true
-          }
-        }
+          select: { name: true },
+        },
       },
-      orderBy: {
-        created_at: "desc"
-      }
+      orderBy: { created_at: "desc" },
     })
 
-    const variantsData = variants.map(v => ({
+    const variantsData = variants.map((v) => ({
       id: v.id,
       productId: v.product_id,
       productName: v.products.name,
       sku: v.sku,
       size: v.size,
       color: v.color,
-      stock: v.stock || 0,
-      priceAdjustment: v.price_adjustment || 0,
-      isActive: v.is_active || false,
+      stock: v.stock ?? 0,
+      priceAdjustment: v.price_adjustment ?? 0,
+      isActive: v.is_active ?? false,
     }))
 
     return NextResponse.json({ success: true, data: variantsData })

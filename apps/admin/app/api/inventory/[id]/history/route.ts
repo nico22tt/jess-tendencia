@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@jess/shared/lib/prisma"
 
+type Movement = Awaited<
+  ReturnType<typeof prisma.stockMovement.findMany>
+>[number]
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -8,14 +12,13 @@ export async function GET(
   try {
     const { id } = await params
 
-    // Obtener producto
     const product = await prisma.product.findUnique({
       where: { id },
       select: {
         name: true,
         sku: true,
-        stock: true
-      }
+        stock: true,
+      },
     })
 
     if (!product) {
@@ -25,11 +28,10 @@ export async function GET(
       )
     }
 
-    // Obtener movimientos de stock
     const movements = await prisma.stockMovement.findMany({
       where: { productId: id },
       orderBy: { createdAt: "desc" },
-      take: 50 // Últimos 50 movimientos
+      take: 50,
     })
 
     return NextResponse.json({
@@ -38,20 +40,20 @@ export async function GET(
         product: {
           name: product.name,
           sku: product.sku,
-          currentStock: product.stock
+          currentStock: product.stock,
         },
-        movements: movements.map(m => ({
+        movements: movements.map((m: Movement) => ({
           id: m.id,
           type: m.type,
           amount: m.amount,
           previousStock: m.previousStock,
           newStock: m.newStock,
           reason: m.reason,
-          user: "Admin", // TODO: obtener nombre real del usuario
+          user: "Admin",
           date: m.createdAt.toISOString().split("T")[0],
-          time: m.createdAt.toTimeString().split(" ")[0].substring(0, 5)
-        }))
-      }
+          time: m.createdAt.toTimeString().split(" ")[0].substring(0, 5),
+        })),
+      },
     })
   } catch (error) {
     console.error("Error al obtener historial:", error)

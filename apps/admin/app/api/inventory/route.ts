@@ -1,3 +1,4 @@
+// apps/admin/app/api/inventory/route.ts
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@jess/shared/lib/prisma"
 
@@ -11,26 +12,22 @@ export async function GET(request: NextRequest) {
         stock: true,
         updatedAt: true,
         category: {
-          select: {
-            name: true
-          }
-        }
+          select: { name: true },
+        },
       },
-      orderBy: {
-        updatedAt: "desc"
-      }
+      orderBy: { updatedAt: "desc" },
     })
 
-    const inventoryData = products.map(product => ({
+    const inventoryData = products.map((product) => ({
       id: product.id,
       name: product.name,
       sku: product.sku || "N/A",
-      stock: product.stock || 0,
+      stock: product.stock ?? 0,
       category: product.category?.name || "Sin categoría",
-      lastUpdated: product.updatedAt 
-        ? product.updatedAt.toISOString().split("T")[0] 
+      lastUpdated: product.updatedAt
+        ? product.updatedAt.toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0],
-      minStock: 10
+      minStock: 10,
     }))
 
     return NextResponse.json({ success: true, data: inventoryData })
