@@ -6,11 +6,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    // Permite todas las imágenes locales en /public
     localPatterns: [
       { pathname: '/**' }
     ],
-    // Permite imágenes externas de estos dominios
     remotePatterns: [
       {
         protocol: 'https',
@@ -32,8 +30,6 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'via.placeholder.com',
       },
-      // TEMPORAL: Permitir cualquier dominio HTTPS (solo desarrollo)
-      // Elimina esto en producción y agrega dominios específicos
       {
         protocol: 'https',
         hostname: '**',
@@ -41,6 +37,9 @@ const nextConfig = {
     ],
   },
   transpilePackages: ['@jess/ui', '@jess/shared'],
+  outputFileTracingIncludes: {
+    '/api/**/*': ['../../packages/prisma/generated/client/**/*'],
+  },
 }
 
 export default nextConfig
