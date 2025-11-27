@@ -37,7 +37,7 @@ interface ProductVariant {
 export default function AddProductPage() {
   const router = useRouter()
   const supabase = createClient()
-
+  
   const [categories, setCategories] = useState<Category[]>([])
   const [productName, setProductName] = useState("")
   const [description, setDescription] = useState("")
@@ -65,13 +65,13 @@ export default function AddProductPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("/api/categories")
+        const res = await fetch('/api/categories')
         const data = await res.json()
         if (data.success) {
           setCategories(data.data)
         }
       } catch (error) {
-        console.error("Error al cargar categorías:", error)
+        console.error('Error al cargar categorías:', error)
       }
     }
     fetchCategories()
@@ -80,23 +80,27 @@ export default function AddProductPage() {
   // Generar slug automáticamente
   const handleNameChange = (name: string) => {
     setProductName(name)
+    
     const slug = name
       .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    
     setUrlSlug(slug)
   }
 
   // Agregar imagen por URL
   const handleAddImage = () => {
     if (!newImageUrl.trim()) return
+
     const newImage: ProductImage = {
       id: Date.now().toString(),
       url: newImageUrl,
-      isMain: uploadedImages.length === 0,
+      isMain: uploadedImages.length === 0
     }
+
     setUploadedImages([...uploadedImages, newImage])
     setNewImageUrl("")
   }
@@ -109,8 +113,7 @@ export default function AddProductPage() {
     const fileExt = file.name.split(".").pop()
     const filename = `product-${Date.now()}.${fileExt}`
 
-    const { data, error } = await supabase
-      .storage
+    const { data, error } = await supabase.storage
       .from("product-images")
       .upload(filename, file)
 
@@ -119,8 +122,7 @@ export default function AddProductPage() {
       return
     }
 
-    const { data: publicUrlData } = supabase
-      .storage
+    const { data: publicUrlData } = supabase.storage
       .from("product-images")
       .getPublicUrl(filename)
 
@@ -130,8 +132,8 @@ export default function AddProductPage() {
         {
           id: Date.now().toString(),
           url: publicUrlData.publicUrl,
-          isMain: prev.length === 0
-        }
+          isMain: prev.length === 0,
+        },
       ])
     } else {
       alert("No se pudo obtener la URL pública de la imagen.")
@@ -141,7 +143,7 @@ export default function AddProductPage() {
 
   // Establecer imagen principal
   const handleSetMainImage = (imageId: string) => {
-    setUploadedImages((prev) =>
+    setUploadedImages((prev) => 
       prev.map((img) => ({ ...img, isMain: img.id === imageId }))
     )
   }
@@ -150,9 +152,11 @@ export default function AddProductPage() {
   const handleRemoveImage = (imageId: string) => {
     setUploadedImages((prev) => {
       const filtered = prev.filter((img) => img.id !== imageId)
-      if (filtered.length > 0 && !filtered.some((img) => img.isMain)) {
+      
+      if (filtered.length > 0 && !filtered.some(img => img.isMain)) {
         filtered[0].isMain = true
       }
+      
       return filtered
     })
   }
@@ -169,10 +173,12 @@ export default function AddProductPage() {
       size: newVariantSize,
       color: newVariantColor || "",
       stock: parseInt(newVariantStock) || 0,
-      priceAdjustment: parseInt(newVariantPriceAdj) || 0,
+      priceAdjustment: parseInt(newVariantPriceAdj) || 0
     }
-    setVariants([...variants, newVariant])
 
+    setVariants([...variants, newVariant])
+    
+    // Limpiar campos
     setNewVariantSize("")
     setNewVariantColor("")
     setNewVariantStock("")
@@ -181,39 +187,47 @@ export default function AddProductPage() {
 
   // Eliminar variante
   const handleRemoveVariant = (variantId: string) => {
-    setVariants(variants.filter((v) => v.id !== variantId))
+    setVariants(variants.filter(v => v.id !== variantId))
   }
 
   // Guardar producto
   const handleSaveProduct = async () => {
+    // Validaciones
     if (!productName.trim()) {
       alert("El nombre del producto es obligatorio")
       return
     }
+
     if (!description.trim()) {
       alert("La descripción es obligatoria")
       return
     }
+
     if (!urlSlug.trim()) {
       alert("El URL slug es obligatorio")
       return
     }
+
     if (!sku.trim()) {
       alert("El SKU es obligatorio")
       return
     }
+
     if (!basePrice || parseFloat(basePrice) <= 0) {
       alert("El precio base debe ser mayor a 0")
       return
     }
+
     if (!category) {
       alert("Debes seleccionar una categoría")
       return
     }
+
     if (!brand.trim()) {
       alert("La marca es obligatoria")
       return
     }
+
     if (uploadedImages.length === 0) {
       alert("Debes agregar al menos una imagen")
       return
@@ -222,14 +236,16 @@ export default function AddProductPage() {
     setIsLoading(true)
 
     try {
-      const imagesArray = uploadedImages.map((img) => ({
+      // Preparar array de imágenes
+      const imagesArray = uploadedImages.map(img => ({
         url: img.url,
-        isMain: img.isMain,
+        isMain: img.isMain
       }))
 
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      // Crear producto
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: productName,
           description,
@@ -242,8 +258,8 @@ export default function AddProductPage() {
           subcategory: subcategory || null,
           brand,
           isPublished,
-          images: imagesArray,
-        }),
+          images: imagesArray
+        })
       })
 
       const data = await res.json()
@@ -251,32 +267,30 @@ export default function AddProductPage() {
       if (data.success) {
         const productId = data.data.id
 
+        // Si hay variantes, crearlas
         if (variants.length > 0) {
           for (const variant of variants) {
             await fetch(`/api/products/${productId}/variants`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 size: variant.size,
                 color: variant.color || null,
                 stock: variant.stock,
                 priceAdjustment: variant.priceAdjustment,
-                sku: `${sku}-${variant.size}${variant.color ? `-${variant.color}` : ""}`,
-              }),
+                sku: `${sku}-${variant.size}${variant.color ? `-${variant.color}` : ''}`
+              })
             })
           }
         }
 
-        alert(
-          "✅ Producto creado exitosamente" +
-            (variants.length > 0 ? ` con ${variants.length} variantes` : "")
-        )
-        router.push("/dashboard/products")
+        alert("✅ Producto creado exitosamente" + (variants.length > 0 ? ` con ${variants.length} variantes` : ""))
+        router.push('/dashboard/products')
       } else {
         alert("❌ Error: " + data.error)
       }
     } catch (error) {
-      console.error("Error al crear producto:", error)
+      console.error('Error al crear producto:', error)
       alert("❌ Error al crear el producto")
     } finally {
       setIsLoading(false)
@@ -296,12 +310,12 @@ export default function AddProductPage() {
                 <h1 className="text-3xl font-bold text-white">Crear Nuevo Producto</h1>
                 <p className="text-zinc-400 mt-1">Completa la información del producto</p>
               </div>
-              <Button
-                onClick={handleSaveProduct}
+              <Button 
+                onClick={handleSaveProduct} 
                 disabled={isLoading}
                 className="bg-pink-600 hover:bg-pink-700 text-white disabled:bg-gray-600"
               >
-                {isLoading ? "Guardando..." : "Guardar Producto"}
+                {isLoading ? 'Guardando...' : 'Guardar Producto'}
               </Button>
             </div>
 
@@ -310,9 +324,7 @@ export default function AddProductPage() {
               {/* Left Column */}
               <div className="space-y-6">
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">
-                    Información General
-                  </h2>
+                  <h2 className="text-xl font-semibold text-white mb-4">Información General</h2>
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="productName" className="text-zinc-300">
@@ -361,21 +373,19 @@ export default function AddProductPage() {
                 </Card>
 
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">
-                    Imágenes y Galería
-                  </h2>
-
-                  {/* Input para subir imágenes */}
+                  <h2 className="text-xl font-semibold text-white mb-4">Imágenes y Galería</h2>
+                  
+                  {/* Input para subir imágenes desde PC */}
                   <div className="space-y-2 mb-4">
                     <Label htmlFor="imageFile" className="text-zinc-300">
                       Subir Imagen desde tu equipo
                     </Label>
                     <input
-                    title="subir imagen"
+                      title="subir imagen"
                       type="file"
                       accept="image/*"
                       id="imageFile"
-                      className="bg-zinc-800 border-zinc-700 text-white px-2 py-1 rounded"
+                      className="bg-zinc-800 border-zinc-700 text-white px-2 py-1 rounded w-full"
                       onChange={handleFileInputChange}
                     />
                   </div>
@@ -383,7 +393,7 @@ export default function AddProductPage() {
                   {/* Input para agregar imagen por URL */}
                   <div className="space-y-2 mb-4">
                     <Label htmlFor="imageUrl" className="text-zinc-300">
-                      URL de Imagen
+                      O agrega una URL de Imagen
                     </Label>
                     <div className="flex gap-2">
                       <Input
@@ -393,7 +403,7 @@ export default function AddProductPage() {
                         placeholder="https://ejemplo.com/imagen.jpg"
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                         onKeyPress={(e) => {
-                          if (e.key === "Enter") {
+                          if (e.key === 'Enter') {
                             e.preventDefault()
                             handleAddImage()
                           }
@@ -434,8 +444,8 @@ export default function AddProductPage() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleRemoveImage(image.id)}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                                aria-label="Eliminar variante"
+                                className="absolute top-2 right-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                aria-label="Eliminar imagen"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -444,8 +454,8 @@ export default function AddProductPage() {
                               type="button"
                               onClick={() => handleSetMainImage(image.id)}
                               className={`mt-2 w-full py-1.5 px-3 rounded text-xs font-medium transition-colors ${
-                                image.isMain
-                                  ? "bg-pink-600 text-white"
+                                image.isMain 
+                                  ? "bg-pink-600 text-white" 
                                   : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
                               }`}
                             >
@@ -468,8 +478,230 @@ export default function AddProductPage() {
 
               {/* Right Column */}
               <div className="space-y-6">
-                {/* Aquí va el resto del formulario: Inventario, Clasificación, Visibilidad */}
-                {/* Mantén la lógica que tienes para esos campos */}
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">Inventario y Precios</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="sku" className="text-zinc-300">SKU *</Label>
+                      <Input
+                        id="sku"
+                        value={sku}
+                        onChange={(e) => setSku(e.target.value)}
+                        placeholder="ZAP-001"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="basePrice" className="text-zinc-300">
+                        Precio Base (CLP) *
+                      </Label>
+                      <Input
+                        id="basePrice"
+                        type="number"
+                        value={basePrice}
+                        onChange={(e) => setBasePrice(e.target.value)}
+                        placeholder="45990"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="salePrice" className="text-zinc-300">
+                        Precio de Oferta (CLP)
+                      </Label>
+                      <Input
+                        id="salePrice"
+                        type="number"
+                        value={salePrice}
+                        onChange={(e) => setSalePrice(e.target.value)}
+                        placeholder="39990"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="stock" className="text-zinc-300">Stock General</Label>
+                      <Input
+                        id="stock"
+                        type="number"
+                        value={stock}
+                        onChange={(e) => setStock(e.target.value)}
+                        placeholder="0"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      />
+                      <p className="text-xs text-zinc-500 mt-1">
+                        Si tienes variantes, el stock se gestiona por talla
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Variantes */}
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">
+                    Variantes de Producto (Opcional)
+                  </h2>
+                  <p className="text-sm text-zinc-400 mb-4">
+                    Agrega tallas, colores y stock específico para cada variante
+                  </p>
+
+                  {/* Formulario para agregar variante */}
+                  <div className="space-y-3 mb-4 p-4 bg-zinc-800/50 rounded-lg">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-zinc-300 text-sm">Talla *</Label>
+                        <Input
+                          value={newVariantSize}
+                          onChange={(e) => setNewVariantSize(e.target.value)}
+                          placeholder="S, M, L, 38, 40..."
+                          className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-zinc-300 text-sm">Color</Label>
+                        <Input
+                          value={newVariantColor}
+                          onChange={(e) => setNewVariantColor(e.target.value)}
+                          placeholder="Negro, Blanco..."
+                          className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-zinc-300 text-sm">Stock</Label>
+                        <Input
+                          type="number"
+                          value={newVariantStock}
+                          onChange={(e) => setNewVariantStock(e.target.value)}
+                          placeholder="10"
+                          className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-zinc-300 text-sm">Ajuste Precio</Label>
+                        <Input
+                          type="number"
+                          value={newVariantPriceAdj}
+                          onChange={(e) => setNewVariantPriceAdj(e.target.value)}
+                          placeholder="0"
+                          className="bg-zinc-800 border-zinc-700 text-white text-sm"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleAddVariant}
+                      className="w-full bg-zinc-700 hover:bg-zinc-600 text-white"
+                      size="sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Variante
+                    </Button>
+                  </div>
+
+                  {/* Lista de variantes */}
+                  {variants.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-zinc-300">
+                        Variantes agregadas ({variants.length})
+                      </h3>
+                      {variants.map((variant) => (
+                        <div
+                          key={variant.id}
+                          className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg"
+                        >
+                          <div className="flex-1">
+                            <p className="text-white font-medium text-sm">
+                              Talla: {variant.size}
+                              {variant.color && ` - ${variant.color}`}
+                            </p>
+                            <p className="text-xs text-zinc-400">
+                              Stock: {variant.stock} unidades
+                              {variant.priceAdjustment !== 0 && ` | Ajuste: $${variant.priceAdjustment}`}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemoveVariant(variant.id)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">Clasificación</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="category" className="text-zinc-300">
+                        Categoría Principal *
+                      </Label>
+                      <Select value={category} onValueChange={setCategory}>
+                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                          <SelectValue placeholder="Selecciona una categoría" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-800 border-zinc-700">
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id} className="text-white">
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="subcategory" className="text-zinc-300">
+                        Subcategoría
+                      </Label>
+                      <Input
+                        id="subcategory"
+                        value={subcategory}
+                        onChange={(e) => setSubcategory(e.target.value)}
+                        placeholder="Ej: Urbanas, Deportivas"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="brand" className="text-zinc-300">Marca *</Label>
+                      <Input
+                        id="brand"
+                        value={brand}
+                        onChange={(e) => setBrand(e.target.value)}
+                        placeholder="Ej: Nike, Adidas"
+                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        required
+                      />
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">Visibilidad</h2>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="published" className="text-zinc-300">
+                        Estado del Producto
+                      </Label>
+                      <p className="text-sm text-zinc-500 mt-1">
+                        {isPublished 
+                          ? "El producto está publicado y visible" 
+                          : "El producto está en borrador"}
+                      </p>
+                    </div>
+                    <Switch 
+                      id="published" 
+                      checked={isPublished} 
+                      onCheckedChange={setIsPublished} 
+                    />
+                  </div>
+                </Card>
               </div>
             </div>
           </div>
