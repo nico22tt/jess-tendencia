@@ -8,6 +8,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
   schemas  = ["auth", "public"]
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

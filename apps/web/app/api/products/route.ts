@@ -1,4 +1,6 @@
 // app/api/products/route.ts
+console.log("WEB DATABASE_URL:", process.env.DATABASE_URL)
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@jess/shared/lib/prisma'
 
@@ -14,7 +16,6 @@ export async function GET(request: NextRequest) {
       if (category) {
         where.categoryId = category.id
       } else {
-        // No existe la categoría
         return NextResponse.json({
           success: true,
           data: [],
@@ -37,8 +38,9 @@ export async function GET(request: NextRequest) {
       data: products
     })
   } catch (error) {
+    console.error("Error en web /api/products:", error)
     return NextResponse.json(
-      { success: false, error: 'Error al obtener productos' },
+      { success: false, error: "Error al obtener productos" },
       { status: 500 }
     )
   }

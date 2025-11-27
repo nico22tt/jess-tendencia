@@ -41,27 +41,44 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
       minimumFractionDigits: 0,
     }).format(price / 100)
 
-  // --- CORREGIDO, robusto a tipo inválido/undefined ---
-  const getImageSrc = (): string | null => {
-    if (
-      isHovered &&
-      Array.isArray(product.images) &&
-      typeof product.images[1] === "string" &&
-      product.images[1].trim()
-    ) {
-      return product.images[1]
+  // Soporta:
+  // - images: Array<{ url, isMain }>
+  // - images: string[] (legacy)
+  // - images: string JSON
+  // - images: objeto único
+  const getImageSrc = (): string => {
+    const images: any = (product as any).images
+
+    let arr: Array<{ url: string; isMain?: boolean }> = []
+
+    if (Array.isArray(images)) {
+      if (typeof images[0] === "string") {
+        arr = images
+          .filter((img) => typeof img === "string" && img.trim())
+          .map((url) => ({ url, isMain: false }))
+      } else {
+        arr = images
+      }
+    } else if (typeof images === "string") {
+      try {
+        const parsed = JSON.parse(images)
+        if (Array.isArray(parsed)) {
+          arr = parsed
+        }
+      } catch {
+        arr = []
+      }
+    } else if (images && typeof images === "object") {
+      arr = [images]
     }
-    if (typeof product.image === "string" && product.image.trim()) {
-      return product.image
+
+    const mainImg = arr.find((img) => img.isMain && img.url)
+    // Si está hover y hay al menos 2 imágenes, usa la segunda como hover image
+    if (isHovered && arr[1]?.url) {
+      return arr[1].url
     }
-    if (
-      Array.isArray(product.images) &&
-      typeof product.images[0] === "string" &&
-      product.images[0].trim()
-    ) {
-      return product.images[0]
-    }
-    return null
+
+    return mainImg?.url || arr[0]?.url || (typeof (product as any).image === "string" && (product as any).image) || "/placeholder.svg"
   }
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -70,7 +87,7 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
       id: product.id,
       name: product.name,
       price: getDisplayPrice(),
-      image: getImageSrc() || "/placeholder.svg",
+      image: getImageSrc(),
       quantity: 1,
     })
   }
@@ -100,7 +117,7 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
             <div className="aspect-square relative bg-gray-50">
               {getImageSrc() ? (
                 <Image
-                  src={getImageSrc()!}
+                  src={getImageSrc()}
                   alt={product.name}
                   fill
                   className="object-cover transition-opacity duration-500"
@@ -228,7 +245,12 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
       </Card>
 
       {showQuickView && (
-        <QuickViewModal product={product} category={category} open={showQuickView} onOpenChange={setShowQuickView} />
+        <QuickViewModal
+          product={product}
+          category={category}
+          open={showQuickView}
+          onOpenChange={setShowQuickView}
+        />
       )}
     </>
   )
