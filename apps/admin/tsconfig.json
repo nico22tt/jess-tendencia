@@ -1,7 +1,6 @@
 {
   "extends": "next",
   "compilerOptions": {
-    "plugins": [{ "name": "next" }],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
