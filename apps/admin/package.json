@@ -4,7 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "next dev --port 3001",
-        "build": "cd ../../packages/prisma && pnpm exec prisma generate && cd ../../apps/admin && next build",        "start": "next start --port 3001",
+        "build": "cd ../../packages/prisma && pnpm exec prisma generate && cd ../../apps/admin && next build",        
+        "start": "next start --port 3001",
         "lint": "next lint",
         "check-types": "tsc --noEmit"
     },
