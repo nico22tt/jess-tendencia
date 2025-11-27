@@ -6,8 +6,7 @@
         "dev": "turbo run dev",
         "lint": "turbo run lint",
         "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-        "check-types": "turbo run check-types",
-        "postinstall": "pnpm --filter @jess/prisma run generate"
+        "check-types": "turbo run check-types"
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4.1.17",
