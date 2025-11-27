@@ -1,13 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@jess/shared/lib/prisma'
+import { NextRequest, NextResponse } from "next/server"
+import prisma from "@jess/shared/lib/prisma"
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     const category = await prisma.category.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         products: {
           select: {
@@ -15,24 +17,24 @@ export async function GET(
             name: true,
             sku: true,
             basePrice: true,
-            stock: true
-          }
-        }
-      }
+            stock: true,
+          },
+        },
+      },
     })
 
     if (!category) {
-      return NextResponse.json({
-        success: false,
-        error: 'Categoría no encontrada'
-      }, { status: 404 })
+      return NextResponse.json(
+        { success: false, error: "Categoría no encontrada" },
+        { status: 404 }
+      )
     }
 
     return NextResponse.json({ success: true, data: category })
   } catch (error) {
-    console.error('Error al obtener categoría:', error)
+    console.error("Error al obtener categoría:", error)
     return NextResponse.json(
-      { success: false, error: 'Error al obtener categoría' },
+      { success: false, error: "Error al obtener categoría" },
       { status: 500 }
     )
   }
@@ -40,63 +42,72 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { name, description, slug } = await request.json()
 
     const category = await prisma.category.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name !== undefined && { name }),
         ...(description !== undefined && { description }),
         ...(slug !== undefined && { slug }),
-      }
+      },
     })
 
     return NextResponse.json({ success: true, data: category })
   } catch (error) {
-    console.error('Error al actualizar categoría:', error)
+    console.error("Error al actualizar categoría:", error)
     return NextResponse.json(
-      { success: false, error: 'Error al actualizar categoría' },
+      { success: false, error: "Error al actualizar categoría" },
       { status: 500 }
     )
   }
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     const category = await prisma.category.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
-        _count: { select: { products: true } }
-      }
+        _count: { select: { products: true } },
+      },
     })
 
     if (!category) {
       return NextResponse.json(
-        { success: false, error: 'Categoría no encontrada' },
+        { success: false, error: "Categoría no encontrada" },
         { status: 404 }
       )
     }
 
     if (category._count.products > 0) {
       return NextResponse.json(
-        { success: false, error: 'No se puede eliminar una categoría con productos' },
+        {
+          success: false,
+          error: "No se puede eliminar una categoría con productos asociados",
+        },
         { status: 400 }
       )
     }
 
-    await prisma.category.delete({ where: { id: params.id } })
+    await prisma.category.delete({ where: { id } })
 
-    return NextResponse.json({ success: true, message: 'Categoría eliminada correctamente' })
+    return NextResponse.json({
+      success: true,
+      message: "Categoría eliminada correctamente",
+    })
   } catch (error) {
-    console.error('Error al eliminar categoría:', error)
+    console.error("Error al eliminar categoría:", error)
     return NextResponse.json(
-      { success: false, error: 'Error al eliminar categoría' },
+      { success: false, error: "Error al eliminar categoría" },
       { status: 500 }
     )
   }
