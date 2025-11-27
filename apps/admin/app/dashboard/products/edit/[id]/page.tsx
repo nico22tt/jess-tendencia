@@ -13,6 +13,7 @@ import { Switch } from "@jess/ui/switch"
 import { Card } from "@jess/ui/card"
 import { Upload, X, Check, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { createClient } from "@utils/supabase/client"
 
 interface Category {
@@ -45,9 +46,8 @@ interface Product {
 export default function EditProductPage() {
   const params = useParams()
   const router = useRouter()
-  const id = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : ""
-
   const supabase = createClient()
+  const id = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : ""
 
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -77,6 +77,7 @@ export default function EditProductPage() {
         setIsLoading(true)
         const res = await fetch(`/api/products/${id}`)
         const data = await res.json()
+
         if (data.success) {
           const product: Product = data.data
           setProductName(product.name)
@@ -90,10 +91,10 @@ export default function EditProductPage() {
           setSubcategory(product.subcategory || "")
           setBrand(product.brand)
           setIsPublished(product.isPublished)
-          // Asigna ids a imágenes
-          const imagesWithIds = (product.images || []).map((img, index) => ({
+          // Asegura IDs únicos locales
+          const imagesWithIds = (product.images || []).map((img, idx) => ({
             ...img,
-            id: img.id || `existing-${index}-${Date.now()}`
+            id: img.id || `existing-${idx}-${Date.now()}`
           }))
           setUploadedImages(imagesWithIds)
         } else {
@@ -107,6 +108,7 @@ export default function EditProductPage() {
         setIsLoading(false)
       }
     }
+
     fetchProduct()
   }, [id, router])
 
@@ -126,28 +128,28 @@ export default function EditProductPage() {
     fetchCategories()
   }, [])
 
-  // AGREGAR imagen por URL
+  // Agregar imagen por URL
   const handleAddImage = () => {
     if (!newImageUrl.trim()) return
+
     const newImage: ProductImage = {
       id: Date.now().toString(),
       url: newImageUrl,
-      isMain: uploadedImages.length === 0
+      isMain: uploadedImages.length === 0,
     }
     setUploadedImages([...uploadedImages, newImage])
     setNewImageUrl("")
   }
 
-  // SUBIR imagen desde PC
+  // Subir imagen desde PC (Supabase)
   const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const fileExt = file.name.split('.').pop()
+    const fileExt = file.name.split(".").pop()
     const filename = `product-${Date.now()}.${fileExt}`
 
-    const { data, error } = await supabase
-      .storage
+    const { data, error } = await supabase.storage
       .from("product-images")
       .upload(filename, file)
 
@@ -155,24 +157,24 @@ export default function EditProductPage() {
       alert("Error al subir imagen: " + error.message)
       return
     }
-    const { data: publicUrlData } = supabase
-      .storage
+
+    const { data: publicUrlData } = supabase.storage
       .from("product-images")
       .getPublicUrl(filename)
 
     if (publicUrlData?.publicUrl) {
-      setUploadedImages(prev => [
+      setUploadedImages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           url: publicUrlData.publicUrl,
-          isMain: prev.length === 0
-        }
+          isMain: prev.length === 0,
+        },
       ])
     } else {
       alert("No se pudo obtener la URL pública de la imagen.")
     }
-    e.target.value = "" // Limpiar el input file para permitir re-suba de la misma imagen
+    e.target.value = "" // limpiar input file
   }
 
   // Establecer imagen principal
@@ -182,27 +184,32 @@ export default function EditProductPage() {
     )
   }
 
-  // Eliminar imagen (SOLO la remueve del formulario, no del bucket)
+  // Eliminar imagen
   const handleRemoveImage = (imageId: string) => {
     setUploadedImages((prev) => {
       const filtered = prev.filter((img) => img.id !== imageId)
+
       if (filtered.length > 0 && !filtered.some(img => img.isMain)) {
         filtered[0].isMain = true
       }
+
       return filtered
     })
   }
 
   // Guardar cambios
   const handleSaveProduct = async () => {
+    // Validaciones
     if (!productName.trim() || !description.trim() || !urlSlug.trim() || !sku.trim() || !category || !brand.trim()) {
       alert("Por favor completa todos los campos obligatorios")
       return
     }
+
     if (!basePrice || parseFloat(basePrice) <= 0) {
       alert("El precio base debe ser mayor a 0")
       return
     }
+
     if (uploadedImages.length === 0) {
       alert("Debes agregar al menos una imagen")
       return
@@ -234,7 +241,9 @@ export default function EditProductPage() {
           images: imagesArray
         })
       })
+
       const data = await res.json()
+
       if (data.success) {
         alert("✅ Producto actualizado exitosamente")
         router.push('/dashboard/products')
@@ -319,6 +328,7 @@ export default function EditProductPage() {
                         required
                       />
                     </div>
+
                     <div>
                       <Label htmlFor="description" className="text-zinc-300">
                         Descripción Larga *
@@ -333,6 +343,7 @@ export default function EditProductPage() {
                         required
                       />
                     </div>
+
                     <div>
                       <Label htmlFor="urlSlug" className="text-zinc-300">
                         URL Slug *
@@ -353,25 +364,25 @@ export default function EditProductPage() {
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-4">Imágenes y Galería</h2>
 
-                  {/* Input para subir imágenes */}
+                  {/* Input para subir imágenes desde PC */}
                   <div className="space-y-2 mb-4">
                     <Label htmlFor="imageFile" className="text-zinc-300">
                       Subir Imagen desde tu equipo
                     </Label>
                     <input
-                      title="subir imagenes"
+                      title="subir imagen"
                       type="file"
                       accept="image/*"
                       id="imageFile"
-                      className="bg-zinc-800 border-zinc-700 text-white px-2 py-1 rounded"
+                      className="bg-zinc-800 border-zinc-700 text-white px-2 py-1 rounded w-full"
                       onChange={handleFileInputChange}
                     />
                   </div>
 
-                  {/* Input para agregar imagen por URL */}
+                  {/* Agregar imagen por URL */}
                   <div className="space-y-2 mb-4">
                     <Label htmlFor="imageUrl" className="text-zinc-300">
-                      URL de Imagen
+                      O agrega una URL de Imagen
                     </Label>
                     <div className="flex gap-2">
                       <Input
@@ -410,19 +421,23 @@ export default function EditProductPage() {
                         {uploadedImages.map((image) => (
                           <div key={image.id} className="relative group">
                             <div className="aspect-square rounded-lg bg-zinc-800 overflow-hidden relative">
-                              <img
+                              <Image
                                 src={image.url || "/placeholder.svg"}
                                 alt="Product"
+                                width={200}
+                                height={200}
                                 className="w-full h-full object-cover"
                               />
-                              <button
-                                onClick={() => handleRemoveImage(image.id!)}
-                                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              <Button
                                 type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveImage(image.id!)}
+                                className="absolute top-2 right-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
                                 aria-label="Eliminar imagen"
                               >
                                 <X className="h-4 w-4" />
-                              </button>
+                              </Button>
                             </div>
                             <button
                               type="button"
@@ -452,8 +467,6 @@ export default function EditProductPage() {
 
               {/* Right Column - Inventory and Classification */}
               <div className="space-y-6">
-                {/* ... (No cambios en el bloque derecho del formulario) ... */}
-                {/* Mantén tu bloque de Inventario, Clasificación y Visibilidad igual que antes */}
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-4">Inventario y Precios</h2>
                   <div className="space-y-4">
@@ -468,6 +481,7 @@ export default function EditProductPage() {
                         required
                       />
                     </div>
+
                     <div>
                       <Label htmlFor="basePrice" className="text-zinc-300">
                         Precio Base (CLP) *
@@ -482,6 +496,7 @@ export default function EditProductPage() {
                         required
                       />
                     </div>
+
                     <div>
                       <Label htmlFor="salePrice" className="text-zinc-300">
                         Precio de Oferta (CLP)
@@ -496,6 +511,7 @@ export default function EditProductPage() {
                       />
                       <p className="text-sm text-zinc-500 mt-1">Opcional</p>
                     </div>
+
                     <div>
                       <Label htmlFor="stock" className="text-zinc-300">Cantidad en Stock</Label>
                       <Input
@@ -509,6 +525,7 @@ export default function EditProductPage() {
                     </div>
                   </div>
                 </Card>
+
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-4">Clasificación</h2>
                   <div className="space-y-4">
@@ -529,6 +546,7 @@ export default function EditProductPage() {
                         </SelectContent>
                       </Select>
                     </div>
+
                     <div>
                       <Label htmlFor="subcategory" className="text-zinc-300">
                         Subcategoría
@@ -541,6 +559,7 @@ export default function EditProductPage() {
                         className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                       />
                     </div>
+
                     <div>
                       <Label htmlFor="brand" className="text-zinc-300">Marca *</Label>
                       <Input
@@ -554,6 +573,7 @@ export default function EditProductPage() {
                     </div>
                   </div>
                 </Card>
+
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-4">Visibilidad</h2>
                   <div className="flex items-center justify-between">
