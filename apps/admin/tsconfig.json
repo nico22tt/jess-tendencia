@@ -1,14 +1,14 @@
 {
-  "extends": "@jess/typescript-config/nextjs.json",
+  "extends": "next",
   "compilerOptions": {
     "plugins": [{ "name": "next" }],
-    "baseUrl": ".",                      // Asegura rutas absolutas
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],                    // Archivos locales en la app
-      "@jess/ui/*": ["../../packages/ui/*"],           // Tu UI compartida
-      "@jess/shared/*": ["../../packages/shared/*"],   // Tu paquete compartido general
-      "@utils/*": ["../../packages/shared/utils/*"],   // Tus utilidades Supabase y más
-      "@lib/*": ["../../packages/shared/lib/*"]        // Acceso directo a shared/lib
+      "@/*": ["./*"],
+      "@jess/ui/*": ["../../packages/ui/*"],
+      "@jess/shared/*": ["../../packages/shared/*"],
+      "@utils/*": ["../../packages/shared/utils/*"],
+      "@lib/*": ["../../packages/shared/lib/*"]
     }
   },
   "include": [
@@ -17,7 +17,5 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
