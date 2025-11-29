@@ -196,6 +196,27 @@ export default function EditProductPage() {
       return filtered
     })
   }
+    const handleToggleVisibility = async () => {
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "PATCH",
+      })
+
+      if (!res.ok) {
+        console.error("Error al cambiar visibilidad")
+        return
+      }
+
+      const data = await res.json()
+      if (data.success) {
+        setIsPublished(data.data.isPublished)
+      }
+    } catch (error) {
+      console.error("Error al cambiar visibilidad:", error)
+    }
+  }
+
+  
 
   // Guardar cambios
   const handleSaveProduct = async () => {
@@ -576,7 +597,7 @@ export default function EditProductPage() {
 
                 <Card className="bg-zinc-900 border-zinc-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-4">Visibilidad</h2>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-4">
                     <div>
                       <Label htmlFor="published" className="text-zinc-300">
                         Estado del Producto
@@ -587,13 +608,24 @@ export default function EditProductPage() {
                           : "El producto está en borrador"}
                       </p>
                     </div>
-                    <Switch
-                      id="published"
-                      checked={isPublished}
-                      onCheckedChange={setIsPublished}
-                    />
+                    <div className="flex flex-col items-end gap-2">
+                      <Switch
+                        id="published"
+                        checked={isPublished}
+                        onCheckedChange={setIsPublished}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        className={isPublished ? "bg-zinc-700 hover:bg-zinc-600" : "bg-pink-600 hover:bg-pink-700"}
+                        onClick={handleToggleVisibility}
+                      >
+                        {isPublished ? "Ocultar producto" : "Publicar producto"}
+                      </Button>
+                    </div>
                   </div>
                 </Card>
+
               </div>
             </div>
           </div>

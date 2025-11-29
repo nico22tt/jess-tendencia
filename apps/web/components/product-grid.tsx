@@ -1,4 +1,5 @@
 "use client"
+
 import useSWR from "swr"
 import { ProductCard } from "@/components/product-card"
 import type { Product } from "@jess/shared/types/product"
@@ -8,22 +9,21 @@ interface ProductGridProps {
   products?: Product[]
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export function ProductGrid({ categorySlug, products }: ProductGridProps) {
-  // Solo busca con SWR si no tienes 'products' mock/SSR
   const { data, error, isLoading } = useSWR(
     !products
       ? categorySlug
         ? `/api/products?categorySlug=${categorySlug}`
         : "/api/products"
       : null,
-    (url: string) => fetch(url).then(res => res.json())
+    fetcher
   )
 
-  // Siempre un array válido o vacío
   const productList: Product[] = products ?? (data?.data ?? [])
 
   if (isLoading) {
-    // Puedes reemplazar esto por tu propio skeleton loader si prefieres
     return <div className="py-24 text-center text-lg">Cargando productos...</div>
   }
   if (error) {

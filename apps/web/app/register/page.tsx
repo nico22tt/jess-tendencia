@@ -118,7 +118,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-pink-25 via-white to-pink-50">
       <Header />
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-4 mt-40 mb-20">
         <div className="w-full max-w-md">
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="text-center space-y-2">

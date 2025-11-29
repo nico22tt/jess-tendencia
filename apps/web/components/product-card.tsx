@@ -8,9 +8,10 @@ import { Button } from "@jess/ui/button"
 import { Card, CardContent } from "@jess/ui/card"
 import { Badge } from "@jess/ui/badge"
 import { Heart, ShoppingCart, Eye, Image as ImageIcon } from "lucide-react"
-import { useCart } from "@jess/shared/contexts/cart"
 import dynamic from "next/dynamic"
 import type { Product } from "@jess/shared/types/product"
+import { createClient } from "@utils/supabase/client"
+import { useRouter } from "next/navigation"
 
 interface ProductCardProps {
   product: Product
@@ -26,7 +27,8 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
   const [isHovered, setIsHovered] = useState(false)
   const [selectedVariant, setSelectedVariant] = useState(0)
   const [showQuickView, setShowQuickView] = useState(false)
-  const { addItem } = useCart()
+  const supabase = createClient()
+  const router = useRouter()
 
   const getDisplayPrice = (): number => {
     if (typeof product.salePrice === "number" && product.salePrice > 0) return product.salePrice
@@ -39,16 +41,10 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
       style: "currency",
       currency: "CLP",
       minimumFractionDigits: 0,
-    }).format(price / 100)
+    }).format(price) // <-- sin /100
 
-  // Soporta:
-  // - images: Array<{ url, isMain }>
-  // - images: string[] (legacy)
-  // - images: string JSON
-  // - images: objeto único
   const getImageSrc = (): string => {
     const images: any = (product as any).images
-
     let arr: Array<{ url: string; isMain?: boolean }> = []
 
     if (Array.isArray(images)) {
@@ -73,24 +69,63 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
     }
 
     const mainImg = arr.find((img) => img.isMain && img.url)
-    // Si está hover y hay al menos 2 imágenes, usa la segunda como hover image
     if (isHovered && arr[1]?.url) {
       return arr[1].url
     }
 
-    return mainImg?.url || arr[0]?.url || (typeof (product as any).image === "string" && (product as any).image) || "/placeholder.svg"
+    return (
+      mainImg?.url ||
+      arr[0]?.url ||
+      ((typeof (product as any).image === "string" && (product as any).image) as string) ||
+      "/placeholder.svg"
+    )
   }
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault()
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: getDisplayPrice(),
-      image: getImageSrc(),
-      quantity: 1,
-    })
+const handleAddToCart = async (e: React.MouseEvent) => {
+  e.preventDefault()
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError) {
+    console.error("Error al obtener usuario de Supabase:", authError)
+    return
   }
+
+  if (!user?.id) {
+    console.error("No hay user.id, redirigiendo a login")
+    router.push("/login")
+    return
+  }
+
+  console.log("Add to cart payload:", {
+    userId: user.id,
+    productId: product.id,
+  })
+
+  const res = await fetch("/api/cart", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId: user.id,
+      productId: product.id,
+      quantity: 1,
+    }),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    console.error(
+      "Error al agregar al carrito desde ProductCard",
+      res.status,
+      text
+    )
+    return
+  }
+}
+
 
   const renderStars = () => {
     const rating = product.rating || 0
@@ -191,7 +226,9 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
           </div>
 
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xl font-bold text-pink-600">{formatPrice(getDisplayPrice())}</span>
+            <span className="text-xl font-bold text-pink-600">
+              {formatPrice(getDisplayPrice())}
+            </span>
             {typeof product.basePrice === "number" &&
               typeof product.salePrice === "number" &&
               product.salePrice > 0 && (

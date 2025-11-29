@@ -7,7 +7,6 @@ import { Badge } from "@jess/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@jess/ui/accordion"
 import { Heart, ShoppingCart, Star, Minus, Plus, Truck, RotateCcw, Shield } from "lucide-react"
 import Image from "next/image"
-import { useCart } from "@jess/shared/contexts/cart"
 import dynamic from "next/dynamic"
 import type { Product } from "@jess/shared/types/product"
 
@@ -33,7 +32,7 @@ const formatPrice = (price: number) =>
     style: "currency",
     currency: "CLP",
     minimumFractionDigits: 0,
-  }).format(price / 100)
+  }).format(price)
 
 type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
@@ -50,22 +49,23 @@ export default function AccesorioPage(props: Props) {
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
-  const { addItem } = useCart()
   const router = useRouter()
 
   useEffect(() => {
     fetch(`/api/products/${paramsObj.id}`)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error("No existe el producto")
         return res.json()
       })
-      .then(data => {
+      .then((data) => {
         setProduct(data.data)
         if (data.data?.category?.id) {
           fetch(`/api/products?categorySlug=${data.data.category.slug}`)
-            .then(res => res.json())
-            .then(related => {
-              const filtered = (related.data || []).filter((p: Product) => p.id !== data.data.id).slice(0, 8)
+            .then((res) => res.json())
+            .then((related) => {
+              const filtered = (related.data || [])
+                .filter((p: Product) => p.id !== data.data.id)
+                .slice(0, 8)
               setRelatedProducts(filtered)
             })
         }
@@ -76,7 +76,7 @@ export default function AccesorioPage(props: Props) {
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
   const allImages = Array.isArray(product.images)
-    ? product.images.filter(img => typeof img === "string" && img.trim())
+    ? product.images.filter((img) => typeof img === "string" && img.trim())
     : []
   if (
     typeof product.image === "string" &&
@@ -88,13 +88,7 @@ export default function AccesorioPage(props: Props) {
   if (!allImages.length) allImages.push("/placeholder.svg")
 
   const handleAddToCart = () => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: getDisplayPrice(product),
-      image: allImages[0] || "/placeholder.svg",
-      quantity,
-    })
+    // aquí solo navegarías o mostrarías un mensaje; ya no hay contexto de carrito
   }
 
   return (
@@ -128,7 +122,9 @@ export default function AccesorioPage(props: Props) {
                     title={`Imagen ${index + 1} de ${allImages.length}`}
                     onClick={() => setSelectedImage(index)}
                     className={`aspect-square relative rounded-md overflow-hidden border-2 transition-all ${
-                      selectedImage === index ? "border-pink-500 scale-105" : "border-gray-200 hover:border-gray-300"
+                      selectedImage === index
+                        ? "border-pink-500 scale-105"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
                     <Image
@@ -148,7 +144,9 @@ export default function AccesorioPage(props: Props) {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-3">{product.name}</h1>
               {product.brand && (
-                <p className="text-sm text-gray-600 mb-3">Marca: <span className="font-semibold">{product.brand}</span></p>
+                <p className="text-sm text-gray-600 mb-3">
+                  Marca: <span className="font-semibold">{product.brand}</span>
+                </p>
               )}
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex items-center">
@@ -156,15 +154,21 @@ export default function AccesorioPage(props: Props) {
                     <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-                <span className="text-sm text-gray-600 font-medium">4.5/5.0 (127 opiniones)</span>
+                <span className="text-sm text-gray-600 font-medium">
+                  4.5/5.0 (127 opiniones)
+                </span>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-4xl font-bold text-pink-600">{formatPrice(getDisplayPrice(product))}</span>
+              <span className="text-4xl font-bold text-pink-600">
+                {formatPrice(getDisplayPrice(product))}
+              </span>
               {getOriginalPrice(product) && (
                 <>
-                  <span className="text-xl text-gray-400 line-through">{formatPrice(getOriginalPrice(product)!)}</span>
+                  <span className="text-xl text-gray-400 line-through">
+                    {formatPrice(getOriginalPrice(product)!)}
+                  </span>
                   {product.discount && (
                     <Badge className="bg-red-100 text-red-700 hover:bg-red-100 font-bold text-base px-3 py-1">
                       -{product.discount}%
@@ -177,7 +181,9 @@ export default function AccesorioPage(props: Props) {
             {/* Variantes de color si existen */}
             {product.product_variants && product.product_variants.length > 0 && (
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Color</label>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  Color
+                </label>
                 <div className="flex gap-2 flex-wrap">
                   {product.product_variants.map((variant: any, index: number) => (
                     <button
@@ -259,19 +265,35 @@ export default function AccesorioPage(props: Props) {
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">
-              <AccordionTrigger className="text-lg font-semibold">Descripción</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-semibold">
+                Descripción
+              </AccordionTrigger>
               <AccordionContent>
-                <p className="text-gray-700">{product.description || "Descripción no disponible."}</p>
+                <p className="text-gray-700">
+                  {product.description || "Descripción no disponible."}
+                </p>
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="details">
-              <AccordionTrigger className="text-lg font-semibold">Detalles del producto</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-semibold">
+                Detalles del producto
+              </AccordionTrigger>
               <AccordionContent>
                 <ul className="space-y-2 text-gray-700">
-                  <li><strong>SKU:</strong> {product.sku}</li>
-                  <li><strong>Marca:</strong> {product.brand}</li>
-                  <li><strong>Categoría:</strong> {product.category?.name}</li>
-                  {product.stock !== undefined && <li><strong>Stock disponible:</strong> {product.stock} unidades</li>}
+                  <li>
+                    <strong>SKU:</strong> {product.sku}
+                  </li>
+                  <li>
+                    <strong>Marca:</strong> {product.brand}
+                  </li>
+                  <li>
+                    <strong>Categoría:</strong> {product.category?.name}
+                  </li>
+                  {product.stock !== undefined && (
+                    <li>
+                      <strong>Stock disponible:</strong> {product.stock} unidades
+                    </li>
+                  )}
                 </ul>
               </AccordionContent>
             </AccordionItem>

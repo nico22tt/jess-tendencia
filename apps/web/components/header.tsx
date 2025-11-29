@@ -43,18 +43,32 @@ const menuItems: MenuItem[] = [
 export function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
-  const [totalItems, setTotalItems] = useState<number>(2) // reemplaza por tu fuente real
+  const [totalItems, setTotalItems] = useState<number>(0)
   const supabase = createClient()
   const router = useRouter()
 
   useEffect(() => {
-    async function fetchUser() {
+    async function loadUserAndCart() {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
+
+      if (!user) {
+        setTotalItems(0)
+        return
+      }
+
+      const res = await fetch(`/api/cart?userId=${user.id}`)
+      const data = await res.json()
+      const items = Array.isArray(data) ? data : []
+
+      const count = items.reduce(
+        (sum: number, i: any) => sum + (i.quantity || 1),
+        0
+      )
+      setTotalItems(count)
     }
-    fetchUser()
-    // Simula obtención real del total de ítems si lo haces asíncrono
-    // setTotalItems(await fetchCartItems());
+
+    loadUserAndCart()
   }, [supabase])
 
   const logout = async () => {
@@ -158,9 +172,13 @@ export function Header() {
           <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
             <Heart className="h-5 w-5" />
           </Button>
-          {/* Ícono de carrito como Link */}
           <Link href="/carrito" className="relative">
-            <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" aria-label="Ver carrito">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-foreground hover:text-primary"
+              aria-label="Ver carrito"
+            >
               <ShoppingCart className="h-6 w-6" />
               {totalItems > 0 && (
                 <span
@@ -169,7 +187,7 @@ export function Header() {
                     minWidth: "16px",
                     minHeight: "16px",
                     lineHeight: "16px",
-                    padding: "0 2px"
+                    padding: "0 2px",
                   }}
                 >
                   {totalItems}
@@ -178,12 +196,21 @@ export function Header() {
             </Button>
           </Link>
           {user ? (
-            <div className="relative" onMouseEnter={() => handleMouseEnter("user")} onMouseLeave={handleMouseLeave}>
-              <Button variant="ghost" className="flex items-center gap-2 text-foreground hover:text-primary">
+            <div
+              className="relative"
+              onMouseEnter={() => handleMouseEnter("user")}
+              onMouseLeave={handleMouseLeave}
+            >
+              <Button
+                variant="ghost"
+                className="flex items-center gap-2 text-foreground hover:text-primary"
+              >
                 <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-pink-600" />
                 </div>
-                <span className="hidden md:block text-sm font-medium">{user.user_metadata?.name}</span>
+                <span className="hidden md:block text-sm font-medium">
+                  {user.user_metadata?.name}
+                </span>
               </Button>
               <div
                 className={cn(
@@ -194,7 +221,9 @@ export function Header() {
                 )}
               >
                 <div className="px-4 py-3 border-b border-pink-100">
-                  <p className="text-sm font-medium text-gray-900">{user.user_metadata?.name}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {user.user_metadata?.name}
+                  </p>
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
                 <Link

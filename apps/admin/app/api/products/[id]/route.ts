@@ -90,3 +90,39 @@ export async function DELETE(
     )
   }
 }
+
+// PATCH /api/products/[id]/ - Toggle isPublished
+export async function PATCH(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // obtener estado actual
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { isPublished: true },
+    })
+
+    if (!product) {
+      return NextResponse.json(
+        { success: false, error: "Producto no encontrado" },
+        { status: 404 }
+      )
+    }
+
+    const updated = await prisma.product.update({
+      where: { id },
+      data: { isPublished: !product.isPublished },
+    })
+
+    return NextResponse.json({ success: true, data: updated })
+  } catch (error) {
+    console.error("Error al cambiar visibilidad:", error)
+    return NextResponse.json(
+      { success: false, error: "Error al cambiar visibilidad" },
+      { status: 500 }
+    )
+  }
+}

@@ -1,178 +1,42 @@
 "use client"
 
-import { use } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
 import { ProtectedRoute } from "@jess/shared/components/protected-route"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } 
+import { Card, CardContent, CardHeader, CardTitle } from "@jess/ui/card"
+import { Button } from "@jess/ui/button"
+import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
-from "@jess/ui/card"
-import { Badge } 
-
-from "@jess/ui/badge"
-import { Button } 
-
-from "@jess/ui/button"
-import { Separator } 
-
-from "@jess/ui/separator"
-import { ArrowLeft, Package, Truck, CheckCircle, MapPin, CreditCard } from "lucide-react"
-import Image from "next/image"
-
-// Mock data - in a real app, this would come from an API
-const mockOrderDetails = {
-  "ORD-001": {
-    id: "ORD-001",
-    date: "2024-01-14",
-    status: "entregado",
-    items: [
-      {
-        id: 1,
-        name: "Zapatillas Urbanas Blancas",
-        variant: "Talla: 38, Color: Blanco",
-        quantity: 1,
-        price: 59990,
-        image: "/white-sneakers-for-women.png",
-      },
-      {
-        id: 2,
-        name: "Jeans Skinny Azul",
-        variant: "Talla: M",
-        quantity: 1,
-        price: 29990,
-        image: "/skinny-blue-jeans-for-women.png",
-      },
-    ],
-    shipping: {
-      address: {
-        region: "Región Metropolitana",
-        comuna: "Santiago Centro",
-        street: "Av. Libertador Bernardo O'Higgins 1234",
-        additional: "Depto 501",
-      },
-      method: "Envío Estándar: 3-5 días hábiles",
-    },
-    payment: {
-      subtotal: 89980,
-      shipping: 4990,
-      discount: 0,
-      total: 94970,
-      method: "Visa **** 1234",
-    },
-  },
-  "ORD-002": {
-    id: "ORD-002",
-    date: "2024-01-20",
-    status: "en_transito",
-    items: [
-      {
-        id: 1,
-        name: "Botas de Cuero Café",
-        variant: "Talla: 39, Color: Café",
-        quantity: 1,
-        price: 129990,
-        image: "/brown-leather-boots-for-women.png",
-      },
-    ],
-    shipping: {
-      address: {
-        region: "Región de Valparaíso",
-        comuna: "Viña del Mar",
-        street: "Calle Marina 567",
-        additional: "Casa 12",
-      },
-      method: "Envío Express: 1-2 días hábiles",
-    },
-    payment: {
-      subtotal: 129990,
-      shipping: 7990,
-      discount: 10000,
-      total: 127980,
-      method: "Mastercard **** 5678",
-    },
-  },
-  "ORD-003": {
-    id: "ORD-003",
-    date: "2024-01-25",
-    status: "procesando",
-    items: [
-      {
-        id: 1,
-        name: "Pantuflas Rosadas",
-        variant: "Talla: 37, Color: Rosa",
-        quantity: 2,
-        price: 22995,
-        image: "/pink-slippers-for-women.png",
-      },
-    ],
-    shipping: {
-      address: {
-        region: "Región del Biobío",
-        comuna: "Concepción",
-        street: "Av. Arturo Prat 890",
-        additional: "",
-      },
-      method: "Envío Estándar: 3-5 días hábiles",
-    },
-    payment: {
-      subtotal: 45990,
-      shipping: 4990,
-      discount: 5000,
-      total: 45980,
-      method: "Visa **** 9012",
-    },
-  },
-}
-
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "entregado":
-      return (
-        <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-base px-4 py-2">
-          <CheckCircle className="h-4 w-4 mr-2" />
-          Entregado
-        </Badge>
-      )
-    case "en_transito":
-      return (
-        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-base px-4 py-2">
-          <Truck className="h-4 w-4 mr-2" />
-          En Tránsito
-        </Badge>
-      )
-    case "procesando":
-      return (
-        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 text-base px-4 py-2">
-          <Package className="h-4 w-4 mr-2" />
-          Procesando
-        </Badge>
-      )
-    default:
-      return <Badge variant="secondary">{status}</Badge>
-  }
-}
-
-export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function OrderDetailPage() {
+  const params = useParams()
   const router = useRouter()
-  const order = mockOrderDetails[id as keyof typeof mockOrderDetails]
+  const orderId = params.id as string
+  const [order, setOrder] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  if (!order) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-background">
-          <Header />
-          <main className="pt-24 pb-16">
-            <div className="container mx-auto px-6 max-w-4xl">
-              <p className="text-center text-gray-600">Pedido no encontrado</p>
-            </div>
-          </main>
-          <Footer />
-        </div>
-      </ProtectedRoute>
-    )
-  }
+  useEffect(() => {
+    if (!orderId) return
+    async function loadOrder() {
+      try {
+        const res = await fetch(`/api/orders/${orderId}`)
+        const data = await res.json()
+        if (data.success) {
+          setOrder(data.order)
+        } else {
+          setOrder(null)
+        }
+      } catch (e) {
+        console.error(e)
+        setOrder(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadOrder()
+  }, [orderId])
 
   return (
     <ProtectedRoute>
@@ -180,135 +44,66 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <Header />
         <main className="pt-24 pb-16">
           <div className="container mx-auto px-6 max-w-4xl">
-            {/* Back button */}
-            <Button variant="ghost" onClick={() => router.push("/mis-pedidos")} className="mb-6 -ml-2">
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/mi-cuenta/mis-pedidos")}
+              className="mb-6 -ml-2"
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver a Mis Pedidos
             </Button>
 
-            {/* Order Header Card */}
-            <Card className="mb-6">
-              <CardHeader>
-                <div className="flex justify-between items-start">
+            {loading ? (
+              <p>Cargando pedido...</p>
+            ) : !order ? (
+              <p>Pedido no encontrado.</p>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    Pedido #{order.order_number || order.id}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p>
+                    Fecha:{" "}
+                    {order.created_at
+                      ? new Date(order.created_at).toLocaleString("es-CL")
+                      : "-"}
+                  </p>
+                  <p>
+                    Total:{" "}
+                    {new Intl.NumberFormat("es-CL", {
+                      style: "currency",
+                      currency: "CLP",
+                      minimumFractionDigits: 0,
+                    }).format(order.total || 0)}
+                  </p>
                   <div>
-                    <CardTitle className="text-2xl mb-2">Detalle del Pedido #{order.id}</CardTitle>
-                    <CardDescription className="text-base">
-                      Realizado el{" "}
-                      {new Date(order.date).toLocaleDateString("es-CL", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </CardDescription>
+                    <p className="font-semibold mb-2">Productos:</p>
+                    <ul className="space-y-1">
+                      {(order.order_items || []).map((item: any) => (
+                        <li key={item.id} className="flex justify-between">
+                          <span>{item.products?.name || "Producto"}</span>
+                          <span>
+                            x{item.quantity} (
+                            {new Intl.NumberFormat("es-CL", {
+                              style: "currency",
+                              currency: "CLP",
+                              minimumFractionDigits: 0,
+                            }).format(item.unit_price * item.quantity)}
+                            )
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  {getStatusBadge(order.status)}
-                </div>
-              </CardHeader>
-            </Card>
-
-            {/* Items Card */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Artículos Comprados</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {order.items.map((item) => (
-                    <div key={item.id} className="flex gap-4 pb-4 border-b border-gray-100 last:border-b-0">
-                      <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{item.variant}</p>
-                        <p className="text-sm text-gray-600 mt-1">Cantidad: {item.quantity}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">
-                          ${(item.price * item.quantity).toLocaleString("es-CL")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  <Separator className="my-4" />
-                  <div className="flex justify-between items-center">
-                    <p className="font-semibold text-gray-900">Subtotal de Productos</p>
-                    <p className="font-semibold text-gray-900">${order.payment.subtotal.toLocaleString("es-CL")}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Shipping Card */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-pink-600" />
-                  Información de Envío
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Dirección de Envío</h4>
-                    <div className="text-gray-600 space-y-1">
-                      <p>{order.shipping.address.region}</p>
-                      <p>{order.shipping.address.comuna}</p>
-                      <p>{order.shipping.address.street}</p>
-                      {order.shipping.address.additional && <p>{order.shipping.address.additional}</p>}
-                    </div>
-                  </div>
-                  <Separator />
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Método de Envío</h4>
-                    <p className="text-gray-600">{order.shipping.method}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Payment Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-pink-600" />
-                  Resumen del Pago
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Subtotal de Productos</span>
-                    <span>${order.payment.subtotal.toLocaleString("es-CL")}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Costo de Envío</span>
-                    <span>${order.payment.shipping.toLocaleString("es-CL")}</span>
-                  </div>
-                  {order.payment.discount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Descuento</span>
-                      <span>-${order.payment.discount.toLocaleString("es-CL")}</span>
-                    </div>
-                  )}
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-gray-900">Total Final</span>
-                    <span className="text-2xl font-bold text-pink-600">
-                      ${order.payment.total.toLocaleString("es-CL")}
-                    </span>
-                  </div>
-                  <Separator />
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Método de Pago</h4>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <CreditCard className="h-4 w-4" />
-                      <span>{order.payment.method}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <Button asChild variant="outline">
+                    <Link href="/">Volver a la tienda</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </main>
         <Footer />

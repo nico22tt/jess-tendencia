@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation"
 import { Button } from "@jess/ui/button"
 import { Badge } from "@jess/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@jess/ui/accordion"
-import { Heart, ShoppingCart, Star, Minus, Plus, Truck, RotateCcw, Shield } from "lucide-react"
+import { Heart, ShoppingCart, Star, Minus, Plus, Truck, RotateCcw, Shield, ImageIcon } from "lucide-react"
 import Image from "next/image"
-import { useCart } from "@jess/shared/contexts/cart"
+import { shouldShowSizeSelector } from "@jess/shared/lib/product-helpers"
 import dynamic from "next/dynamic"
 import type { Product } from "@jess/shared/types/product"
+import { createClient } from "@utils/supabase/client"
 
 const ProductCarousel = dynamic(
   () => import("@/components/product-carousel").then((mod) => ({ default: mod.ProductCarousel })),
@@ -21,21 +22,62 @@ const getDisplayPrice = (product: Product): number => {
   if (typeof product.basePrice === "number") return product.basePrice
   return typeof product.price === "number" ? product.price : 0
 }
+
 const getOriginalPrice = (product: Product): number | undefined => {
   if (typeof product.basePrice === "number" && typeof product.salePrice === "number" && product.salePrice > 0)
     return product.basePrice
   return product.originalPrice
 }
+
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("es-CL", {
     style: "currency",
     currency: "CLP",
     minimumFractionDigits: 0,
-  }).format(price / 100)
+  }).format(price)
 
 type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
 type Props = { params: Params } | { params: ParamsPromise }
+
+const getImageList = (product: Product): string[] => {
+  const images: any = (product as any).images
+  let arr: Array<{ url: string; isMain?: boolean }> = []
+
+  if (Array.isArray(images)) {
+    if (typeof images[0] === "string") {
+      arr = images
+        .filter((img) => typeof img === "string" && img.trim())
+        .map((url) => ({ url, isMain: false }))
+    } else {
+      arr = images
+    }
+  } else if (typeof images === "string") {
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) {
+        arr = parsed
+      }
+    } catch {
+      arr = []
+    }
+  } else if (images && typeof images === "object") {
+    arr = [images]
+  }
+
+  const sorted = [
+    ...arr.filter((img) => img.isMain && img.url),
+    ...arr.filter((img) => !img.isMain && img.url),
+  ]
+
+  const fallback =
+    (typeof (product as any).image === "string" && (product as any).image) ||
+    "/placeholder.svg"
+
+  if (!sorted.length) return [fallback]
+
+  return sorted.map((img) => img.url || fallback)
+}
 
 export default function ProductPage(props: Props) {
   const paramsObj: Params =
@@ -49,22 +91,24 @@ export default function ProductPage(props: Props) {
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
-  const { addItem } = useCart()
   const router = useRouter()
+  const supabase = createClient()
 
   useEffect(() => {
     fetch(`/api/products/${paramsObj.id}`)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error("No existe el producto")
         return res.json()
       })
-      .then(data => {
+      .then((data) => {
         setProduct(data.data)
         if (data.data?.category?.slug) {
           fetch(`/api/products?categorySlug=${data.data.category.slug}`)
-            .then(res => res.json())
-            .then(related => {
-              const filtered = (related.data || []).filter((p: Product) => p.id !== data.data.id).slice(0, 8)
+            .then((res) => res.json())
+            .then((related) => {
+              const filtered = (related.data || [])
+                .filter((p: Product) => p.id !== data.data.id)
+                .slice(0, 8)
               setRelatedProducts(filtered)
             })
         }
@@ -74,34 +118,44 @@ export default function ProductPage(props: Props) {
 
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
-  // Images
-  const allImages = Array.isArray(product.images)
-    ? product.images.filter(img => typeof img === "string" && img.trim())
-    : []
-  if (
-    typeof product.image === "string" &&
-    product.image.trim() &&
-    !allImages.includes(product.image)
-  ) {
-    allImages.unshift(product.image)
-  }
-  if (!allImages.length) allImages.push("/placeholder.svg")
-  // Tallas dinámicas
-  const sizes: string[] = (product.sizes?.filter(Boolean) ?? []).length ? product.sizes.filter(Boolean) : ["35", "36", "37", "38", "39", "40", "41", "42"];
-  const showSizeSelector = sizes.length > 1 && !sizes.every((t: string) => t.toLowerCase().includes("único"));
+  const allImages = getImageList(product)
+  const currentImage = allImages[selectedImage] || allImages[0] || "/placeholder.svg"
+  const hasValidImages = allImages.length > 0
 
-  const handleAddToCart = () => {
+  const sizes: string[] = Array.isArray(product.sizes) ? product.sizes : []
+  const showSizeSelector = shouldShowSizeSelector(product.category?.name) && sizes.length > 0
+
+  const handleAddToCart = async () => {
     if (showSizeSelector && !selectedSize) {
       alert("Por favor selecciona una talla")
       return
     }
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: getDisplayPrice(product),
-      image: allImages[0] || "/placeholder.svg",
-      quantity,
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push("/login")
+      return
+    }
+
+    const res = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.id,
+        productId: product.id,
+        quantity,
+      }),
     })
+
+    if (!res.ok) {
+      console.error("Error al agregar al carrito")
+      return
+    }
+
+    // opcional: router.push("/carrito")
   }
 
   return (
@@ -111,12 +165,20 @@ export default function ProductPage(props: Props) {
           {/* Gallery */}
           <div className="lg:col-span-3">
             <div className="aspect-square relative bg-gray-50 rounded-lg overflow-hidden mb-4">
-              <Image
-                src={allImages[selectedImage] || "/placeholder.svg"}
-                alt={product.name}
-                fill
-                className="object-cover"
-              />
+              {hasValidImages ? (
+                <Image
+                  src={currentImage}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center w-full h-full bg-gray-100">
+                  <ImageIcon className="w-16 h-16 text-gray-300 mb-2" />
+                  <span className="text-gray-400 text-sm">Sin imagen disponible</span>
+                </div>
+              )}
               {product.label && (
                 <Badge
                   className={`absolute top-4 left-4 ${
@@ -127,6 +189,7 @@ export default function ProductPage(props: Props) {
                 </Badge>
               )}
             </div>
+
             {allImages.length > 1 && (
               <div className="grid grid-cols-5 gap-3">
                 {allImages.map((img, index) => (
@@ -135,11 +198,13 @@ export default function ProductPage(props: Props) {
                     title={`Imagen ${index + 1} de ${allImages.length}`}
                     onClick={() => setSelectedImage(index)}
                     className={`aspect-square relative rounded-md overflow-hidden border-2 transition-all ${
-                      selectedImage === index ? "border-pink-500 scale-105" : "border-gray-200 hover:border-gray-300"
+                      selectedImage === index
+                        ? "border-pink-500 scale-105"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
                     <Image
-                      src={typeof img === "string" && img.trim() ? img : "/placeholder.svg"}
+                      src={img}
                       alt={`Vista ${index + 1}`}
                       fill
                       className="object-cover"
@@ -165,14 +230,21 @@ export default function ProductPage(props: Props) {
                     <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-                <span className="text-sm text-gray-600 font-medium">4.5/5.0 (127 opiniones)</span>
+                <span className="text-sm text-gray-600 font-medium">
+                  4.5/5.0 (127 opiniones)
+                </span>
               </div>
             </div>
+
             <div className="flex items-center gap-3">
-              <span className="text-4xl font-bold text-pink-600">{formatPrice(getDisplayPrice(product))}</span>
+              <span className="text-4xl font-bold text-pink-600">
+                {formatPrice(getDisplayPrice(product))}
+              </span>
               {getOriginalPrice(product) && (
                 <>
-                  <span className="text-xl text-gray-400 line-through">{formatPrice(getOriginalPrice(product)!)}</span>
+                  <span className="text-xl text-gray-400 line-through">
+                    {formatPrice(getOriginalPrice(product)!)}
+                  </span>
                   {product.discount && (
                     <Badge className="bg-red-100 text-red-700 hover:bg-red-100 font-bold text-base px-3 py-1">
                       -{product.discount}%
@@ -185,7 +257,9 @@ export default function ProductPage(props: Props) {
             {/* Colores/variantes */}
             {product.product_variants && product.product_variants.length > 0 && (
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Color</label>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  Color
+                </label>
                 <div className="flex gap-2 flex-wrap">
                   {product.product_variants.map((variant: any, index: number) => (
                     <button
@@ -208,7 +282,9 @@ export default function ProductPage(props: Props) {
             {/* Selector de talla */}
             {showSizeSelector && (
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Talla</label>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  Talla
+                </label>
                 <div className="flex gap-2 flex-wrap">
                   {sizes.map((size: string) => (
                     <button
@@ -226,6 +302,7 @@ export default function ProductPage(props: Props) {
                 </div>
               </div>
             )}
+
             {/* Cantidad y botones */}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -250,7 +327,8 @@ export default function ProductPage(props: Props) {
               </div>
               <Button
                 onClick={handleAddToCart}
-                className="w-full bg-pink-600 hover:bg-pink-700 text-white gap-2 font-semibold py-6 text-lg"
+                disabled={showSizeSelector && !selectedSize}
+                className="w-full bg-pink-600 hover:bg-pink-700 text-white gap-2 font-semibold py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingCart className="h-5 w-5" />
                 Agregar al carro
@@ -263,6 +341,7 @@ export default function ProductPage(props: Props) {
                 Agregar a favoritos
               </Button>
             </div>
+
             {/* Beneficios */}
             <div className="border-t pt-6 space-y-3">
               <div className="flex items-center gap-3 text-sm">
@@ -281,19 +360,26 @@ export default function ProductPage(props: Props) {
           </div>
         </div>
 
-        {/* Descripción y detalles y GUÍA DE TALLAS */}
+        {/* Descripción y detalles */}
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">
-              <AccordionTrigger className="text-lg font-semibold">Descripción Completa</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-semibold">
+                Descripción Completa
+              </AccordionTrigger>
               <AccordionContent>
-                <p className="text-gray-700 whitespace-pre-line">{product.description || "Descripción no disponible."}</p>
+                <p className="text-gray-700 whitespace-pre-line">
+                  {product.description || "Descripción no disponible."}
+                </p>
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="sizeguide">
-              <AccordionTrigger className="text-lg font-semibold">Guía de Tallas</AccordionTrigger>
-              <AccordionContent>
-                {product.category?.name?.toLowerCase() === "zapatillas" && showSizeSelector ? (
+
+            {showSizeSelector && (
+              <AccordionItem value="sizeguide" id="guia-tallas">
+                <AccordionTrigger className="text-lg font-semibold">
+                  Guía de Tallas
+                </AccordionTrigger>
+                <AccordionContent>
                   <table className="w-full text-sm text-left text-gray-500 mb-4">
                     <thead className="text-xs uppercase bg-gray-100">
                       <tr>
@@ -303,40 +389,59 @@ export default function ProductPage(props: Props) {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr><td className="px-4 py-2">35</td><td className="px-4 py-2">22.5</td><td className="px-4 py-2">8.5</td></tr>
-                      <tr><td className="px-4 py-2">36</td><td className="px-4 py-2">23.0</td><td className="px-4 py-2">8.7</td></tr>
-                      <tr><td className="px-4 py-2">37</td><td className="px-4 py-2">23.5</td><td className="px-4 py-2">8.9</td></tr>
-                      <tr><td className="px-4 py-2">38</td><td className="px-4 py-2">24.0</td><td className="px-4 py-2">9.1</td></tr>
-                      <tr><td className="px-4 py-2">39</td><td className="px-4 py-2">24.5</td><td className="px-4 py-2">9.3</td></tr>
-                      <tr><td className="px-4 py-2">40</td><td className="px-4 py-2">25.0</td><td className="px-4 py-2">9.5</td></tr>
-                      <tr><td className="px-4 py-2">41</td><td className="px-4 py-2">25.5</td><td className="px-4 py-2">9.6</td></tr>
-                      <tr><td className="px-4 py-2">42</td><td className="px-4 py-2">26.0</td><td className="px-4 py-2">9.7</td></tr>
+                      {sizes.map((size) => {
+                        const sizeNum = parseInt(size)
+                        if (isNaN(sizeNum)) return null
+                        const length = (22.5 + (sizeNum - 35) * 0.5).toFixed(1)
+                        const width = (8.5 + (sizeNum - 35) * 0.2).toFixed(1)
+                        return (
+                          <tr key={size}>
+                            <td className="px-4 py-2">{size}</td>
+                            <td className="px-4 py-2">{length}</td>
+                            <td className="px-4 py-2">{width}</td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
-                ) : (
-                  <p className="text-gray-500">Este producto no requiere guía de tallas.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
             <AccordionItem value="details">
-              <AccordionTrigger className="text-lg font-semibold">Detalles del producto</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-semibold">
+                Detalles del producto
+              </AccordionTrigger>
               <AccordionContent>
                 <ul className="space-y-2 text-gray-700">
-                  <li><strong>SKU:</strong> {product.sku}</li>
-                  {product.brand && <li><strong>Marca:</strong> {product.brand}</li>}
-                  {product.category?.name && <li><strong>Categoría:</strong> {product.category.name}</li>}
-                  {product.stock !== undefined && <li><strong>Stock disponible:</strong> {product.stock} unidades</li>}
+                  <li>
+                    <strong>SKU:</strong> {product.sku}
+                  </li>
+                  {product.brand && (
+                    <li>
+                      <strong>Marca:</strong> {product.brand}
+                    </li>
+                  )}
+                  {product.category?.name && (
+                    <li>
+                      <strong>Categoría:</strong> {product.category.name}
+                    </li>
+                  )}
+                  {product.stock !== undefined && (
+                    <li>
+                      <strong>Stock disponible:</strong> {product.stock} unidades
+                    </li>
+                  )}
                 </ul>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         </div>
 
-        {/* Productos relacionados */}
         {relatedProducts.length > 0 && (
-          <ProductCarousel 
-            products={relatedProducts} 
-            category="zapatillas"
+          <ProductCarousel
+            products={relatedProducts}
+            category={product.category?.slug || "zapatillas"}
             title="Productos Relacionados"
           />
         )}

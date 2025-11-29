@@ -7,9 +7,9 @@ import { Badge } from "@jess/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@jess/ui/accordion"
 import { Heart, ShoppingCart, Star, Minus, Plus, Truck, RotateCcw, Shield } from "lucide-react"
 import Image from "next/image"
-import { useCart } from "@jess/shared/contexts/cart"
 import dynamic from "next/dynamic"
 import type { Product } from "@jess/shared/types/product"
+import { createClient } from "@utils/supabase/client"
 
 const ProductCarousel = dynamic(
   () => import("@/components/product-carousel").then((mod) => ({ default: mod.ProductCarousel })),
@@ -21,17 +21,19 @@ const getDisplayPrice = (product: Product): number => {
   if (typeof product.basePrice === "number") return product.basePrice
   return typeof product.price === "number" ? product.price : 0
 }
+
 const getOriginalPrice = (product: Product): number | undefined => {
   if (typeof product.basePrice === "number" && typeof product.salePrice === "number" && product.salePrice > 0)
     return product.basePrice
   return product.originalPrice
 }
+
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("es-CL", {
     style: "currency",
     currency: "CLP",
     minimumFractionDigits: 0,
-  }).format(price / 100)
+  }).format(price)
 
 type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
@@ -49,22 +51,24 @@ export default function SlipperProductPage(props: Props) {
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
-  const { addItem } = useCart()
   const router = useRouter()
+  const supabase = createClient()
 
   useEffect(() => {
     fetch(`/api/products/${paramsObj.id}`)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error("No existe el producto")
         return res.json()
       })
-      .then(data => {
+      .then((data) => {
         setProduct(data.data)
         if (data.data?.category?.slug) {
           fetch(`/api/products?categorySlug=${data.data.category.slug}`)
-            .then(res => res.json())
-            .then(related => {
-              const filtered = (related.data || []).filter((p: Product) => p.id !== data.data.id).slice(0, 8)
+            .then((res) => res.json())
+            .then((related) => {
+              const filtered = (related.data || [])
+                .filter((p: Product) => p.id !== data.data.id)
+                .slice(0, 8)
               setRelatedProducts(filtered)
             })
         }
@@ -75,8 +79,9 @@ export default function SlipperProductPage(props: Props) {
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
   const allImages = Array.isArray(product.images)
-    ? product.images.filter(img => typeof img === "string" && img.trim())
+    ? product.images.filter((img) => typeof img === "string" && img.trim())
     : []
+
   if (
     typeof product.image === "string" &&
     product.image.trim() &&
@@ -86,23 +91,43 @@ export default function SlipperProductPage(props: Props) {
   }
   if (!allImages.length) allImages.push("/placeholder.svg")
 
-  // Extrae tallas reales; por defecto, "Único"
-  const sizes: string[] = (product.sizes?.filter(Boolean) ?? []).length ? product.sizes.filter(Boolean) : ["Único"]
-  // Solo mostrar el selector si hay más de 1 talla y no todas son "Único"
-  const showSizeSelector = sizes.length > 1 && !sizes.every((t: string) => t.toLowerCase().includes("único"))
+  const sizes: string[] =
+    (product.sizes?.filter(Boolean) ?? []).length ? product.sizes.filter(Boolean) : ["Único"]
 
-  const handleAddToCart = () => {
+  const showSizeSelector =
+    sizes.length > 1 && !sizes.every((t: string) => t.toLowerCase().includes("único"))
+
+  const handleAddToCart = async () => {
     if (showSizeSelector && !selectedSize) {
       alert("Por favor selecciona una talla")
       return
     }
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: getDisplayPrice(product),
-      image: allImages[0] || "/placeholder.svg",
-      quantity,
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push("/login")
+      return
+    }
+
+    const res = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.id,
+        productId: product.id,
+        quantity,
+      }),
     })
+
+    if (!res.ok) {
+      console.error("Error al agregar al carrito")
+      return
+    }
+
+    // opcional: router.push("/carrito")
   }
 
   return (
@@ -136,7 +161,9 @@ export default function SlipperProductPage(props: Props) {
                     title={`Imagen ${index + 1} de ${allImages.length}`}
                     onClick={() => setSelectedImage(index)}
                     className={`aspect-square relative rounded-md overflow-hidden border-2 transition-all ${
-                      selectedImage === index ? "border-pink-500 scale-105" : "border-gray-200 hover:border-gray-300"
+                      selectedImage === index
+                        ? "border-pink-500 scale-105"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
                     <Image
@@ -166,14 +193,20 @@ export default function SlipperProductPage(props: Props) {
                     <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-                <span className="text-sm text-gray-600 font-medium">4.5/5.0 (127 opiniones)</span>
+                <span className="text-sm text-gray-600 font-medium">
+                  4.5/5.0 (127 opiniones)
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-4xl font-bold text-pink-600">{formatPrice(getDisplayPrice(product))}</span>
+              <span className="text-4xl font-bold text-pink-600">
+                {formatPrice(getDisplayPrice(product))}
+              </span>
               {getOriginalPrice(product) && (
                 <>
-                  <span className="text-xl text-gray-400 line-through">{formatPrice(getOriginalPrice(product)!)}</span>
+                  <span className="text-xl text-gray-400 line-through">
+                    {formatPrice(getOriginalPrice(product)!)}
+                  </span>
                   {product.discount && (
                     <Badge className="bg-red-100 text-red-700 hover:bg-red-100 font-bold text-base px-3 py-1">
                       -{product.discount}%
@@ -186,7 +219,9 @@ export default function SlipperProductPage(props: Props) {
             {/* Colores/variantes */}
             {product.product_variants && product.product_variants.length > 0 && (
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Color</label>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  Color
+                </label>
                 <div className="flex gap-2 flex-wrap">
                   {product.product_variants.map((variant: any, index: number) => (
                     <button
@@ -209,7 +244,9 @@ export default function SlipperProductPage(props: Props) {
             {/* Selector de tallas solo si hay más de una y no son todas "Único" */}
             {showSizeSelector && (
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Talla</label>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  Talla
+                </label>
                 <div className="flex gap-2 flex-wrap">
                   {sizes.map((size: string) => (
                     <button
@@ -227,6 +264,7 @@ export default function SlipperProductPage(props: Props) {
                 </div>
               </div>
             )}
+
             {/* Cantidad y botones */}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -264,6 +302,7 @@ export default function SlipperProductPage(props: Props) {
                 Agregar a favoritos
               </Button>
             </div>
+
             {/* Beneficios */}
             <div className="border-t pt-6 space-y-3">
               <div className="flex items-center gap-3 text-sm">
@@ -286,14 +325,20 @@ export default function SlipperProductPage(props: Props) {
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">
-              <AccordionTrigger className="text-lg font-semibold">Descripción Completa</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-semibold">
+                Descripción Completa
+              </AccordionTrigger>
               <AccordionContent>
-                <p className="text-gray-700 whitespace-pre-line">{product.description || "Descripción no disponible."}</p>
+                <p className="text-gray-700 whitespace-pre-line">
+                  {product.description || "Descripción no disponible."}
+                </p>
               </AccordionContent>
             </AccordionItem>
-            {/* Guía de tallas SOLO cuando es útil */}
+
             <AccordionItem value="sizeguide">
-              <AccordionTrigger className="text-lg font-semibold">Guía de Tallas</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-semibold">
+                Guía de Tallas
+              </AccordionTrigger>
               <AccordionContent>
                 {product.category?.name?.toLowerCase() === "pantuflas" && showSizeSelector ? (
                   <table className="w-full text-sm text-left text-gray-500 mb-4">
@@ -304,10 +349,22 @@ export default function SlipperProductPage(props: Props) {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr><td className="px-4 py-2">35-36</td><td className="px-4 py-2">22-23</td></tr>
-                      <tr><td className="px-4 py-2">37-38</td><td className="px-4 py-2">23.5-24.5</td></tr>
-                      <tr><td className="px-4 py-2">39-40</td><td className="px-4 py-2">25-26</td></tr>
-                      <tr><td className="px-4 py-2">41-42</td><td className="px-4 py-2">26-27</td></tr>
+                      <tr>
+                        <td className="px-4 py-2">35-36</td>
+                        <td className="px-4 py-2">22-23</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2">37-38</td>
+                        <td className="px-4 py-2">23.5-24.5</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2">39-40</td>
+                        <td className="px-4 py-2">25-26</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-2">41-42</td>
+                        <td className="px-4 py-2">26-27</td>
+                      </tr>
                     </tbody>
                   </table>
                 ) : (
@@ -315,14 +372,31 @@ export default function SlipperProductPage(props: Props) {
                 )}
               </AccordionContent>
             </AccordionItem>
+
             <AccordionItem value="details">
-              <AccordionTrigger className="text-lg font-semibold">Detalles del producto</AccordionTrigger>
+              <AccordionTrigger className="text-lg font-semibold">
+                Detalles del producto
+              </AccordionTrigger>
               <AccordionContent>
                 <ul className="space-y-2 text-gray-700">
-                  <li><strong>SKU:</strong> {product.sku}</li>
-                  {product.brand && <li><strong>Marca:</strong> {product.brand}</li>}
-                  {product.category?.name && <li><strong>Categoría:</strong> {product.category.name}</li>}
-                  {product.stock !== undefined && <li><strong>Stock disponible:</strong> {product.stock} unidades</li>}
+                  <li>
+                    <strong>SKU:</strong> {product.sku}
+                  </li>
+                  {product.brand && (
+                    <li>
+                      <strong>Marca:</strong> {product.brand}
+                    </li>
+                  )}
+                  {product.category?.name && (
+                    <li>
+                      <strong>Categoría:</strong> {product.category.name}
+                    </li>
+                  )}
+                  {product.stock !== undefined && (
+                    <li>
+                      <strong>Stock disponible:</strong> {product.stock} unidades
+                    </li>
+                  )}
                 </ul>
               </AccordionContent>
             </AccordionItem>
@@ -331,8 +405,8 @@ export default function SlipperProductPage(props: Props) {
 
         {/* Productos relacionados */}
         {relatedProducts.length > 0 && (
-          <ProductCarousel 
-            products={relatedProducts} 
+          <ProductCarousel
+            products={relatedProducts}
             category="pantuflas"
             title="Productos Relacionados"
           />

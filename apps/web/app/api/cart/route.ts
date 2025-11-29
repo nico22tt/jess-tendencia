@@ -8,9 +8,9 @@ export async function GET(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Falta userId" }, { status: 400 })
 
   try {
-    const items = await prisma.cartItem.findMany({
+    const items = await prisma.cart_items.findMany({
       where: { user_id: userId },
-      include: { product: true } // Si quieres traer datos de producto
+      include: { products: true },
     })
     return NextResponse.json(items)
   } catch (error) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Agregar producto (¡o sumar cantidad!) al carrito
+// Agregar producto (o sumar cantidad) al carrito
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -29,15 +29,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Faltan datos" }, { status: 400 })
     }
 
-    const item = await prisma.cartItem.upsert({
-      where: { user_id_product_id: { user_id: userId, product_id: productId }},
+    const item = await prisma.cart_items.upsert({
+      where: { user_id_product_id: { user_id: userId, product_id: productId } },
       update: { quantity: { increment: quantity } },
-      create: { user_id: userId, product_id: productId, quantity }
+      create: { user_id: userId, product_id: productId, quantity },
     })
+
     return NextResponse.json(item)
   } catch (error) {
     console.error("Error al agregar producto:", error)
-    return NextResponse.json({ error: "Error al agregar producto al carrito" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Error al agregar producto al carrito" },
+      { status: 500 },
+    )
   }
 }
 
@@ -51,14 +55,17 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Datos de entrada inválidos" }, { status: 400 })
     }
 
-    const item = await prisma.cartItem.update({
-      where: { user_id_product_id: { user_id: userId, product_id: productId }},
-      data: { quantity }
+    const item = await prisma.cart_items.update({
+      where: { user_id_product_id: { user_id: userId, product_id: productId } },
+      data: { quantity },
     })
     return NextResponse.json(item)
   } catch (error) {
     console.error("Error al actualizar cantidad:", error)
-    return NextResponse.json({ error: "Error al actualizar cantidad del carrito" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Error al actualizar cantidad del carrito" },
+      { status: 500 },
+    )
   }
 }
 
@@ -67,15 +74,20 @@ export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get("userId")
   const productId = searchParams.get("productId")
-  if (!userId || !productId) return NextResponse.json({ error: "Faltan datos" }, { status: 400 })
+  if (!userId || !productId) {
+    return NextResponse.json({ error: "Faltan datos" }, { status: 400 })
+  }
 
   try {
-    await prisma.cartItem.delete({
-      where: { user_id_product_id: { user_id: userId, product_id: productId }}
+    await prisma.cart_items.delete({
+      where: { user_id_product_id: { user_id: userId, product_id: productId } },
     })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error al eliminar producto:", error)
-    return NextResponse.json({ error: "Error al eliminar producto del carrito" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Error al eliminar producto del carrito" },
+      { status: 500 },
+    )
   }
 }

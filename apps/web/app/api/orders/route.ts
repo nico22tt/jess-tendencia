@@ -1,10 +1,48 @@
 import { NextRequest, NextResponse } from "next/server"
-import prisma from '@jess/shared/lib/prisma'
+import prisma from "@jess/shared/lib/prisma"
 
 // Utilidad: Genera número de orden único (puedes mejorar con lógica secuencial)
 const generateOrderNumber = () =>
-  "ORD-" + Math.floor(Date.now() / 1000) + "-" + Math.floor(Math.random() * 10000)
+  "ORD-" +
+  Math.floor(Date.now() / 1000) +
+  "-" +
+  Math.floor(Math.random() * 10000)
 
+// GET /api/orders?userId=...
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const userId = searchParams.get("userId")
+
+  if (!userId) {
+    return NextResponse.json(
+      { success: false, error: "Falta userId" },
+      { status: 400 },
+    )
+  }
+
+  try {
+    const orders = await prisma.orders.findMany({
+      where: { user_id: userId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        order_items: {
+          include: {
+            products: { select: { name: true } },
+          },
+        },
+      },
+    })
+
+    return NextResponse.json({ success: true, orders })
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, error: err.message || "Error al listar órdenes" },
+      { status: 500 },
+    )
+  }
+}
+
+// POST /api/orders  (igual que ya tenías)
 export async function POST(req: NextRequest) {
   try {
     const {
@@ -25,29 +63,50 @@ export async function POST(req: NextRequest) {
       !client_name ||
       !client_email ||
       !client_phone ||
-      !Array.isArray(items) || items.length === 0
+      !Array.isArray(items) ||
+      items.length === 0
     ) {
-      return NextResponse.json({ success: false, error: "Campos obligatorios faltantes." }, { status: 400 })
+      return NextResponse.json(
+        { success: false, error: "Campos obligatorios faltantes." },
+        { status: 400 },
+      )
     }
 
     // Busca datos de dirección en BD para poblar campos de envío
-    let shipping_address = "", shipping_city = "", shipping_region = "", shipping_zip = ""
+    let shipping_address = "",
+      shipping_city = "",
+      shipping_region = "",
+      shipping_zip = ""
     let shipping_recipient = client_name
     let shipping_phone = client_phone
     let shipping_email = client_email
+
     if (shipping_method === "delivery" && user_address_id) {
-      const addr = await prisma.user_addresses.findUnique({ where: { id: user_address_id } })
-      if (!addr) return NextResponse.json({ success: false, error: "Dirección de envío no encontrada." }, { status: 400 })
+      const addr = await prisma.user_addresses.findUnique({
+        where: { id: user_address_id },
+      })
+      if (!addr) {
+        return NextResponse.json(
+          { success: false, error: "Dirección de envío no encontrada." },
+          { status: 400 },
+        )
+      }
       shipping_recipient = addr.recipient_name || client_name
       shipping_phone = addr.phone_number || client_phone
-      shipping_address = `${addr.address_line_1} ${addr.address_line_2 || ""}`.trim()
+      shipping_address = `${addr.address_line_1} ${
+        addr.address_line_2 || ""
+      }`.trim()
       shipping_city = addr.city
       shipping_region = addr.region
       shipping_zip = addr.zip_code
       shipping_email = client_email
     }
+
     // Cálculo de subtotal y total
-    const subtotal = items.reduce((sum: number, it: any) => sum + it.price * it.quantity, 0)
+    const subtotal = items.reduce(
+      (sum: number, it: any) => sum + it.price * it.quantity,
+      0,
+    )
     const total = subtotal + (shipping || 0) + (tax || 0)
 
     // Genera y crea orden + ítems
@@ -63,7 +122,7 @@ export async function POST(req: NextRequest) {
         shipping_name: shipping_recipient,
         shipping_email,
         shipping_phone,
-        shipping_address: shipping_address || "Retiro local", // Si es retiro, puedes poner un texto por defecto
+        shipping_address: shipping_address || "Retiro local",
         shipping_city: shipping_city || "Retiro local",
         shipping_region: shipping_region || "Retiro local",
         shipping_zip: shipping_zip || "0000000",
@@ -76,16 +135,19 @@ export async function POST(req: NextRequest) {
             quantity: item.quantity,
             unit_price: item.price,
             subtotal: item.price * item.quantity,
-          }))
-        }
+          })),
+        },
       },
       include: {
-        order_items: true
-      }
+        order_items: true,
+      },
     })
 
     return NextResponse.json({ success: true, order_id: order.id })
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message || "Error al crear orden" }, { status: 500 })
+    return NextResponse.json(
+      { success: false, error: err.message || "Error al crear orden" },
+      { status: 500 },
+    )
   }
 }
