@@ -10,7 +10,7 @@ const BROWSER_COLORS: Record<string, string> = {
   Safari: "#a855f7",
   Firefox: "#ec4899",
   Edge: "#8b5cf6",
-  Otros: "#06b6d4"
+  Otros: "#06b6d4",
 }
 
 export function BrowserUsageChart() {
@@ -23,7 +23,6 @@ export function BrowserUsageChart() {
       try {
         const res = await fetch("/api/stats/browsers")
         const browsers = await res.json()
-        // Aseguramos que browsers es un array, si no, dejamos []
         setData(Array.isArray(browsers) ? browsers : [])
       } catch {
         setData([])
@@ -35,17 +34,18 @@ export function BrowserUsageChart() {
     return () => clearInterval(interval)
   }, [])
 
-  // Seguridad: evitamos el error de .reduce is not a function
   const totalVisitors = Array.isArray(data)
     ? data.reduce((sum, item) => sum + item.value, 0)
     : 0
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800 p-6 h-full flex flex-col">
-      <h3 className="text-lg font-semibold text-white mb-4">Uso de navegadores</h3>
+    <Card className="bg-card border border-border p-6 h-full flex flex-col">
+      <h3 className="text-lg font-semibold text-foreground mb-4">
+        Uso de navegadores
+      </h3>
       <div className="flex-1">
         {loading ? (
-          <div className="w-full h-60 flex items-center justify-center text-zinc-400">
+          <div className="w-full h-60 flex items-center justify-center text-muted-foreground">
             Cargando datos...
           </div>
         ) : (
@@ -74,7 +74,7 @@ export function BrowserUsageChart() {
                 verticalAlign="bottom"
                 height={36}
                 formatter={(value, entry: any) => (
-                  <span className="text-zinc-300 text-sm">
+                  <span className="text-sm text-muted-foreground">
                     {`${value} (${entry.payload.value} visitas)`}
                   </span>
                 )}
@@ -84,8 +84,10 @@ export function BrowserUsageChart() {
         )}
       </div>
       <div className="text-center mt-4">
-        <p className="text-xl font-bold text-white">{totalVisitors.toLocaleString()}</p>
-        <p className="text-sm text-zinc-400">Visitantes totales</p>
+        <p className="text-xl font-bold text-foreground">
+          {totalVisitors.toLocaleString()}
+        </p>
+        <p className="text-sm text-muted-foreground">Visitantes totales</p>
       </div>
     </Card>
   )

@@ -71,7 +71,7 @@ export const metadata: Metadata = {
   verification: {
     google: "google-site-verification-code",
   },
-  generator: 'v0.app'
+  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -90,13 +90,15 @@ export default function RootLayout({
           }
         `}</style>
       </head>
-      <body className="font-body bg-gradient-to-br from-pink-50 via-white to-rose-50 min-h-screen">
+      <body className="font-body bg-white min-h-screen">
         <ClientLayout>
-          <div className="flex min-h-screen">
-            {/* Sidebar siempre visible en desktop */}
-            <Sidebar />
-            {/* Contenido principal con margen para sidebar */}
-            <main className="flex-1 lg:ml-72 pt-4 lg:pt-0 w-full">
+          <div className="min-h-screen flex">
+            {/* Sidebar solo en móvil */}
+            <div className="block lg:hidden">
+              <Sidebar />
+            </div>
+            {/* Contenido principal full width en desktop */}
+            <main className="flex-1 w-full">
               {children}
             </main>
           </div>

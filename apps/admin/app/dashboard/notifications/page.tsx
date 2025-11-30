@@ -182,7 +182,7 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-zinc-950">
+      <div className="flex h-screen bg-background">
         <AdminSidebar />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
@@ -192,7 +192,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader />
@@ -204,16 +204,16 @@ export default function NotificationsPage() {
                 <div className="p-3 bg-pink-600/10 rounded-lg relative">
                   <Bell className="h-6 w-6 text-pink-600" />
                   {unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    <div className="absolute -top-1 -right-1 bg-red-500 text-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </div>
                   )}
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">
+                  <h1 className="text-3xl font-bold text-foreground">
                     Notificaciones
                   </h1>
-                  <p className="text-zinc-400 mt-1">
+                  <p className="text-muted-foreground mt-1">
                     {unreadCount > 0
                       ? `Tienes ${unreadCount} notificación${
                           unreadCount > 1 ? "es" : ""
@@ -226,7 +226,7 @@ export default function NotificationsPage() {
                 <Button
                   onClick={markAllAsRead}
                   variant="outline"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                  className="border-border text-zinc-300 hover:bg-muted"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Marcar todas como leídas
@@ -236,21 +236,21 @@ export default function NotificationsPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+              <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-zinc-400">Total</p>
-                    <p className="text-2xl font-bold text-white">
+                    <p className="text-sm text-muted-foreground">Total</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {notifications.length}
                     </p>
                   </div>
-                  <Bell className="h-8 w-8 text-zinc-600" />
+                  <Bell className="h-8 w-8 text-muted-foreground" />
                 </div>
               </div>
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+              <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-zinc-400">Sin leer</p>
+                    <p className="text-sm text-muted-foreground">Sin leer</p>
                     <p className="text-2xl font-bold text-pink-600">
                       {unreadCount}
                     </p>
@@ -258,10 +258,10 @@ export default function NotificationsPage() {
                   <Bell className="h-8 w-8 text-pink-600" />
                 </div>
               </div>
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+              <div className="bg-card border border-border rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-zinc-400">Leídas</p>
+                    <p className="text-sm text-muted-foreground">Leídas</p>
                     <p className="text-2xl font-bold text-green-400">
                       {notifications.length - unreadCount}
                     </p>
@@ -272,50 +272,50 @@ export default function NotificationsPage() {
             </div>
 
             {/* Filters */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+            <div className="bg-card border border-border rounded-lg p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Filtrar por tipo" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
-                    <SelectItem value="all" className="text-white">
+                  <SelectContent className="bg-muted border-border">
+                    <SelectItem value="all" className="text-foreground">
                       Todos los tipos
                     </SelectItem>
-                    <SelectItem value="stock_low" className="text-white">
+                    <SelectItem value="stock_low" className="text-foreground">
                       Stock Bajo
                     </SelectItem>
-                    <SelectItem value="stock_critical" className="text-white">
+                    <SelectItem value="stock_critical" className="text-foreground">
                       Stock Crítico
                     </SelectItem>
-                    <SelectItem value="stock_out" className="text-white">
+                    <SelectItem value="stock_out" className="text-foreground">
                       Stock Agotado
                     </SelectItem>
-                    <SelectItem value="stock_adjusted" className="text-white">
+                    <SelectItem value="stock_adjusted" className="text-foreground">
                       Inventario Ajustado
                     </SelectItem>
-                    <SelectItem value="order_new" className="text-white">
+                    <SelectItem value="order_new" className="text-foreground">
                       Nuevo Pedido
                     </SelectItem>
-                    <SelectItem value="order_status" className="text-white">
+                    <SelectItem value="order_status" className="text-foreground">
                       Estado de Pedido
                     </SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select value={filterRead} onValueChange={setFilterRead}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground">
                     <SelectValue placeholder="Filtrar por estado" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
-                    <SelectItem value="all" className="text-white">
+                  <SelectContent className="bg-muted border-border">
+                    <SelectItem value="all" className="text-foreground">
                       Todas
                     </SelectItem>
-                    <SelectItem value="unread" className="text-white">
+                    <SelectItem value="unread" className="text-foreground">
                       Sin leer
                     </SelectItem>
-                    <SelectItem value="read" className="text-white">
+                    <SelectItem value="read" className="text-foreground">
                       Leídas
                     </SelectItem>
                   </SelectContent>
@@ -324,14 +324,14 @@ export default function NotificationsPage() {
             </div>
 
             {/* Notifications List */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
               {filteredNotifications.length === 0 ? (
                 <div className="p-12 text-center">
-                  <Bell className="h-16 w-16 text-zinc-700 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-zinc-400 mb-2">
+                  <Bell className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
                     No hay notificaciones
                   </h3>
-                  <p className="text-zinc-500">
+                  <p className="text-muted-foreground">
                     {filterType !== "all" || filterRead !== "all"
                       ? "Prueba cambiando los filtros"
                       : "Las notificaciones aparecerán aquí"}
@@ -350,8 +350,8 @@ export default function NotificationsPage() {
                       return (
                         <div
                           key={notification.id}
-                          className={`p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer ${
-                            !notification.isRead ? "bg-zinc-800/30" : ""
+                          className={`p-4 hover:bg-muted/50 transition-colors cursor-pointer ${
+                            !notification.isRead ? "bg-muted/30" : ""
                           }`}
                           onClick={() => handleNotificationClick(notification)}
                         >
@@ -368,21 +368,21 @@ export default function NotificationsPage() {
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
-                                    <h3 className="font-semibold text-white">
+                                    <h3 className="font-semibold text-foreground">
                                       {notification.title}
                                     </h3>
                                     {!notification.isRead && (
                                       <div className="w-2 h-2 bg-pink-600 rounded-full" />
                                     )}
                                   </div>
-                                  <p className="text-sm text-zinc-400 mt-1">
+                                  <p className="text-sm text-muted-foreground mt-1">
                                     {notification.message}
                                   </p>
                                   {notification.product && (
                                     <div className="flex items-center gap-2 mt-2">
                                       <Badge
                                         variant="outline"
-                                        className="text-xs border-zinc-700 text-zinc-400"
+                                        className="text-xs border-border text-muted-foreground"
                                       >
                                         {notification.product.sku}
                                       </Badge>
@@ -390,7 +390,7 @@ export default function NotificationsPage() {
                                   )}
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
-                                  <span className="text-xs text-zinc-500">
+                                  <span className="text-xs text-muted-foreground">
                                     {getTimeAgo(notification.createdAt)}
                                   </span>
                                   {notification.productId && (

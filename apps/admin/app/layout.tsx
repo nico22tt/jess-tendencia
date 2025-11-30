@@ -15,13 +15,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className="dark">
-      <body className={`${inter.className} bg-background text-foreground min-h-screen`}>
-        {/* Variables CSS para tu tema oscuro */}
+    <html lang="es" suppressHydrationWarning>
+      <head>
         <style>{`
           :root {
-            --background: 18 7% 8%;        /* ≈ bg-zinc-950 en HSL (tailwind estándar) */
-            --foreground: 0 0% 98%;        /* ≈ text-zinc-100 */
+            color-scheme: dark;
+            --background: 18 7% 8%;
+            --foreground: 0 0% 98%;
             --card: 240 4% 16%;
             --card-foreground: 0 0% 98%;
             --popover: 240 4% 16%;
@@ -46,7 +46,39 @@ export default function RootLayout({
             --chart-4: 340 82% 52%;
             --chart-5: 198 89% 48%;
           }
+
+          .light {
+            color-scheme: light;
+            --background: 0 0% 100%;
+            --foreground: 240 10% 4%;
+            --card: 0 0% 100%;
+            --card-foreground: 240 10% 4%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 240 10% 4%;
+            --primary: 291 89% 60%;
+            --primary-foreground: 0 0% 100%;
+            --secondary: 240 4% 95%;
+            --secondary-foreground: 240 10% 4%;
+            --muted: 240 4% 95%;
+            --muted-foreground: 240 5% 35%;
+            --accent: 291 89% 60%;
+            --accent-foreground: 0 0% 100%;
+            --destructive: 0 84% 60%;
+            --destructive-foreground: 0 0% 100%;
+            --border: 240 5% 90%;
+            --input: 240 5% 90%;
+            --ring: 291 89% 60%;
+            --chart-1: 221 83% 53%;
+            --chart-2: 160 84% 39%;
+            --chart-3: 25 95% 53%;
+            --chart-4: 340 82% 52%;
+            --chart-5: 199 89% 48%;
+          }
         `}</style>
+      </head>
+      <body
+        className={`${inter.className} bg-background text-foreground min-h-screen`}
+      >
         {children}
       </body>
     </html>

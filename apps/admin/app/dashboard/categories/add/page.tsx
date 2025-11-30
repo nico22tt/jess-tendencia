@@ -101,7 +101,7 @@ export default function AddCategoryPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background">
       <AdminSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -112,13 +112,13 @@ export default function AddCategoryPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white">Crear Nueva Categoría</h1>
-                <p className="text-zinc-400 mt-1">Organiza tus productos en categorías</p>
+                <h1 className="text-3xl font-bold  text-foreground">Crear Nueva Categoría</h1>
+                <p className="text-muted-foreground mt-1">Organiza tus productos en categorías</p>
               </div>
               <Button 
                 onClick={handleSaveCategory} 
                 disabled={isLoading}
-                className="bg-pink-600 hover:bg-pink-700 text-white disabled:bg-gray-600"
+                className="bg-pink-600 hover:bg-pink-700  text-foreground disabled:bg-gray-600"
               >
                 {isLoading ? 'Guardando...' : 'Guardar Categoría'}
               </Button>
@@ -127,8 +127,8 @@ export default function AddCategoryPage() {
             {/* Form */}
             <div className="space-y-6">
               {/* Basic Information */}
-              <Card className="bg-zinc-900 border-zinc-800 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Información Básica</h2>
+              <Card className="bg-card border-border p-6">
+                <h2 className="text-xl font-semibold  text-foreground mb-4">Información Básica</h2>
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="categoryName" className="text-zinc-300">
@@ -139,7 +139,7 @@ export default function AddCategoryPage() {
                       value={categoryName}
                       onChange={(e) => handleNameChange(e.target.value)}
                       placeholder="Ej: Ropa de Mujer"
-                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
                       required
                     />
                   </div>
@@ -153,10 +153,10 @@ export default function AddCategoryPage() {
                       value={urlSlug}
                       onChange={(e) => setUrlSlug(e.target.value)}
                       placeholder="ropa-de-mujer"
-                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
                       required
                     />
-                    <p className="text-sm text-zinc-500 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       Se genera automáticamente, pero puedes editarlo
                     </p>
                   </div>
@@ -171,19 +171,19 @@ export default function AddCategoryPage() {
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe la categoría..."
                       rows={4}
-                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
                     />
                   </div>
                 </div>
               </Card>
 
               {/* Category Image */}
-              <Card className="bg-zinc-900 border-zinc-800 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Imagen de Categoría</h2>
+              <Card className="bg-card border-border p-6">
+                <h2 className="text-xl font-semibold  text-foreground mb-4">Imagen de Categoría</h2>
 
                 <div className="flex items-start gap-6">
                   {/* Image Preview */}
-                  <div className="w-48 h-48 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0">
+                  <div className="w-48 h-48 rounded-lg bg-mutedoverflow-hidden flex-shrink-0">
                     <Image
                       src={categoryImage || "/placeholder.svg"}
                       alt="Category"
@@ -204,9 +204,9 @@ export default function AddCategoryPage() {
                         value={categoryImage}
                         onChange={(e) => setCategoryImage(e.target.value)}
                         placeholder="https://ejemplo.com/imagen.jpg"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
                       />
-                      <p className="text-xs text-zinc-600">
+                      <p className="text-xs text-muted-foreground">
                         Por ahora ingresa una URL de imagen. Recomendado: 800x800px
                       </p>
                     </div>
@@ -215,29 +215,29 @@ export default function AddCategoryPage() {
               </Card>
 
               {/* Organization */}
-              <Card className="bg-zinc-900 border-zinc-800 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Organización</h2>
+              <Card className="bg-card border-border p-6">
+                <h2 className="text-xl font-semibold  text-foreground mb-4">Organización</h2>
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="parentCategory" className="text-zinc-300">
                       Categoría Padre (Opcional)
                     </Label>
                     <Select value={parentCategory} onValueChange={setParentCategory}>
-                      <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                      <SelectTrigger className="bg-mutedborder-border  text-foreground">
                         <SelectValue placeholder="Ninguna (Categoría principal)" />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
-                        <SelectItem value="none" className="text-white">
+                      <SelectContent className="bg-mutedborder-border">
+                        <SelectItem value="none" className=" text-foreground">
                           Ninguna (Categoría principal)
                         </SelectItem>
                         {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id} className="text-white">
+                          <SelectItem key={cat.id} value={cat.id} className=" text-foreground">
                             {cat.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-sm text-zinc-500 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       Selecciona una categoría padre para crear una subcategoría
                     </p>
                   </div>
@@ -252,9 +252,9 @@ export default function AddCategoryPage() {
                       value={displayOrder}
                       onChange={(e) => setDisplayOrder(e.target.value)}
                       placeholder="0"
-                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                      className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
                     />
-                    <p className="text-sm text-zinc-500 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       Número menor aparece primero en el menú (ej: 1, 2, 3...)
                     </p>
                   </div>
@@ -262,14 +262,14 @@ export default function AddCategoryPage() {
               </Card>
 
               {/* Visibility */}
-              <Card className="bg-zinc-900 border-zinc-800 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Visibilidad</h2>
+              <Card className="bg-card border-border p-6">
+                <h2 className="text-xl font-semibold  text-foreground mb-4">Visibilidad</h2>
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="active" className="text-zinc-300">
                       Estado de la Categoría
                     </Label>
-                    <p className="text-sm text-zinc-500 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {isActive ? "La categoría está activa y visible" : "La categoría está oculta"}
                     </p>
                   </div>

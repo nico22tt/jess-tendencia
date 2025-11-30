@@ -1,4 +1,3 @@
-import { Sidebar } from "@jess/shared/components/sidebar"
 import { HeroSection } from "@/components/hero-section"
 import { ProductShowcase } from "@/components/product-showcase"
 import type { Metadata } from "next"
@@ -15,17 +14,11 @@ export const metadata: Metadata = {
   },
 }
 
-
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1">
-          <HeroSection />
-          <ProductShowcase />
-        </main>
-      </div>
-    </div>
+    <>
+      <HeroSection />
+      <ProductShowcase />
+    </>
   )
 }

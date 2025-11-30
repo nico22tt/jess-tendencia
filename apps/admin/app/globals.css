@@ -1,13 +1,60 @@
-/* Si tienes Tailwind, usa esto: */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Si no, deja el archivo vacío */
+/* Tema por defecto (oscuro) */
 :root {
   --background: 18 7% 8%;
   --foreground: 0 0% 98%;
   --card: 240 4% 16%;
   --card-foreground: 0 0% 98%;
-  /* ...pon aquí todas las variables que usaste en tailwind.config.ts... */
+  --popover: 240 4% 16%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 291 89% 68%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 13% 18%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 4% 20%;
+  --muted-foreground: 225 5% 70%;
+  --accent: 291 89% 68%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 80% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 4% 20%;
+  --input: 240 4% 22%;
+  --ring: 291 89% 68%;
+  --radius: 1rem;
+  --chart-1: 265 85% 77%;
+  --chart-2: 152 62% 51%;
+  --chart-3: 42 90% 60%;
+  --chart-4: 340 82% 52%;
+  --chart-5: 198 89% 48%;
+}
+
+/* Tema claro (cuando añadas class="light" al <html>) */
+.light {
+  --background: 0 0% 97%;
+  --foreground: 240 10% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 4%;
+  --primary: 291 89% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 4% 95%;
+  --secondary-foreground: 240 10% 4%;
+  --muted: 240 4% 95%;
+  --muted-foreground: 240 5% 35%;
+  --accent: 291 89% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 5% 90%;
+  --input: 240 5% 90%;
+  --ring: 291 89% 60%;
+  --chart-1: 221 83% 53%;
+  --chart-2: 160 84% 39%;
+  --chart-3: 25 95% 53%;
+  --chart-4: 340 82% 52%;
+  --chart-5: 199 89% 48%;
 }

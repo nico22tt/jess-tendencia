@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Bell, LogOut } from "lucide-react"
+import { Bell, LogOut, Sun, Moon } from "lucide-react"
 import { Button } from "@jess/ui/button"
 import {
   DropdownMenu,
@@ -22,13 +22,39 @@ type AdminHeaderProps = {
 export function AdminHeader({ user, profile }: AdminHeaderProps) {
   const router = useRouter()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [theme, setTheme] = useState<"light" | "dark">("dark")
+  const [mounted, setMounted] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    setMounted(true)
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null
+    const initial = savedTheme ?? "dark"
+    setTheme(initial)
+    applyTheme(initial)
+  }, [])
 
   useEffect(() => {
     fetchUnreadCount()
     const interval = setInterval(fetchUnreadCount, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  const applyTheme = (newTheme: "light" | "dark") => {
+    const root = document.documentElement
+    if (newTheme === "light") {
+      root.classList.add("light")
+    } else {
+      root.classList.remove("light")
+    }
+  }
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark"
+    setTheme(next)
+    localStorage.setItem("theme", next)
+    applyTheme(next)
+  }
 
   const fetchUnreadCount = async () => {
     try {
@@ -47,55 +73,83 @@ export function AdminHeader({ user, profile }: AdminHeaderProps) {
     router.replace("/login")
   }
 
+  if (!mounted) return null
+
   return (
-    <header className="bg-zinc-900 border-b border-zinc-800 px-6 py-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-white">Admin</h2>
-          {user && (
-            <p className="text-sm text-zinc-400">
-              {user.email} {profile?.role ? <span className="text-pink-500">({profile.role})</span> : ""}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-4 pr-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative text-zinc-400 hover:text-white hover:bg-zinc-800"
-            onClick={() => router.push("/dashboard/notifications")}
-          >
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
+    <div className="flex items-center justify-between px-6 py-4">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
+          Admin
+        </h2>
+        {user && (
+          <p className="text-sm text-muted-foreground">
+            {user.email}{" "}
+            {profile?.role && (
+              <span className="text-primary">({profile.role})</span>
             )}
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
-              <DropdownMenuLabel className="text-white">Cuenta</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-zinc-800" />
-              <DropdownMenuItem
-                className="text-zinc-300 focus:bg-zinc-800 focus:text-white"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Cerrar Sesión
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+          </p>
+        )}
       </div>
-    </header>
+
+      <div className="flex items-center gap-3 sm:gap-4 pr-1 sm:pr-4">
+        {/* Toggle de tema */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground hover:text-foreground hover:bg-muted"
+          onClick={toggleTheme}
+        >
+          {theme === "dark" ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </Button>
+
+        {/* Notificaciones */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative text-muted-foreground hover:text-foreground hover:bg-muted"
+          onClick={() => router.push("/dashboard/notifications")}
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Button>
+
+        {/* Logout */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="bg-card border border-border"
+          >
+            <DropdownMenuLabel className="text-foreground">
+              Cuenta
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuItem
+              className="text-muted-foreground focus:bg-muted focus:text-foreground"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Cerrar Sesión
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   )
 }
