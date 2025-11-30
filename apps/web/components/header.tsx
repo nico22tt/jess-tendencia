@@ -92,7 +92,7 @@ export function Header() {
           <div className="flex items-center">
             <Link href="/">
               <Image
-                src="/jess-tendencia-logo.jpeg"
+                src="/jess-tendencia-logo.png"
                 alt="Jess Tendencia"
                 width={120}
                 height={60}
