@@ -1,5 +1,6 @@
 "use client"
 
+
 import type React from "react"
 import { MainLayout } from "@/components/main-layout"
 import { usePathname } from "next/navigation"
