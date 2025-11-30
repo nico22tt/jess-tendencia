@@ -340,7 +340,7 @@ importers:
   packages/ui:
     dependencies:
       '@radix-ui/react-accordion':
-        specifier: ^1.2.2
+        specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.6))(@types/react@19.2.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.4

@@ -4,8 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "next dev --port 3000",
-        "build": "next build",
-        "start": "next start",
+        "build": "prisma generate --schema=../../packages/prisma/schema.prisma && next build",
+        "start": "next start --port 3000",
         "lint": "next lint",
         "check-types": "tsc --noEmit"
     },

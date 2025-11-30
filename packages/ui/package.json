@@ -53,7 +53,6 @@
     "./utils": "./utils.ts",
     "./use-toast": "./use-toast.ts",
     "./use-mobile": "./use-mobile.ts"
-
   },
   "scripts": {
     "lint": "eslint .",
@@ -64,8 +63,7 @@
     "react-dom": "^19.0.0"
   },
   "dependencies": {
-    
-    "@radix-ui/react-accordion": "^1.2.2",
+    "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.4",
     "@radix-ui/react-aspect-ratio": "^1.1.1",
     "@radix-ui/react-avatar": "^1.1.2",
