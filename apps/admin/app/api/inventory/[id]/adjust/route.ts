@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@jess/shared/lib/prisma"
-import { createNotification, getStockStatusType } from "@jess/shared/lib/notifications"
-import type { PrismaClient } from "@prisma/client"
+import { getStockStatusType } from "@jess/shared/lib/notifications"
 
 export async function POST(
   request: NextRequest,
@@ -44,7 +43,7 @@ export async function POST(
 
     const minStock = 10
 
-    const result = await prisma.$transaction(async (tx: PrismaClient) => {
+    const result = await prisma.$transaction(async (tx) => {
       const updatedProduct = await tx.product.update({
         where: { id },
         data: {
