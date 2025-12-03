@@ -20,8 +20,8 @@ export default function HomePage() {
     <>
       <HeroSection />
 
-      {/* Recomendaciones personalizadas con IA (solo si hay usuario logueado) */}
-      <RecommendationsCarousel />
+      {/* <RecommendationsCarousel /> */}
+      
 
       <ProductShowcase />
     </>
