@@ -1,5 +1,6 @@
 import { HeroSection } from "@/components/hero-section"
 import { ProductShowcase } from "@/components/product-showcase"
+import { RecommendationsCarousel } from "@/components/recommendations-carousel"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -18,6 +19,10 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
+
+      {/* Recomendaciones personalizadas con IA (solo si hay usuario logueado) */}
+      <RecommendationsCarousel />
+
       <ProductShowcase />
     </>
   )

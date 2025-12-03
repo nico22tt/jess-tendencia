@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Button } from "@jess/ui/button"
 import Link from "next/link"
 import { createClient } from "@utils/supabase/client"
+import { RecommendationsCarousel } from "@/components/recommendations-carousel" // Ajusta la ruta
 
 function getCartItemPrice(p: any): number {
   if (typeof p?.salePrice === "number" && p.salePrice > 0) return p.salePrice
@@ -120,23 +121,16 @@ export default function CartPage() {
     )
   }
 
+  const hasItems = items.length > 0
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-25 to-white">
       <Header />
       <main className="mt-40 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold my-8">Tu carrito de compras</h1>
-          {items.length === 0 ? (
-            <div className="text-center text-gray-500 py-24">
-              <p>Tu carrito está vacío.</p>
-              <Link
-                href="/"
-                className="text-pink-600 underline text-sm mt-4 block"
-              >
-                Ver productos
-              </Link>
-            </div>
-          ) : (
+          
+          {hasItems ? (
             <div className="space-y-6">
               {items.map((item) => (
                 <div
@@ -177,6 +171,7 @@ export default function CartPage() {
                   </div>
                 </div>
               ))}
+              
               <div className="flex justify-between items-center pt-6">
                 <Button
                   onClick={clearCart}
@@ -200,9 +195,24 @@ export default function CartPage() {
                 </Button>
               </div>
             </div>
+          ) : (
+            <div className="text-center text-gray-500 py-24">
+              <p>Tu carrito está vacío.</p>
+              <Link
+                href="/"
+                className="text-pink-600 underline text-sm mt-4 block"
+              >
+                Ver productos
+              </Link>
+            </div>
           )}
         </div>
       </main>
+
+      {/* Carousel de recomendaciones solo cuando hay productos en el carrito */}
+      {hasItems && (
+        <RecommendationsCarousel />
+      )}
     </div>
   )
 }
