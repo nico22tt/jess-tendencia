@@ -68,7 +68,7 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-zinc-950">
+      <div className="flex h-screen bg-background">
         <AdminSidebar />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
@@ -79,17 +79,17 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
 
   if (!product) {
     return (
-      <div className="flex h-screen bg-zinc-950">
+      <div className="flex h-screen bg-background">
         <AdminSidebar />
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-zinc-400">Producto no encontrado</p>
+          <p className="text-muted-foreground">Producto no encontrado</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader />
@@ -101,7 +101,7 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
                 variant="outline"
                 size="icon"
                 onClick={() => router.back()}
-                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                className="border-zinc-700 text-muted-foreground hover:bg-muted"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -110,8 +110,8 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
                   <History className="h-6 w-6 text-pink-600" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">Historial de Movimientos</h1>
-                  <p className="text-zinc-400 mt-1">
+                  <h1 className="text-3xl font-bold text-foreground">Historial de Movimientos</h1>
+                  <p className="text-muted-foreground mt-1">
                     {product.name} - SKU: {product.sku}
                   </p>
                 </div>
@@ -119,39 +119,39 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
             </div>
 
             {/* Current Stock Card */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+            <div className="bg-card border border-border rounded-lg p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-zinc-400">Stock Actual</p>
-                  <p className="text-4xl font-bold text-white mt-2">{product.currentStock}</p>
-                  <p className="text-sm text-zinc-500 mt-1">unidades disponibles</p>
+                  <p className="text-sm text-muted-foreground">Stock Actual</p>
+                  <p className="text-4xl font-bold text-foreground mt-2">{product.currentStock}</p>
+                  <p className="text-sm text-muted-foreground mt-1">unidades disponibles</p>
                 </div>
                 <Package className="h-16 w-16 text-pink-600" />
               </div>
             </div>
 
             {/* Movements Table */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
-              <div className="p-4 border-b border-zinc-800">
-                <h2 className="text-lg font-semibold text-white">Movimientos Registrados</h2>
-                <p className="text-sm text-zinc-400 mt-1">Historial completo de entradas y salidas</p>
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="p-4 border-b border-border">
+                <h2 className="text-lg font-semibold text-foreground">Movimientos Registrados</h2>
+                <p className="text-sm text-muted-foreground mt-1">Historial completo de entradas y salidas</p>
               </div>
               <ScrollArea className="h-[500px]">
                 {movements.length === 0 ? (
-                  <div className="p-8 text-center text-zinc-500">
+                  <div className="p-8 text-center text-muted-foreground">
                     No hay movimientos registrados para este producto
                   </div>
                 ) : (
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-zinc-800 hover:bg-zinc-900">
-                        <TableHead className="text-zinc-400">Fecha y Hora</TableHead>
-                        <TableHead className="text-zinc-400">Tipo</TableHead>
-                        <TableHead className="text-zinc-400">Cantidad</TableHead>
-                        <TableHead className="text-zinc-400">Stock Anterior</TableHead>
-                        <TableHead className="text-zinc-400">Stock Nuevo</TableHead>
-                        <TableHead className="text-zinc-400">Motivo</TableHead>
-                        <TableHead className="text-zinc-400">Usuario</TableHead>
+                      <TableRow className="border-border hover:bg-card">
+                        <TableHead className="text-muted-foreground">Fecha y Hora</TableHead>
+                        <TableHead className="text-muted-foreground">Tipo</TableHead>
+                        <TableHead className="text-muted-foreground">Cantidad</TableHead>
+                        <TableHead className="text-muted-foreground">Stock Anterior</TableHead>
+                        <TableHead className="text-muted-foreground">Stock Nuevo</TableHead>
+                        <TableHead className="text-muted-foreground">Motivo</TableHead>
+                        <TableHead className="text-muted-foreground">Usuario</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -160,11 +160,11 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
                         const Icon = config.icon
 
                         return (
-                          <TableRow key={movement.id} className="border-zinc-800 hover:bg-zinc-800/50">
-                            <TableCell className="text-zinc-300">
+                          <TableRow key={movement.id} className="border-border hover:bg-muted/50">
+                            <TableCell className="text-muted-foreground">
                               <div>
                                 <p className="font-medium">{movement.date}</p>
-                                <p className="text-sm text-zinc-500">{movement.time}</p>
+                                <p className="text-sm text-muted-foreground">{movement.time}</p>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -183,10 +183,10 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
                                 {movement.amount}
                               </span>
                             </TableCell>
-                            <TableCell className="text-zinc-400">{movement.previousStock}</TableCell>
-                            <TableCell className="text-white font-semibold">{movement.newStock}</TableCell>
-                            <TableCell className="text-zinc-300">{movement.reason}</TableCell>
-                            <TableCell className="text-zinc-400">{movement.user}</TableCell>
+                            <TableCell className="text-muted-foreground">{movement.previousStock}</TableCell>
+                            <TableCell className="text-foreground font-semibold">{movement.newStock}</TableCell>
+                            <TableCell className="text-muted-foreground">{movement.reason}</TableCell>
+                            <TableCell className="text-muted-foreground">{movement.user}</TableCell>
                           </TableRow>
                         )
                       })}

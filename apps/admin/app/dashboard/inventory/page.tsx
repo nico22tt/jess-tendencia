@@ -201,7 +201,7 @@ export default function InventoryPage() {
 
   if (productsLoading) {
     return (
-      <div className="flex h-screen bg-zinc-950">
+      <div className="flex h-screen bg-background">
         <AdminSidebar />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
@@ -211,7 +211,7 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader />
@@ -224,11 +224,11 @@ export default function InventoryPage() {
                   <Package className="h-6 w-6 text-pink-600" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">Gestionar Inventario</h1>
-                  <p className="text-zinc-400 mt-1">Monitorea y ajusta el stock de tus productos</p>
+                  <h1 className="text-3xl font-bold text-foreground">Gestionar Inventario</h1>
+                  <p className="text-foreground mt-1">Monitorea y ajusta el stock de tus productos</p>
                 </div>
               </div>
-              <Button className="bg-pink-600 hover:bg-pink-700 text-white">
+              <Button className="bg-pink-600 hover:bg-pink-700 text-foreground">
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Inventario
               </Button>
@@ -236,17 +236,17 @@ export default function InventoryPage() {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="bg-zinc-900 border border-zinc-800">
+              <TabsList className="bg-card border  border-border">
                 <TabsTrigger
                   value="products"
-                  className="data-[state=active]:bg-pink-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-pink-600 data-[state=active]:text-foreground"
                 >
                   <Package className="h-4 w-4 mr-2" />
                   Por Producto
                 </TabsTrigger>
                 <TabsTrigger
                   value="variants"
-                  className="data-[state=active]:bg-pink-600 data-[state=active]:text-white"
+                  className="data-[state=active]:bg-pink-600 data-[state=active]:text-foreground"
                 >
                   <Boxes className="h-4 w-4 mr-2" />
                   Por Tallas/Colores
@@ -257,37 +257,37 @@ export default function InventoryPage() {
               <TabsContent value="products" className="space-y-6 mt-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                  <div className="bg-card border  border-border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-zinc-400">Disponibles</p>
+                        <p className="text-sm text-foreground">Disponibles</p>
                         <p className="text-2xl font-bold text-green-400">{productStats.available}</p>
                       </div>
                       <TrendingUp className="h-8 w-8 text-green-400" />
                     </div>
                   </div>
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                  <div className="bg-card border  border-border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-zinc-400">Stock Bajo</p>
+                        <p className="text-sm text-foreground">Stock Bajo</p>
                         <p className="text-2xl font-bold text-yellow-400">{productStats.low}</p>
                       </div>
                       <AlertTriangle className="h-8 w-8 text-yellow-400" />
                     </div>
                   </div>
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                  <div className="bg-card border  border-border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-zinc-400">Stock Crítico</p>
+                        <p className="text-sm text-foreground">Stock Crítico</p>
                         <p className="text-2xl font-bold text-orange-400">{productStats.critical}</p>
                       </div>
                       <TrendingDown className="h-8 w-8 text-orange-400" />
                     </div>
                   </div>
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                  <div className="bg-card border  border-border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-zinc-400">Agotados</p>
+                        <p className="text-sm text-foreground">Agotados</p>
                         <p className="text-2xl font-bold text-red-400">{productStats.out}</p>
                       </div>
                       <Package className="h-8 w-8 text-red-400" />
@@ -296,7 +296,7 @@ export default function InventoryPage() {
                 </div>
 
                 {/* Filters */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                <div className="bg-card border  border-border rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
@@ -305,30 +305,30 @@ export default function InventoryPage() {
                         placeholder="Buscar por nombre o SKU..."
                         value={productSearchQuery}
                         onChange={(e) => setProductSearchQuery(e.target.value)}
-                        className="pl-9 bg-zinc-800 border-zinc-700 text-white"
+                        className="pl-9  bg-muted border-border text-foreground"
                       />
                     </div>
                     <Select value={productFilterStatus} onValueChange={setProductFilterStatus}>
-                      <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                      <SelectTrigger className=" bg-muted border-border text-foreground">
                         <Filter className="h-4 w-4 mr-2" />
                         <SelectValue placeholder="Filtrar por estado" />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
-                        <SelectItem value="all" className="text-white">Todos los estados</SelectItem>
-                        <SelectItem value="available" className="text-white">Disponible</SelectItem>
-                        <SelectItem value="low" className="text-white">Stock Bajo</SelectItem>
-                        <SelectItem value="critical" className="text-white">Stock Crítico</SelectItem>
-                        <SelectItem value="out" className="text-white">Agotado</SelectItem>
+                      <SelectContent className=" bg-muted border-border">
+                        <SelectItem value="all" className="text-foreground">Todos los estados</SelectItem>
+                        <SelectItem value="available" className="text-foreground">Disponible</SelectItem>
+                        <SelectItem value="low" className="text-foreground">Stock Bajo</SelectItem>
+                        <SelectItem value="critical" className="text-foreground">Stock Crítico</SelectItem>
+                        <SelectItem value="out" className="text-foreground">Agotado</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={productFilterCategory} onValueChange={setProductFilterCategory}>
-                      <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                      <SelectTrigger className=" bg-muted border-border text-foreground">
                         <SelectValue placeholder="Filtrar por categoría" />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
-                        <SelectItem value="all" className="text-white">Todas las categorías</SelectItem>
+                      <SelectContent className=" bg-muted border-border">
+                        <SelectItem value="all" className="text-foreground">Todas las categorías</SelectItem>
                         {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat} className="text-white">{cat}</SelectItem>
+                          <SelectItem key={cat} value={cat} className="text-foreground">{cat}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -336,18 +336,18 @@ export default function InventoryPage() {
                 </div>
 
                 {/* Table */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+                <div className="bg-card border  border-border rounded-lg overflow-hidden">
                   <ScrollArea className="h-[500px]">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-zinc-800 hover:bg-zinc-900">
-                          <TableHead className="text-zinc-400">Producto</TableHead>
-                          <TableHead className="text-zinc-400">SKU</TableHead>
-                          <TableHead className="text-zinc-400">Categoría</TableHead>
-                          <TableHead className="text-zinc-400">Stock Actual</TableHead>
-                          <TableHead className="text-zinc-400">Estado</TableHead>
-                          <TableHead className="text-zinc-400">Última Act.</TableHead>
-                          <TableHead className="text-zinc-400 text-right">Acciones</TableHead>
+                        <TableRow className=" border-border hover:bg-card">
+                          <TableHead className="text-foreground">Producto</TableHead>
+                          <TableHead className="text-foreground">SKU</TableHead>
+                          <TableHead className="text-foreground">Categoría</TableHead>
+                          <TableHead className="text-foreground">Stock Actual</TableHead>
+                          <TableHead className="text-foreground">Estado</TableHead>
+                          <TableHead className="text-foreground">Última Act.</TableHead>
+                          <TableHead className="text-foreground text-right">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -356,33 +356,33 @@ export default function InventoryPage() {
                           const config = statusConfig[status]
 
                           return (
-                            <TableRow key={product.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                            <TableRow key={product.id} className=" border-border hover: bg-muted/50">
                               <TableCell>
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-zinc-800 rounded-lg flex items-center justify-center">
-                                    <Package className="h-5 w-5 text-zinc-500" />
+                                  <div className="w-10 h-10  bg-muted rounded-lg flex items-center justify-center">
+                                    <Package className="h-5 w-5 text-muted-foreground" />
                                   </div>
-                                  <span className="text-white font-medium">{product.name}</span>
+                                  <span className="text-foreground font-medium">{product.name}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-zinc-400">{product.sku}</TableCell>
-                              <TableCell className="text-zinc-400">{product.category}</TableCell>
+                              <TableCell className="text-foreground">{product.sku}</TableCell>
+                              <TableCell className="text-foreground">{product.category}</TableCell>
                               <TableCell>
-                                <span className="text-white font-semibold">{product.stock}</span>
-                                <span className="text-zinc-500 text-sm ml-1">unidades</span>
+                                <span className="text-foreground font-semibold">{product.stock}</span>
+                                <span className="text-foregroundtext-sm ml-1">unidades</span>
                               </TableCell>
                               <TableCell>
                                 <Badge variant="outline" className={config.color}>
                                   {config.label}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-zinc-400">{product.lastUpdated}</TableCell>
+                              <TableCell className="text-foreground">{product.lastUpdated}</TableCell>
                               <TableCell>
                                 <div className="flex items-center justify-end gap-2">
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                                    className="border-border text-zinc-300 hover: bg-muted"
                                     onClick={() => router.push(`/dashboard/inventory/${product.id}/edit`)}
                                   >
                                     <Edit className="h-4 w-4" />
@@ -390,7 +390,7 @@ export default function InventoryPage() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                                    className="border-border text-zinc-300 hover: bg-muted"
                                     onClick={() => router.push(`/dashboard/inventory/${product.id}/history`)}
                                   >
                                     <History className="h-4 w-4" />
@@ -398,7 +398,7 @@ export default function InventoryPage() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                                    className="border-border text-zinc-300 hover: bg-muted"
                                     onClick={() => router.push(`/dashboard/products/edit/${product.id}`)}
                                   >
                                     <Eye className="h-4 w-4" />
@@ -424,28 +424,28 @@ export default function InventoryPage() {
                   <>
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                      <div className="bg-card border  border-border rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-zinc-400">Disponibles</p>
+                            <p className="text-sm text-foreground">Disponibles</p>
                             <p className="text-2xl font-bold text-green-400">{variantStats.available}</p>
                           </div>
                           <TrendingUp className="h-8 w-8 text-green-400" />
                         </div>
                       </div>
-                      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                      <div className="bg-card border  border-border rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-zinc-400">Stock Bajo</p>
+                            <p className="text-sm text-foreground">Stock Bajo</p>
                             <p className="text-2xl font-bold text-yellow-400">{variantStats.low}</p>
                           </div>
                           <AlertTriangle className="h-8 w-8 text-yellow-400" />
                         </div>
                       </div>
-                      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                      <div className="bg-card border  border-border rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-zinc-400">Agotados</p>
+                            <p className="text-sm text-foreground">Agotados</p>
                             <p className="text-2xl font-bold text-red-400">{variantStats.out}</p>
                           </div>
                           <Package className="h-8 w-8 text-red-400" />
@@ -454,7 +454,7 @@ export default function InventoryPage() {
                     </div>
 
                     {/* Filters */}
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                    <div className="bg-card border  border-border rounded-lg p-4">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
@@ -463,70 +463,70 @@ export default function InventoryPage() {
                             placeholder="Buscar variante..."
                             value={variantSearchQuery}
                             onChange={(e) => setVariantSearchQuery(e.target.value)}
-                            className="pl-9 bg-zinc-800 border-zinc-700 text-white"
+                            className="pl-9  bg-muted border-border text-foreground"
                           />
                         </div>
                         <Select value={variantFilterSize} onValueChange={setVariantFilterSize}>
-                          <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                          <SelectTrigger className=" bg-muted border-border text-foreground">
                             <SelectValue placeholder="Filtrar por talla" />
                           </SelectTrigger>
-                          <SelectContent className="bg-zinc-800 border-zinc-700">
-                            <SelectItem value="all" className="text-white">Todas las tallas</SelectItem>
+                          <SelectContent className=" bg-muted border-border">
+                            <SelectItem value="all" className="text-foreground">Todas las tallas</SelectItem>
                             {sizes.map((size) => (
-                              <SelectItem key={size} value={size!} className="text-white">
+                              <SelectItem key={size} value={size!} className="text-foreground">
                                 Talla {size}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <Select value={variantFilterColor} onValueChange={setVariantFilterColor}>
-                          <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                          <SelectTrigger className=" bg-muted border-border text-foreground">
                             <SelectValue placeholder="Filtrar por color" />
                           </SelectTrigger>
-                          <SelectContent className="bg-zinc-800 border-zinc-700">
-                            <SelectItem value="all" className="text-white">Todos los colores</SelectItem>
+                          <SelectContent className=" bg-muted border-border">
+                            <SelectItem value="all" className="text-foreground">Todos los colores</SelectItem>
                             {colors.map((color) => (
-                              <SelectItem key={color} value={color!} className="text-white">
+                              <SelectItem key={color} value={color!} className="text-foreground">
                                 {color}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <Select value={variantFilterStatus} onValueChange={setVariantFilterStatus}>
-                          <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                          <SelectTrigger className=" bg-muted border-border text-foreground">
                             <Filter className="h-4 w-4 mr-2" />
                             <SelectValue placeholder="Estado" />
                           </SelectTrigger>
-                          <SelectContent className="bg-zinc-800 border-zinc-700">
-                            <SelectItem value="all" className="text-white">Todos</SelectItem>
-                            <SelectItem value="Disponible" className="text-white">Disponible</SelectItem>
-                            <SelectItem value="Bajo" className="text-white">Bajo</SelectItem>
-                            <SelectItem value="Agotado" className="text-white">Agotado</SelectItem>
+                          <SelectContent className=" bg-muted border-border">
+                            <SelectItem value="all" className="text-foreground">Todos</SelectItem>
+                            <SelectItem value="Disponible" className="text-foreground">Disponible</SelectItem>
+                            <SelectItem value="Bajo" className="text-foreground">Bajo</SelectItem>
+                            <SelectItem value="Agotado" className="text-foreground">Agotado</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
 
                     {/* Table */}
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+                    <div className="bg-card border  border-border rounded-lg overflow-hidden">
                       <ScrollArea className="h-[500px]">
                         <Table>
                           <TableHeader>
-                            <TableRow className="border-zinc-800 hover:bg-zinc-900">
-                              <TableHead className="text-zinc-400">Producto</TableHead>
-                              <TableHead className="text-zinc-400">SKU</TableHead>
-                              <TableHead className="text-zinc-400">Talla</TableHead>
-                              <TableHead className="text-zinc-400">Color</TableHead>
-                              <TableHead className="text-zinc-400">Stock</TableHead>
-                              <TableHead className="text-zinc-400">Estado</TableHead>
-                              <TableHead className="text-zinc-400">Ajuste Precio</TableHead>
-                              <TableHead className="text-zinc-400 text-right">Acciones</TableHead>
+                            <TableRow className=" border-border hover:bg-card">
+                              <TableHead className="text-foreground">Producto</TableHead>
+                              <TableHead className="text-foreground">SKU</TableHead>
+                              <TableHead className="text-foreground">Talla</TableHead>
+                              <TableHead className="text-foreground">Color</TableHead>
+                              <TableHead className="text-foreground">Stock</TableHead>
+                              <TableHead className="text-foreground">Estado</TableHead>
+                              <TableHead className="text-foreground">Ajuste Precio</TableHead>
+                              <TableHead className="text-foreground text-right">Acciones</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {filteredVariants.length === 0 ? (
                               <TableRow>
-                                <TableCell colSpan={8} className="text-center text-zinc-500 py-12">
+                                <TableCell colSpan={8} className="text-center text-foregroundpy-12">
                                   No se encontraron variantes
                                 </TableCell>
                               </TableRow>
@@ -535,18 +535,18 @@ export default function InventoryPage() {
                                 const status = getVariantStockStatus(variant.stock)
 
                                 return (
-                                  <TableRow key={variant.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                                  <TableRow key={variant.id} className=" border-border hover: bg-muted/50">
                                     <TableCell>
                                       <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-zinc-800 rounded-lg flex items-center justify-center">
+                                        <div className="w-10 h-10  bg-muted rounded-lg flex items-center justify-center">
                                           <Boxes className="h-5 w-5 text-zinc-500" />
                                         </div>
-                                        <span className="text-white font-medium">{variant.productName}</span>
+                                        <span className="text-foreground font-medium">{variant.productName}</span>
                                       </div>
                                     </TableCell>
-                                    <TableCell className="text-zinc-400">{variant.sku}</TableCell>
+                                    <TableCell className="text-foreground">{variant.sku}</TableCell>
                                     <TableCell>
-                                      <Badge variant="outline" className="border-zinc-700 text-zinc-300">
+                                      <Badge variant="outline" className="border-border text-zinc-300">
                                         {variant.size || "N/A"}
                                       </Badge>
                                     </TableCell>
@@ -554,7 +554,7 @@ export default function InventoryPage() {
                                       {variant.color ? (
                                         <div className="flex items-center gap-2">
                                           <div
-                                            className="w-4 h-4 rounded-full border border-zinc-700"
+                                            className="w-4 h-4 rounded-full border border-border"
                                             style={{ backgroundColor: variant.color.toLowerCase() }}
                                           />
                                           <span className="text-zinc-300">{variant.color}</span>
@@ -564,15 +564,15 @@ export default function InventoryPage() {
                                       )}
                                     </TableCell>
                                     <TableCell>
-                                      <span className="text-white font-semibold">{variant.stock}</span>
-                                      <span className="text-zinc-500 text-sm ml-1">und</span>
+                                      <span className="text-foreground font-semibold">{variant.stock}</span>
+                                      <span className="text-foregroundtext-sm ml-1">und</span>
                                     </TableCell>
                                     <TableCell>
                                       <Badge variant="outline" className={status.color}>
                                         {status.label}
                                       </Badge>
                                     </TableCell>
-                                    <TableCell className="text-zinc-400">
+                                    <TableCell className="text-foreground">
                                       {variant.priceAdjustment > 0 ? "+" : ""}
                                       ${variant.priceAdjustment}
                                     </TableCell>
@@ -581,7 +581,7 @@ export default function InventoryPage() {
                                         <Button
                                           size="sm"
                                           variant="outline"
-                                          className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                                          className="border-border text-zinc-300 hover: bg-muted"
                                           onClick={() =>
                                             router.push(`/dashboard/inventory/variants/${variant.id}/edit`)
                                           }

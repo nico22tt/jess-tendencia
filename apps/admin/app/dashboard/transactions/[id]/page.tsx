@@ -188,13 +188,16 @@ export default function TransactionDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-zinc-950">
+      <div className="flex h-screen bg-background
+">
         <AdminSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <AdminHeader />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-5xl mx-auto">
-              <p className="text-zinc-400 text-center">
+              <p className="text-muted-foreground
+
+ text-center">
                 Cargando orden...
               </p>
             </div>
@@ -209,7 +212,8 @@ export default function TransactionDetailPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background
+">
       <AdminSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -224,17 +228,27 @@ export default function TransactionDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                    className="border-border
+
+ text-muted-foreground
+
+ hover:bg-muted
+
+ bg-transparent"
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Volver
                   </Button>
                 </Link>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">
+                  <h1 className="text-3xl font-bold text-foreground
+
+">
                     {order.order_number}
                   </h1>
-                  <p className="text-zinc-400 mt-1">
+                  <p className="text-muted-foreground
+
+ mt-1">
                     Creado el {formatDate(order.created_at)}
                   </p>
                 </div>
@@ -246,10 +260,15 @@ export default function TransactionDetailPage() {
               {/* Columna izquierda - Items y totales */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Items de la orden */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                <Card className="bg-card
+ border-border
+
+ p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Package className="h-5 w-5 text-pink-600" />
-                    <h2 className="text-xl font-semibold text-white">
+                    <h2 className="text-xl font-semibold text-foreground
+
+">
                       Productos
                     </h2>
                   </div>
@@ -293,7 +312,9 @@ export default function TransactionDetailPage() {
                       return (
                         <div
                           key={item.id}
-                          className="flex gap-4 p-4 bg-zinc-800/50 rounded-lg"
+                          className="flex gap-4 p-4 bg-muted
+
+/50 rounded-lg"
                         >
                           <img
                             src={imageUrl}
@@ -301,24 +322,34 @@ export default function TransactionDetailPage() {
                             className="w-20 h-20 object-cover rounded-lg"
                           />
                           <div className="flex-1">
-                            <h3 className="text-white font-medium">
+                            <h3 className="text-foreground
+
+ font-medium">
                               {item.products.name}
                             </h3>
-                            <p className="text-sm text-zinc-400">
+                            <p className="text-sm text-muted-foreground
+
+">
                               SKU: {item.products.sku}
                             </p>
                             <div className="flex items-center gap-4 mt-2">
-                              <span className="text-zinc-400">
+                              <span className="text-muted-foreground
+
+">
                                 Cantidad: {item.quantity}
                               </span>
-                              <span className="text-zinc-400">
+                              <span className="text-muted-foreground
+
+">
                                 Precio:{" "}
                                 {formatCurrency(item.unit_price)}
                               </span>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-white font-semibold">
+                            <p className="text-foreground
+
+ font-semibold">
                               {formatCurrency(item.subtotal)}
                             </p>
                           </div>
@@ -329,26 +360,41 @@ export default function TransactionDetailPage() {
                 </Card>
 
                 {/* Totales */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">
+                <Card className="bg-card
+ border-border
+
+ p-6">
+                  <h2 className="text-xl font-semibold text-foreground
+
+ mb-4">
                     Resumen de Pago
                   </h2>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-zinc-400">
+                    <div className="flex justify-between text-muted-foreground
+
+">
                       <span>Subtotal:</span>
                       <span>{formatCurrency(order.subtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-zinc-400">
+                    <div className="flex justify-between text-muted-foreground
+
+">
                       <span>Envío:</span>
                       <span>{formatCurrency(order.shipping)}</span>
                     </div>
                     {order.tax > 0 && (
-                      <div className="flex justify-between text-zinc-400">
+                      <div className="flex justify-between text-muted-foreground
+
+">
                         <span>Impuestos:</span>
                         <span>{formatCurrency(order.tax)}</span>
                       </div>
                     )}
-                    <div className="pt-3 border-t border-zinc-700 flex justify-between text-white text-lg font-bold">
+                    <div className="pt-3 border-t border-border
+
+ flex justify-between text-foreground
+
+ text-lg font-bold">
                       <span>Total:</span>
                       <span className="text-pink-600">
                         {formatCurrency(order.total)}
@@ -361,42 +407,66 @@ export default function TransactionDetailPage() {
               {/* Columna derecha - Información */}
               <div className="space-y-6">
                 {/* Cliente */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-lg font-semibold text-white mb-4">
+                <Card className="bg-card
+ border-border
+
+ p-6">
+                  <h2 className="text-lg font-semibold text-foreground
+
+ mb-4">
                     Cliente
                   </h2>
                   <div className="space-y-2">
-                    <p className="text-white font-medium">
+                    <p className="text-foreground
+
+ font-medium">
                       {order.users.name}
                     </p>
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-muted-foreground
+
+">
                       {order.users.email}
                     </p>
                   </div>
                 </Card>
 
                 {/* Dirección de envío */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                <Card className="bg-card
+ border-border
+
+ p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <MapPin className="h-5 w-5 text-pink-600" />
-                    <h2 className="text-lg font-semibold text-white">
+                    <h2 className="text-lg font-semibold text-foreground
+
+">
                       Dirección de Envío
                     </h2>
                   </div>
                   <div className="space-y-2 text-sm">
-                    <p className="text-white font-medium">
+                    <p className="text-foreground
+
+ font-medium">
                       {order.shipping_name}
                     </p>
-                    <p className="text-zinc-400">
+                    <p className="text-muted-foreground
+
+">
                       {order.shipping_phone}
                     </p>
-                    <p className="text-zinc-400">
+                    <p className="text-muted-foreground
+
+">
                       {order.shipping_address}
                     </p>
-                    <p className="text-zinc-400">
+                    <p className="text-muted-foreground
+
+">
                       {order.shipping_city}, {order.shipping_region}
                     </p>
-                    <p className="text-zinc-400">
+                    <p className="text-muted-foreground
+
+">
                       CP: {order.shipping_zip}
                     </p>
                   </div>
@@ -404,63 +474,99 @@ export default function TransactionDetailPage() {
 
                 {/* Método de pago */}
                 {order.payment_method && (
-                  <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <Card className="bg-card
+ border-border
+
+ p-6">
                     <div className="flex items-center gap-2 mb-4">
                       <CreditCard className="h-5 w-5 text-pink-600" />
-                      <h2 className="text-lg font-semibold text-white">
+                      <h2 className="text-lg font-semibold text-foreground
+
+">
                         Método de Pago
                       </h2>
                     </div>
-                    <p className="text-zinc-400 capitalize">
+                    <p className="text-muted-foreground
+
+ capitalize">
                       {order.payment_method}
                     </p>
                   </Card>
                 )}
 
                 {/* Cambiar estado */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-lg font-semibold text-white mb-4">
+                <Card className="bg-card
+ border-border
+
+ p-6">
+                  <h2 className="text-lg font-semibold text-foreground
+
+ mb-4">
                     Actualizar Estado
                   </h2>
                   <div className="space-y-4">
                     <Select value={newStatus} onValueChange={setNewStatus}>
-                      <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                      <SelectTrigger className="bg-muted
+
+ border-border
+
+ text-foreground
+
+">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-800 border-zinc-700">
-                        <SelectItem value="PENDING" className="text-white">
+                      <SelectContent className="bg-muted
+
+ border-border
+
+">
+                        <SelectItem value="PENDING" className="text-foreground
+
+">
                           Pendiente
                         </SelectItem>
-                        <SelectItem value="PAID" className="text-white">
+                        <SelectItem value="PAID" className="text-foreground
+
+">
                           Pagado
                         </SelectItem>
                         <SelectItem
                           value="PROCESSING"
-                          className="text-white"
+                          className="text-foreground
+
+"
                         >
                           Procesando
                         </SelectItem>
                         <SelectItem
                           value="SHIPPED"
-                          className="text-white"
+                          className="text-foreground
+
+"
                         >
                           Enviado
                         </SelectItem>
                         <SelectItem
                           value="DELIVERED"
-                          className="text-white"
+                          className="text-foreground
+
+"
                         >
                           Entregado
                         </SelectItem>
                         <SelectItem
                           value="CANCELLED"
-                          className="text-white"
+                          className="text-foreground
+
+"
                         >
                           Cancelado
                         </SelectItem>
                         <SelectItem
                           value="REFUNDED"
-                          className="text-white"
+                          className="text-foreground
+
+"
                         >
                           Reembolsado
                         </SelectItem>
@@ -469,7 +575,9 @@ export default function TransactionDetailPage() {
                     <Button
                       onClick={handleUpdateStatus}
                       disabled={isSaving || newStatus === order.status}
-                      className="w-full bg-pink-600 hover:bg-pink-700 text-white"
+                      className="w-full bg-pink-600 hover:bg-pink-700 text-foreground
+
+"
                     >
                       {isSaving ? "Guardando..." : "Actualizar Estado"}
                     </Button>
@@ -478,14 +586,21 @@ export default function TransactionDetailPage() {
 
                 {/* Notas */}
                 {order.notes && (
-                  <Card className="bg-zinc-900 border-zinc-800 p-6">
+                  <Card className="bg-card
+ border-border
+
+ p-6">
                     <div className="flex items-center gap-2 mb-4">
                       <FileText className="h-5 w-5 text-pink-600" />
-                      <h2 className="text-lg font-semibold text-white">
+                      <h2 className="text-lg font-semibold text-foreground
+
+">
                         Notas
                       </h2>
                     </div>
-                    <p className="text-zinc-400 text-sm">
+                    <p className="text-muted-foreground
+
+ text-sm">
                       {order.notes}
                     </p>
                   </Card>

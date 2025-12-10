@@ -242,7 +242,9 @@ export default function CreateOrderPage() {
 
   if (loadingData) {
     return (
-      <div className="flex h-screen bg-zinc-950">
+      <div className="flex h-screen bg-background
+
+">
         <AdminSidebar />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
@@ -252,7 +254,9 @@ export default function CreateOrderPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background
+
+">
       <AdminSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -264,14 +268,18 @@ export default function CreateOrderPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Link href="/dashboard/transactions">
-                  <Button variant="outline" size="sm" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent">
+                  <Button variant="outline" size="sm" className="border-border text-foreground
+ hover:bg-muted
+bg-transparent">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Volver
                   </Button>
                 </Link>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">Crear Pedido Manual</h1>
-                  <p className="text-zinc-400 mt-1">Crea un pedido para un cliente existente</p>
+                  <h1 className="text-3xl font-bold text-foreground
+">Crear Pedido Manual</h1>
+                  <p className="text-muted-foreground
+mt-1">Crea un pedido para un cliente existente</p>
                 </div>
               </div>
             </div>
@@ -280,18 +288,24 @@ export default function CreateOrderPage() {
               {/* Columna izquierda - Productos y datos */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Seleccionar Cliente */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                <Card className="bg-card
+border-border p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <User className="h-5 w-5 text-pink-600" />
-                    <h2 className="text-xl font-semibold text-white">Cliente</h2>
+                    <h2 className="text-xl font-semibold text-foreground
+">Cliente</h2>
                   </div>
                   <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                    <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                    <SelectTrigger className="bg-muted
+border-border text-foreground
+">
                       <SelectValue placeholder="Selecciona un cliente" />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-800 border-zinc-700">
+                    <SelectContent className="bg-muted
+border-border">
                       {users.map(user => (
-                        <SelectItem key={user.id} value={user.id} className="text-white">
+                        <SelectItem key={user.id} value={user.id} className="text-foreground
+">
                           {user.name} ({user.email})
                         </SelectItem>
                       ))}
@@ -300,10 +314,12 @@ export default function CreateOrderPage() {
                 </Card>
 
                 {/* Agregar Productos */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                <Card className="bg-card
+border-border p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Package className="h-5 w-5 text-pink-600" />
-                    <h2 className="text-xl font-semibold text-white">Productos</h2>
+                    <h2 className="text-xl font-semibold text-foreground
+">Productos</h2>
                   </div>
                   
                   {/* Buscador de productos */}
@@ -314,13 +330,16 @@ export default function CreateOrderPage() {
                       placeholder="Buscar producto por nombre o SKU..."
                       value={searchProduct}
                       onChange={(e) => setSearchProduct(e.target.value)}
-                      className="pl-9 bg-zinc-800 border-zinc-700 text-white"
+                      className="pl-9 bg-muted
+border-border text-foreground
+"
                     />
                   </div>
 
                   {/* Resultados de búsqueda */}
                   {searchProduct && (
-                    <div className="mb-4 max-h-48 overflow-y-auto bg-zinc-800 rounded-lg border border-zinc-700">
+                    <div className="mb-4 max-h-48 overflow-y-auto bg-muted
+rounded-lg border border-border">
                       {filteredProducts.length === 0 ? (
                         <p className="text-zinc-500 text-center py-4">No se encontraron productos</p>
                       ) : (
@@ -328,9 +347,10 @@ export default function CreateOrderPage() {
                           <button
                             key={product.id}
                             onClick={() => addProductToOrder(product)}
-                            className="w-full text-left p-3 hover:bg-zinc-700 transition-colors border-b border-zinc-700 last:border-0"
+                            className="w-full text-left p-3 hover:bg-zinc-700 transition-colors border-b border-border last:border-0"
                           >
-                            <p className="text-white font-medium">{product.name}</p>
+                            <p className="text-foreground
+font-medium">{product.name}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-zinc-400">SKU: {product.sku}</span>
                               <span className="text-xs text-zinc-400">•</span>
@@ -350,9 +370,11 @@ export default function CreateOrderPage() {
                       <p className="text-zinc-500 text-center py-8">No hay productos agregados</p>
                     ) : (
                       orderItems.map(item => (
-                        <div key={item.productId} className="flex items-center gap-4 p-4 bg-zinc-800 rounded-lg">
+                        <div key={item.productId} className="flex items-center gap-4 p-4 bg-muted
+rounded-lg">
                           <div className="flex-1">
-                            <p className="text-white font-medium">{item.productName}</p>
+                            <p className="text-foreground
+font-medium">{item.productName}</p>
                             <p className="text-sm text-zinc-400">SKU: {item.sku}</p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -361,15 +383,18 @@ export default function CreateOrderPage() {
                               min="1"
                               value={item.quantity}
                               onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value))}
-                              className="w-20 bg-zinc-700 border-zinc-600 text-white text-center"
+                              className="w-20 bg-zinc-700 border-zinc-600 text-foreground
+text-center"
                             />
                             <span className="text-zinc-400">×</span>
-                            <span className="text-white font-medium w-24 text-right">
+                            <span className="text-foreground
+font-medium w-24 text-right">
                               {formatCurrency(item.unitPrice)}
                             </span>
                           </div>
                           <div className="text-right w-28">
-                            <p className="text-white font-semibold">{formatCurrency(item.subtotal)}</p>
+                            <p className="text-foreground
+font-semibold">{formatCurrency(item.subtotal)}</p>
                           </div>
                           <Button
                             size="sm"
@@ -386,73 +411,96 @@ export default function CreateOrderPage() {
                 </Card>
 
                 {/* Dirección de envío */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
+                <Card className="bg-card
+border-border p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <MapPin className="h-5 w-5 text-pink-600" />
-                    <h2 className="text-xl font-semibold text-white">Dirección de Envío</h2>
+                    <h2 className="text-xl font-semibold text-foreground
+">Dirección de Envío</h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-zinc-300">Nombre completo</Label>
+                      <Label className="text-foreground
+">Nombre completo</Label>
                       <Input
                         value={shippingName}
                         onChange={(e) => setShippingName(e.target.value)}
-                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        className="bg-muted
+border-border text-foreground
+mt-1"
                         placeholder="Juan Pérez"
                       />
                     </div>
                     <div>
-                      <Label className="text-zinc-300">Email</Label>
+                      <Label className="text-foreground
+">Email</Label>
                       <Input
                         type="email"
                         value={shippingEmail}
                         onChange={(e) => setShippingEmail(e.target.value)}
-                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        className="bg-muted
+border-border text-foreground
+mt-1"
                         placeholder="juan@example.com"
                       />
                     </div>
                     <div>
-                      <Label className="text-zinc-300">Teléfono</Label>
+                      <Label className="text-foreground
+">Teléfono</Label>
                       <Input
                         value={shippingPhone}
                         onChange={(e) => setShippingPhone(e.target.value)}
-                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        className="bg-muted
+border-border text-foreground
+mt-1"
                         placeholder="+56 9 1234 5678"
                       />
                     </div>
                     <div>
-                      <Label className="text-zinc-300">Ciudad</Label>
+                      <Label className="text-foreground
+">Ciudad</Label>
                       <Input
                         value={shippingCity}
                         onChange={(e) => setShippingCity(e.target.value)}
-                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        className="bg-muted
+border-border text-foreground
+mt-1"
                         placeholder="Santiago"
                       />
                     </div>
                     <div>
-                      <Label className="text-zinc-300">Región</Label>
+                      <Label className="text-foreground
+">Región</Label>
                       <Input
                         value={shippingRegion}
                         onChange={(e) => setShippingRegion(e.target.value)}
-                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        className="bg-muted
+border-border text-foreground
+mt-1"
                         placeholder="Metropolitana"
                       />
                     </div>
                     <div>
-                      <Label className="text-zinc-300">Código Postal</Label>
+                      <Label className="text-foreground
+">Código Postal</Label>
                       <Input
                         value={shippingZip}
                         onChange={(e) => setShippingZip(e.target.value)}
-                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        className="bg-muted
+border-border text-foreground
+mt-1"
                         placeholder="8320000"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <Label className="text-zinc-300">Dirección</Label>
+                      <Label className="text-foreground
+">Dirección</Label>
                       <Input
                         value={shippingAddress}
                         onChange={(e) => setShippingAddress(e.target.value)}
-                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        className="bg-muted
+border-border text-foreground
+mt-1"
                         placeholder="Av. Providencia 1234, Depto 501"
                       />
                     </div>
@@ -463,8 +511,10 @@ export default function CreateOrderPage() {
               {/* Columna derecha - Resumen */}
               <div className="space-y-6">
                 {/* Totales */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">Resumen</h2>
+                <Card className="bg-card
+border-border p-6">
+                  <h2 className="text-xl font-semibold text-foreground
+mb-4">Resumen</h2>
                   <div className="space-y-3">
                     <div className="flex justify-between text-zinc-400">
                       <span>Subtotal:</span>
@@ -477,14 +527,17 @@ export default function CreateOrderPage() {
                         min="0"
                         value={shippingCost}
                         onChange={(e) => setShippingCost(e.target.value)}
-                        className="w-32 bg-zinc-800 border-zinc-700 text-white text-right"
+                        className="w-32 bg-muted
+border-border text-foreground
+text-right"
                       />
                     </div>
                     <div className="flex justify-between text-zinc-400">
                       <span>IVA (19%):</span>
                       <span>{formatCurrency(totals.tax)}</span>
                     </div>
-                    <div className="pt-3 border-t border-zinc-700 flex justify-between text-white text-lg font-bold">
+                    <div className="pt-3 border-t border-border flex justify-between text-foreground
+text-lg font-bold">
                       <span>Total:</span>
                       <span className="text-pink-600">{formatCurrency(totals.total)}</span>
                     </div>
@@ -492,44 +545,64 @@ export default function CreateOrderPage() {
                 </Card>
 
                 {/* Opciones adicionales */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">Opciones</h2>
+                <Card className="bg-card
+border-border p-6">
+                  <h2 className="text-xl font-semibold text-foreground
+mb-4">Opciones</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-zinc-300">Estado inicial</Label>
+                      <Label className="text-foreground
+">Estado inicial</Label>
                       <Select value={orderStatus} onValueChange={setOrderStatus}>
-                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1">
+                        <SelectTrigger className="bg-muted
+border-border text-foreground
+mt-1">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-800 border-zinc-700">
-                          <SelectItem value="PENDING" className="text-white">Pendiente</SelectItem>
-                          <SelectItem value="PAID" className="text-white">Pagado</SelectItem>
-                          <SelectItem value="PROCESSING" className="text-white">Procesando</SelectItem>
+                        <SelectContent className="bg-muted
+border-border">
+                          <SelectItem value="PENDING" className="text-foreground
+">Pendiente</SelectItem>
+                          <SelectItem value="PAID" className="text-foreground
+">Pagado</SelectItem>
+                          <SelectItem value="PROCESSING" className="text-foreground
+">Procesando</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div>
-                      <Label className="text-zinc-300">Método de pago</Label>
+                      <Label className="text-foreground
+">Método de pago</Label>
                       <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-1">
+                        <SelectTrigger className="bg-muted
+border-border text-foreground
+mt-1">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-800 border-zinc-700">
-                          <SelectItem value="cash" className="text-white">Efectivo</SelectItem>
-                          <SelectItem value="transfer" className="text-white">Transferencia</SelectItem>
-                          <SelectItem value="credit_card" className="text-white">Tarjeta</SelectItem>
-                          <SelectItem value="debit_card" className="text-white">Débito</SelectItem>
+                        <SelectContent className="bg-muted
+border-border">
+                          <SelectItem value="cash" className="text-foreground
+">Efectivo</SelectItem>
+                          <SelectItem value="transfer" className="text-foreground
+">Transferencia</SelectItem>
+                          <SelectItem value="credit_card" className="text-foreground
+">Tarjeta</SelectItem>
+                          <SelectItem value="debit_card" className="text-foreground
+">Débito</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div>
-                      <Label className="text-zinc-300">Notas (opcional)</Label>
+                      <Label className="text-foreground
+">Notas (opcional)</Label>
                       <Textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                        className="bg-muted
+border-border text-foreground
+mt-1"
                         placeholder="Notas adicionales sobre el pedido..."
                         rows={3}
                       />
@@ -541,7 +614,8 @@ export default function CreateOrderPage() {
                 <Button
                   onClick={handleSubmit}
                   disabled={loading || orderItems.length === 0}
-                  className="w-full bg-pink-600 hover:bg-pink-700 text-white"
+                  className="w-full bg-pink-600 hover:bg-pink-700 text-foreground
+"
                 >
                   {loading ? (
                     <>

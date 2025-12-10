@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import {
   Home,
   Inbox,
-  Search,
   Settings,
   Package,
   Plus,
@@ -13,8 +12,10 @@ import {
   CreditCard,
   ShoppingCart,
   X,
+  Menu,
 } from "lucide-react"
 import { cn } from "@jess/ui/utils"
+import { useState } from "react"
 
 const navigationSections = [
   {
@@ -49,32 +50,23 @@ const navigationSections = [
   },
 ]
 
-type Props = {
-  className?: string
-  onClose?: () => void
-}
-
-export function AdminSidebar({ className, onClose }: Props) {
+// Componente interno del contenido del sidebar
+function SidebarContent({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname()
 
   return (
-    <aside
-      className={cn(
-        "w-64 lg:w-72 xl:w-80",
-        "fixed lg:relative left-0 top-0 h-screen z-50 lg:z-auto",
-        "bg-card text-foreground border-r border-border flex flex-col shadow-2xl lg:shadow-none",
-        className,
-      )}
-    >
+    <>
       <div className="p-6 border-b border-border flex items-center justify-between">
         <h1 className="text-xl lg:text-2xl font-bold">Dashboard</h1>
-        <button
-          title="Cerrar menú"
-          onClick={onClose}
-          className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        {onClose && (
+          <button
+            title="Cerrar menú"
+            onClick={onClose}
+            className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-card/95 backdrop-blur-sm border border-border shadow-2xl"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
@@ -110,6 +102,48 @@ export function AdminSidebar({ className, onClose }: Props) {
           </div>
         ))}
       </nav>
-    </aside>
+    </>
+  )
+}
+
+// Componente principal que maneja desktop y mobile
+export function AdminSidebar() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev)
+
+  return (
+    <>
+      {/* Sidebar Desktop - fijo */}
+      <aside className="hidden lg:flex w-64 lg:w-72 xl:w-80 fixed left-0 top-0 h-screen z-40 bg-card text-foreground border-r border-border flex-col shadow-lg">
+        <SidebarContent />
+      </aside>
+
+      {/* Sidebar Mobile - drawer desde la izquierda */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Overlay con blur que cubre todo incluyendo el botón */}
+          <div
+            className="absolute inset-0 bg-background/40 backdrop-blur-md transition-opacity duration-200"
+            onClick={toggleSidebar}
+          />
+          {/* Drawer que sale desde la izquierda */}
+          <aside className="absolute left-0 top-0 w-64 h-full bg-card border-r border-border shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
+            <SidebarContent onClose={toggleSidebar} />
+          </aside>
+        </div>
+      )}
+
+      {/* Botón menú mobile - solo visible cuando el sidebar está cerrado */}
+      {!sidebarOpen && (
+        <button
+          className="lg:hidden fixed top-4 left-4 z-40 p-3 rounded-xl bg-card/95 backdrop-blur-sm border border-border shadow-2xl hover:bg-muted transition-colors"
+          onClick={toggleSidebar}
+          aria-label="Abrir menú"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      )}
+    </>
   )
 }

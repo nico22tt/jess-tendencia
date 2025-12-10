@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Bell, LogOut, Sun, Moon } from "lucide-react"
+import { Bell, LogOut, Sun, Moon, Menu } from "lucide-react"  // 👈 Agrega Menu
 import { Button } from "@jess/ui/button"
 import {
   DropdownMenu,
@@ -17,9 +17,10 @@ import { createClient } from "@utils/supabase/client"
 type AdminHeaderProps = {
   user?: any
   profile?: any
+  onMenuClick?: () => void  // 👈 Agrega esta línea
 }
 
-export function AdminHeader({ user, profile }: AdminHeaderProps) {
+export function AdminHeader({ user, profile, onMenuClick }: AdminHeaderProps) {  // 👈 Agrega la prop
   const router = useRouter()
   const [unreadCount, setUnreadCount] = useState(0)
   const [theme, setTheme] = useState<"light" | "dark">("dark")
@@ -77,18 +78,32 @@ export function AdminHeader({ user, profile }: AdminHeaderProps) {
 
   return (
     <div className="flex items-center justify-between px-6 py-4">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
-          Admin
-        </h2>
-        {user && (
-          <p className="text-sm text-muted-foreground">
-            {user.email}{" "}
-            {profile?.role && (
-              <span className="text-primary">({profile.role})</span>
-            )}
-          </p>
+      <div className="flex items-center gap-3">
+        {/* Botón de menú mobile */}
+        {onMenuClick && (  // 👈 Solo muestra si hay onMenuClick
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden text-muted-foreground hover:text-foreground hover:bg-muted"
+            onClick={onMenuClick}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
         )}
+
+        <div>
+          <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
+            Admin
+          </h2>
+          {user && (
+            <p className="text-sm text-muted-foreground">
+              {user.email}{" "}
+              {profile?.role && (
+                <span className="text-primary">({profile.role})</span>
+              )}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4 pr-1 sm:pr-4">

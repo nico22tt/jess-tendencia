@@ -128,7 +128,7 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-zinc-950">
+      <div className="flex h-screen bg-background">
         <AdminSidebar />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
@@ -139,10 +139,10 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
 
   if (!product) {
     return (
-      <div className="flex h-screen bg-zinc-950">
+      <div className="flex h-screen bg-background">
         <AdminSidebar />
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-zinc-400">Producto no encontrado</p>
+          <p className="text-muted-foreground">Producto no encontrado</p>
         </div>
       </div>
     )
@@ -152,7 +152,7 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
   const stockDifference = newStock - product.stock
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader />
@@ -164,20 +164,20 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
                 variant="outline"
                 size="icon"
                 onClick={() => router.back()}
-                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                className="border-border text-muted-foreground hover:bg-muted"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-white">Editar Inventario</h1>
-                <p className="text-zinc-400 mt-1">{product.name}</p>
+                <h1 className="text-3xl font-bold text-foreground">Editar Inventario</h1>
+                <p className="text-muted-foreground mt-1">{product.name}</p>
               </div>
             </div>
 
             {/* Información del Producto */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
+                <CardTitle className="text-foreground flex items-center gap-2">
                   <Package className="h-5 w-5 text-pink-600" />
                   Información del Producto
                 </CardTitle>
@@ -185,33 +185,33 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-zinc-400">Nombre</Label>
-                    <p className="text-white font-medium mt-1">{product.name}</p>
+                    <Label className="text-muted-foreground">Nombre</Label>
+                    <p className="text-foreground font-medium mt-1">{product.name}</p>
                   </div>
                   <div>
-                    <Label className="text-zinc-400">SKU</Label>
-                    <p className="text-white font-medium mt-1">{product.sku}</p>
+                    <Label className="text-muted-foreground">SKU</Label>
+                    <p className="text-foreground font-medium mt-1">{product.sku}</p>
                   </div>
                   <div>
-                    <Label className="text-zinc-400">Categoría</Label>
-                    <p className="text-white font-medium mt-1">{product.category}</p>
+                    <Label className="text-muted-foreground">Categoría</Label>
+                    <p className="text-foreground font-medium mt-1">{product.category}</p>
                   </div>
                   <div>
-                    <Label className="text-zinc-400">Stock Mínimo</Label>
-                    <p className="text-white font-medium mt-1">{product.minStock} unidades</p>
+                    <Label className="text-muted-foreground">Stock Mínimo</Label>
+                    <p className="text-foreground font-medium mt-1">{product.minStock} unidades</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Stock Actual */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card border-border">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-zinc-400">Stock Actual</Label>
-                    <p className="text-4xl font-bold text-white mt-2">{product.stock}</p>
-                    <p className="text-sm text-zinc-500 mt-1">unidades disponibles</p>
+                    <Label className="text-muted-foreground">Stock Actual</Label>
+                    <p className="text-4xl font-bold text-foreground mt-2">{product.stock}</p>
+                    <p className="text-smtext-muted-foreground mt-1">unidades disponibles</p>
                   </div>
                   <Package className="h-16 w-16 text-pink-600" />
                 </div>
@@ -219,37 +219,37 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
             </Card>
 
             {/* Formulario de Ajuste */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="text-white">Ajustar Stock</CardTitle>
-                <CardDescription className="text-zinc-400">
+                <CardTitle className="text-foreground">Ajustar Stock</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Modifica la cantidad de unidades disponibles
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Tipo de Ajuste */}
                 <div>
-                  <Label htmlFor="adjustmentType" className="text-zinc-300">
+                  <Label htmlFor="adjustmentType" className="text-muted-foreground">
                     Tipo de ajuste
                   </Label>
                   <Select value={adjustmentType} onValueChange={(v: any) => setAdjustmentType(v)}>
-                    <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white mt-2">
+                    <SelectTrigger className="bg-muted border-border text-foreground mt-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-800 border-zinc-700">
-                      <SelectItem value="add" className="text-white">
+                    <SelectContent className="bg-muted border-border">
+                      <SelectItem value="add" className="text-foreground">
                         <div className="flex items-center gap-2">
                           <TrendingUp className="h-4 w-4 text-green-400" />
                           Sumar unidades (Entrada de inventario)
                         </div>
                       </SelectItem>
-                      <SelectItem value="subtract" className="text-white">
+                      <SelectItem value="subtract" className="text-foreground">
                         <div className="flex items-center gap-2">
                           <TrendingUp className="h-4 w-4 rotate-180 text-red-400" />
                           Restar unidades (Salida de inventario)
                         </div>
                       </SelectItem>
-                      <SelectItem value="set" className="text-white">
+                      <SelectItem value="set" className="text-foreground">
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4 text-yellow-400" />
                           Establecer cantidad exacta
@@ -261,7 +261,7 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
 
                 {/* Cantidad */}
                 <div>
-                  <Label htmlFor="amount" className="text-zinc-300">
+                  <Label htmlFor="amount" className="text-muted-foreground">
                     Cantidad
                   </Label>
                   <Input
@@ -275,24 +275,24 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
                     }
                     value={adjustmentAmount}
                     onChange={(e) => setAdjustmentAmount(e.target.value)}
-                    className="bg-zinc-800 border-zinc-700 text-white mt-2"
+                    className="bg-muted border-border text-foreground mt-2"
                   />
                 </div>
 
                 {/* Preview del cambio */}
                 {adjustmentAmount && (
-                  <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-4">
+                  <div className="bg-muted border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-zinc-400">Stock actual</p>
-                        <p className="text-2xl font-bold text-white">{product.stock}</p>
+                        <p className="text-sm text-muted-foreground">Stock actual</p>
+                        <p className="text-2xl font-bold text-foreground">{product.stock}</p>
                       </div>
                       <div className="text-2xl font-bold text-zinc-600">→</div>
                       <div>
-                        <p className="text-sm text-zinc-400">Nuevo stock</p>
+                        <p className="text-sm text-muted-foreground">Nuevo stock</p>
                         <p className={`text-2xl font-bold ${
                           stockDifference > 0 ? "text-green-400" : 
-                          stockDifference < 0 ? "text-red-400" : "text-white"
+                          stockDifference < 0 ? "text-red-400" : "text-foreground"
                         }`}>
                           {newStock}
                           {stockDifference !== 0 && (
@@ -308,7 +308,7 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
 
                 {/* Nota */}
                 <div>
-                  <Label htmlFor="note" className="text-zinc-300">
+                  <Label htmlFor="note" className="text-muted-foreground">
                     Motivo del ajuste (opcional)
                   </Label>
                   <Textarea
@@ -316,19 +316,19 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
                     placeholder="Ej: Reposición de proveedor, Venta directa, Ajuste por inventario físico..."
                     value={adjustmentNote}
                     onChange={(e) => setAdjustmentNote(e.target.value)}
-                    className="bg-zinc-800 border-zinc-700 text-white mt-2"
+                    className="bg-muted border-border text-foreground mt-2"
                     rows={3}
                   />
                 </div>
 
-                <Separator className="bg-zinc-800" />
+                <Separator className="bg-muted" />
 
                 {/* Botones */}
                 <div className="flex gap-3">
                   <Button
                     onClick={handleAdjustStock}
                     disabled={saving || !adjustmentAmount}
-                    className="flex-1 bg-pink-600 hover:bg-pink-700 text-white"
+                    className="flex-1 bg-green-600 hover:bg-pink-700 text-foreground"
                   >
                     {saving ? (
                       <>
@@ -345,7 +345,7 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
                   <Button
                     variant="outline"
                     onClick={() => router.back()}
-                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                    className="flex-1 border-border bg-pink-600 text-foreground hover:bg-muted"
                   >
                     Cancelar
                   </Button>
@@ -357,7 +357,7 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
             <Button
               variant="outline"
               onClick={() => router.push(`/dashboard/inventory/${product.id}/history`)}
-              className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              className="w-full order-border text-foreground hover:bg-muted bg-blue-600"
             >
               Ver Historial de Movimientos
             </Button>

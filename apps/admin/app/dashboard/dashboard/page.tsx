@@ -1,3 +1,5 @@
+"use client"
+
 import { AdminSidebar } from "@/components/admin-sidebar"
 import { AdminHeader } from "@/components/admin-header"
 import { RevenueChart } from "@/components/revenue-chart"
@@ -7,19 +9,22 @@ import { TodoList } from "@/components/todo-list"
 import { VisitorsChart } from "@/components/visitors-chart"
 import { PopularProducts } from "@/components/popular-products"
 
-export default function AdminDashboard() {
+type Props = {
+  user?: any
+  profile?: any
+}
+
+export default function AdminDashboard({ user, profile }: Props) {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Sidebar */}
-      <div className="hidden lg:block fixed left-0 top-0 h-screen w-64 lg:w-72 z-40 border-r border-border bg-card">
-        <AdminSidebar />
-      </div>
+      <AdminSidebar />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-64">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="sticky top-0 z-30 bg-card border-b border-border">
-          <AdminHeader />
+          <AdminHeader user={user} profile={profile} />
         </header>
 
         {/* Dashboard Content */}

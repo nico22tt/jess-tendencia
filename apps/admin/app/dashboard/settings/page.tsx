@@ -28,7 +28,10 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("general")
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background
+
+
+">
       <AdminSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -38,13 +41,22 @@ export default function SettingsPage() {
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Configuración del Sistema</h1>
+              <h1 className="text-3xl font-bold  text-foreground
+
+
+mb-2">Configuración del Sistema</h1>
               <p className="text-zinc-400">Administra la configuración de tu tienda online</p>
             </div>
 
             <div className="grid grid-cols-12 gap-6">
               {/* Settings Navigation Sidebar */}
-              <Card className="col-span-3 bg-zinc-900 border-zinc-800 p-4">
+              <Card className="col-span-3 bg-card
+
+
+  border-border
+
+
+ p-4">
                 <nav className="space-y-1">
                   {settingsNavigation.map((item) => {
                     const Icon = item.icon
@@ -58,7 +70,7 @@ export default function SettingsPage() {
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
                           isActive
                             ? "bg-purple-600/20 text-purple-400 border border-purple-500/30"
-                            : "text-zinc-400 hover:text-white hover:bg-zinc-800/50",
+                            : "text-muted-foreground hover: text-foreground hover:bg-muted /50",
                         )}
                       >
                         <Icon className="h-4 w-4" />
@@ -73,57 +85,111 @@ export default function SettingsPage() {
               <div className="col-span-9">
                 {/* Configuración General */}
                 {activeSection === "general" && (
-                  <Card className="bg-zinc-900 border-zinc-800">
+                  <Card className="bg-card
+
+
+  border-border
+
+
+">
                     <CardHeader>
                       <CardTitle className="text-2xl text-white">Configuración General</CardTitle>
                       <CardDescription className="text-zinc-400">
                         Información básica de tu tienda online
                       </CardDescription>
                     </CardHeader>
-                    <Separator className="bg-zinc-800" />
+                    <Separator className="bg-muted
+
+
+" />
                     <CardContent className="pt-6 space-y-6">
                       <div className="space-y-2">
-                        <Label htmlFor="storeName" className="text-zinc-300">
+                        <Label htmlFor="storeName" className=" text-foreground
+
+
+">
                           Nombre de la Tienda
                         </Label>
                         <Input
                           id="storeName"
                           type="text"
                           defaultValue="Jess Tendencia"
-                          className="bg-zinc-800 border-zinc-700 text-white focus:border-purple-500 focus:ring-purple-500"
+                          className="bg-muted
+
+
+  border-border
+
+
+  text-foreground
+
+
+focus:border-purple-500 focus:ring-purple-500"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="storeEmail" className="text-zinc-300">
+                        <Label htmlFor="storeEmail" className=" text-foreground
+
+
+">
                           Email de Contacto
                         </Label>
                         <Input
                           id="storeEmail"
                           type="email"
                           defaultValue="contacto@jesstendencia.com"
-                          className="bg-zinc-800 border-zinc-700 text-white focus:border-purple-500 focus:ring-purple-500"
+                          className="bg-muted
+
+
+  border-border
+
+
+  text-foreground
+
+
+focus:border-purple-500 focus:ring-purple-500"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="storePhone" className="text-zinc-300">
+                        <Label htmlFor="storePhone" className=" text-foreground
+
+
+">
                           Teléfono
                         </Label>
                         <Input
                           id="storePhone"
                           type="tel"
                           defaultValue="+56 9 1234 5678"
-                          className="bg-zinc-800 border-zinc-700 text-white focus:border-purple-500 focus:ring-purple-500"
+                          className="bg-muted
+
+
+  border-border
+
+
+  text-foreground
+
+
+focus:border-purple-500 focus:ring-purple-500"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="timezone" className="text-zinc-300">
+                        <Label htmlFor="timezone" className=" text-foreground
+
+
+">
                           Zona Horaria
                         </Label>
                         <Select defaultValue="santiago">
-                          <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                          <SelectTrigger className="bg-muted
+
+
+  border-border
+
+
+ text-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -134,10 +200,16 @@ export default function SettingsPage() {
                         </Select>
                       </div>
 
-                      <Separator className="bg-zinc-800" />
+                      <Separator className="bg-muted
+
+
+" />
 
                       <div className="flex justify-end">
-                        <Button className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6">
+                        <Button className="bg-purple-600 hover:bg-purple-700  text-foreground
+
+
+font-medium px-6">
                           Guardar Cambios
                         </Button>
                       </div>
@@ -147,47 +219,86 @@ export default function SettingsPage() {
 
                 {/* Gestión de Productos */}
                 {activeSection === "products" && (
-                  <Card className="bg-zinc-900 border-zinc-800">
+                  <Card className="bg-card
+
+
+  border-border
+
+
+">
                     <CardHeader>
                       <CardTitle className="text-2xl text-white">Gestión de Productos</CardTitle>
                       <CardDescription className="text-zinc-400">
                         Configura cómo se manejan los productos en tu tienda
                       </CardDescription>
                     </CardHeader>
-                    <Separator className="bg-zinc-800" />
+                    <Separator className="bg-muted
+
+
+" />
                     <CardContent className="pt-6 space-y-6">
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <Label className="text-zinc-300">Mostrar productos agotados</Label>
-                          <p className="text-sm text-zinc-500">Los productos sin stock seguirán visibles</p>
+                          <Label className=" text-foreground
+
+
+">Mostrar productos agotados</Label>
+                          <p className="text-sm text-muted-foreground
+
+
+">Los productos sin stock seguirán visibles</p>
                         </div>
                         <Switch defaultChecked />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <Label className="text-zinc-300">Alertas de inventario bajo</Label>
-                          <p className="text-sm text-zinc-500">Recibe notificaciones cuando el stock sea bajo</p>
+                          <Label className=" text-foreground
+
+
+">Alertas de inventario bajo</Label>
+                          <p className="text-sm text-muted-foreground
+
+
+">Recibe notificaciones cuando el stock sea bajo</p>
                         </div>
                         <Switch defaultChecked />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="lowStock" className="text-zinc-300">
+                        <Label htmlFor="lowStock" className=" text-foreground
+
+
+">
                           Umbral de stock bajo
                         </Label>
                         <Input
                           id="lowStock"
                           type="number"
                           defaultValue="5"
-                          className="bg-zinc-800 border-zinc-700 text-white focus:border-purple-500 focus:ring-purple-500"
+                          className="bg-muted
+
+
+  border-border
+
+
+  text-foreground
+
+
+focus:border-purple-500 focus:ring-purple-500"
                         />
                       </div>
 
-                      <Separator className="bg-zinc-800" />
+                      <Separator className="bg-muted
+
+
+" />
 
                       <div className="flex justify-end">
-                        <Button className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6">
+                        <Button className="bg-purple-600 hover:bg-purple-700  text-foreground
+
+
+font-medium px-6">
                           Guardar Cambios
                         </Button>
                       </div>
@@ -197,19 +308,37 @@ export default function SettingsPage() {
 
                 {/* Configuración de Pagos */}
                 {activeSection === "payments" && (
-                  <Card className="bg-zinc-900 border-zinc-800">
+                  <Card className="bg-card
+
+
+  border-border
+
+
+">
                     <CardHeader>
                       <CardTitle className="text-2xl text-white">Configuración de Pagos</CardTitle>
                       <CardDescription className="text-zinc-400">
                         Gestiona los métodos de pago aceptados
                       </CardDescription>
                     </CardHeader>
-                    <Separator className="bg-zinc-800" />
+                    <Separator className="bg-muted
+
+
+" />
                     <CardContent className="pt-6 space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-zinc-300">Moneda Principal</Label>
+                        <Label className=" text-foreground
+
+
+">Moneda Principal</Label>
                         <Select defaultValue="clp">
-                          <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                          <SelectTrigger className="bg-muted
+
+
+  border-border
+
+
+ text-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -221,36 +350,66 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="space-y-4">
-                        <Label className="text-zinc-300">Métodos de Pago Activos</Label>
+                        <Label className=" text-foreground
+
+
+">Métodos de Pago Activos</Label>
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-800 border border-zinc-700">
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-muted
+
+
+ border  border-border
+
+
+">
                             <div className="flex items-center gap-3">
                               <CreditCard className="h-5 w-5 text-zinc-400" />
                               <div>
                                 <p className="text-sm font-medium text-white">Tarjetas de Crédito/Débito</p>
-                                <p className="text-xs text-zinc-500">Visa, Mastercard, American Express</p>
+                                <p className="text-xs text-muted-foreground
+
+
+">Visa, Mastercard, American Express</p>
                               </div>
                             </div>
                             <Switch defaultChecked />
                           </div>
 
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-800 border border-zinc-700">
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-muted
+
+
+ border  border-border
+
+
+">
                             <div className="flex items-center gap-3">
                               <Store className="h-5 w-5 text-zinc-400" />
                               <div>
                                 <p className="text-sm font-medium text-white">Transferencia Bancaria</p>
-                                <p className="text-xs text-zinc-500">Pago directo a cuenta bancaria</p>
+                                <p className="text-xs text-muted-foreground
+
+
+">Pago directo a cuenta bancaria</p>
                               </div>
                             </div>
                             <Switch defaultChecked />
                           </div>
 
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-800 border border-zinc-700">
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-muted
+
+
+ border  border-border
+
+
+">
                             <div className="flex items-center gap-3">
                               <Package className="h-5 w-5 text-zinc-400" />
                               <div>
                                 <p className="text-sm font-medium text-white">Pago Contra Entrega</p>
-                                <p className="text-xs text-zinc-500">Pago en efectivo al recibir</p>
+                                <p className="text-xs text-muted-foreground
+
+
+">Pago en efectivo al recibir</p>
                               </div>
                             </div>
                             <Switch />
@@ -258,10 +417,16 @@ export default function SettingsPage() {
                         </div>
                       </div>
 
-                      <Separator className="bg-zinc-800" />
+                      <Separator className="bg-muted
+
+
+" />
 
                       <div className="flex justify-end">
-                        <Button className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6">
+                        <Button className="bg-purple-600 hover:bg-purple-700  text-foreground
+
+
+font-medium px-6">
                           Guardar Cambios
                         </Button>
                       </div>
@@ -271,63 +436,120 @@ export default function SettingsPage() {
 
                 {/* Envíos y Entregas */}
                 {activeSection === "shipping" && (
-                  <Card className="bg-zinc-900 border-zinc-800">
+                  <Card className="bg-card
+
+
+  border-border
+
+
+">
                     <CardHeader>
                       <CardTitle className="text-2xl text-white">Envíos y Entregas</CardTitle>
                       <CardDescription className="text-zinc-400">
                         Configura las opciones de envío para tus clientes
                       </CardDescription>
                     </CardHeader>
-                    <Separator className="bg-zinc-800" />
+                    <Separator className="bg-muted
+
+
+" />
                     <CardContent className="pt-6 space-y-6">
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <Label className="text-zinc-300">Envío gratuito</Label>
-                          <p className="text-sm text-zinc-500">Ofrecer envío sin costo en compras mayores</p>
+                          <Label className=" text-foreground
+
+
+">Envío gratuito</Label>
+                          <p className="text-sm text-muted-foreground
+
+
+">Ofrecer envío sin costo en compras mayores</p>
                         </div>
                         <Switch defaultChecked />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="freeShipping" className="text-zinc-300">
+                        <Label htmlFor="freeShipping" className=" text-foreground
+
+
+">
                           Monto mínimo para envío gratuito
                         </Label>
                         <Input
                           id="freeShipping"
                           type="number"
                           defaultValue="50000"
-                          className="bg-zinc-800 border-zinc-700 text-white focus:border-purple-500 focus:ring-purple-500"
+                          className="bg-muted
+
+
+  border-border
+
+
+  text-foreground
+
+
+focus:border-purple-500 focus:ring-purple-500"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="shippingCost" className="text-zinc-300">
+                        <Label htmlFor="shippingCost" className=" text-foreground
+
+
+">
                           Costo de envío estándar
                         </Label>
                         <Input
                           id="shippingCost"
                           type="number"
                           defaultValue="5000"
-                          className="bg-zinc-800 border-zinc-700 text-white focus:border-purple-500 focus:ring-purple-500"
+                          className="bg-muted
+
+
+  border-border
+
+
+  text-foreground
+
+
+focus:border-purple-500 focus:ring-purple-500"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="deliveryTime" className="text-zinc-300">
+                        <Label htmlFor="deliveryTime" className=" text-foreground
+
+
+">
                           Tiempo de entrega estimado (días)
                         </Label>
                         <Input
                           id="deliveryTime"
                           type="text"
                           defaultValue="3-5 días hábiles"
-                          className="bg-zinc-800 border-zinc-700 text-white focus:border-purple-500 focus:ring-purple-500"
+                          className="bg-muted
+
+
+  border-border
+
+
+  text-foreground
+
+
+focus:border-purple-500 focus:ring-purple-500"
                         />
                       </div>
 
-                      <Separator className="bg-zinc-800" />
+                      <Separator className="bg-muted
+
+
+" />
 
                       <div className="flex justify-end">
-                        <Button className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6">
+                        <Button className="bg-purple-600 hover:bg-purple-700  text-foreground
+
+
+font-medium px-6">
                           Guardar Cambios
                         </Button>
                       </div>
@@ -337,22 +559,37 @@ export default function SettingsPage() {
 
                 {/* Notificaciones */}
                 {activeSection === "notifications" && (
-                  <Card className="bg-zinc-900 border-zinc-800">
+                  <Card className="bg-card
+
+
+  border-border
+
+
+">
                     <CardHeader>
                       <CardTitle className="text-2xl text-white">Notificaciones</CardTitle>
                       <CardDescription className="text-zinc-400">
                         Configura cómo y cuándo recibir notificaciones
                       </CardDescription>
                     </CardHeader>
-                    <Separator className="bg-zinc-800" />
+                    <Separator className="bg-muted
+
+
+" />
                     <CardContent className="pt-6 space-y-6">
                       <div className="space-y-4">
-                        <Label className="text-zinc-300">Notificaciones por Email</Label>
+                        <Label className=" text-foreground
+
+
+">Notificaciones por Email</Label>
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                               <p className="text-sm text-white">Nuevos pedidos</p>
-                              <p className="text-xs text-zinc-500">Recibe un email cuando llegue un nuevo pedido</p>
+                              <p className="text-xs text-muted-foreground
+
+
+">Recibe un email cuando llegue un nuevo pedido</p>
                             </div>
                             <Switch defaultChecked />
                           </div>
@@ -360,7 +597,10 @@ export default function SettingsPage() {
                           <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                               <p className="text-sm text-white">Stock bajo</p>
-                              <p className="text-xs text-zinc-500">Alerta cuando un producto tenga poco inventario</p>
+                              <p className="text-xs text-muted-foreground
+
+
+">Alerta cuando un producto tenga poco inventario</p>
                             </div>
                             <Switch defaultChecked />
                           </div>
@@ -368,7 +608,10 @@ export default function SettingsPage() {
                           <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                               <p className="text-sm text-white">Nuevos usuarios</p>
-                              <p className="text-xs text-zinc-500">Notificación cuando se registre un nuevo usuario</p>
+                              <p className="text-xs text-muted-foreground
+
+
+">Notificación cuando se registre un nuevo usuario</p>
                             </div>
                             <Switch />
                           </div>
@@ -376,17 +619,26 @@ export default function SettingsPage() {
                           <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                               <p className="text-sm text-white">Reseñas de productos</p>
-                              <p className="text-xs text-zinc-500">Alerta cuando un cliente deje una reseña</p>
+                              <p className="text-xs text-muted-foreground
+
+
+">Alerta cuando un cliente deje una reseña</p>
                             </div>
                             <Switch defaultChecked />
                           </div>
                         </div>
                       </div>
 
-                      <Separator className="bg-zinc-800" />
+                      <Separator className="bg-muted
+
+
+" />
 
                       <div className="flex justify-end">
-                        <Button className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6">
+                        <Button className="bg-purple-600 hover:bg-purple-700  text-foreground
+
+
+font-medium px-6">
                           Guardar Cambios
                         </Button>
                       </div>
@@ -396,17 +648,29 @@ export default function SettingsPage() {
 
                 {/* Apariencia */}
                 {activeSection === "appearance" && (
-                  <Card className="bg-zinc-900 border-zinc-800">
+                  <Card className="bg-card
+
+
+  border-border
+
+
+">
                     <CardHeader>
                       <CardTitle className="text-2xl text-white">Apariencia</CardTitle>
                       <CardDescription className="text-zinc-400">
                         Personaliza el aspecto visual de tu tienda
                       </CardDescription>
                     </CardHeader>
-                    <Separator className="bg-zinc-800" />
+                    <Separator className="bg-muted
+
+
+" />
                     <CardContent className="pt-6 space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-zinc-300">Color Principal</Label>
+                        <Label className=" text-foreground
+
+
+">Color Principal</Label>
                         <div className="flex gap-3">
                           <div className="w-12 h-12 rounded-lg bg-pink-400 border-2 border-white cursor-pointer" />
                           <div className="w-12 h-12 rounded-lg bg-purple-500 border-2 border-transparent cursor-pointer" />
@@ -416,16 +680,34 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="logo" className="text-zinc-300">
+                        <Label htmlFor="logo" className=" text-foreground
+
+
+">
                           Logo de la Tienda
                         </Label>
                         <div className="flex items-center gap-4">
-                          <div className="w-24 h-24 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                          <div className="w-24 h-24 rounded-lg bg-muted
+
+
+ border  border-border
+
+
+ flex items-center justify-center">
                             <Store className="h-8 w-8 text-zinc-600" />
                           </div>
                           <Button
                             variant="outline"
-                            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                            className=" border-border
+
+
+  text-foreground
+
+
+ hover:bg-muted
+
+
+ bg-transparent"
                           >
                             Cambiar Logo
                           </Button>
@@ -434,16 +716,28 @@ export default function SettingsPage() {
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <Label className="text-zinc-300">Modo Oscuro</Label>
-                          <p className="text-sm text-zinc-500">Usar tema oscuro en el panel de administración</p>
+                          <Label className=" text-foreground
+
+
+">Modo Oscuro</Label>
+                          <p className="text-sm text-muted-foreground
+
+
+">Usar tema oscuro en el panel de administración</p>
                         </div>
                         <Switch defaultChecked />
                       </div>
 
-                      <Separator className="bg-zinc-800" />
+                      <Separator className="bg-muted
+
+
+" />
 
                       <div className="flex justify-end">
-                        <Button className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6">
+                        <Button className="bg-purple-600 hover:bg-purple-700  text-foreground
+
+
+font-medium px-6">
                           Guardar Cambios
                         </Button>
                       </div>

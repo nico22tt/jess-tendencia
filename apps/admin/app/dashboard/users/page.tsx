@@ -57,7 +57,8 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background
+">
       <AdminSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -68,37 +69,50 @@ export default function UsersPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white">Gestión de Usuarios</h1>
-                <p className="text-zinc-400 mt-1">Administra todos los usuarios de tu plataforma</p>
+                <h1 className="text-3xl font-bold text-foreground
+">Gestión de Usuarios</h1>
+                <p className="text-muted-foreground
+ mt-1">Administra todos los usuarios de tu plataforma</p>
               </div>
             </div>
 
             {/* Filters */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+            <div className="bg-card
+border border-border rounded-lg p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground
+" />
                   <Input
                     type="text"
                     placeholder="Buscar por nombre o email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                    className="pl-9 bg-muted
+ border-border text-foreground
+ placeholder:text-muted-foreground
+"
                   />
                 </div>
 
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectTrigger className="bg-muted
+ border-border text-foreground
+">
                     <SelectValue placeholder="Filtrar por rol" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
-                    <SelectItem value="all" className="text-white">
+                  <SelectContent className="bg-muted
+ border-border">
+                    <SelectItem value="all" className="text-foreground
+">
                       Todos los roles
                     </SelectItem>
-                    <SelectItem value="admin" className="text-white">
+                    <SelectItem value="admin" className="text-foreground
+">
                       Admin
                     </SelectItem>
-                    <SelectItem value="client" className="text-white">
+                    <SelectItem value="client" className="text-foreground
+">
                       Cliente
                     </SelectItem>
                   </SelectContent>
@@ -107,23 +121,34 @@ export default function UsersPage() {
             </div>
 
             {/* Users Table */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+            <div className="bg-card
+border border-border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-zinc-800 hover:bg-zinc-800/50">
-                    <TableHead className="text-zinc-400">Nombre</TableHead>
-                    <TableHead className="text-zinc-400">Email</TableHead>
-                    <TableHead className="text-zinc-400">Rol</TableHead>
-                    <TableHead className="text-zinc-400">Fecha de Registro</TableHead>
-                    <TableHead className="text-zinc-400">Estado</TableHead>
-                    <TableHead className="text-zinc-400 text-right">Acciones</TableHead>
+                  <TableRow className="border-border hover:bg-muted
+/50">
+                    <TableHead className="text-muted-foreground
+">Nombre</TableHead>
+                    <TableHead className="text-muted-foreground
+">Email</TableHead>
+                    <TableHead className="text-muted-foreground
+">Rol</TableHead>
+                    <TableHead className="text-muted-foreground
+">Fecha de Registro</TableHead>
+                    <TableHead className="text-muted-foreground
+">Estado</TableHead>
+                    <TableHead className="text-muted-foreground
+ text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedUsers.map((user) => (
-                    <TableRow key={user.id} className="border-zinc-800 hover:bg-zinc-800/50">
-                      <TableCell className="text-white font-medium">{user.name}</TableCell>
-                      <TableCell className="text-zinc-400">{user.email}</TableCell>
+                    <TableRow key={user.id} className="border-border hover:bg-muted
+/50">
+                      <TableCell className="text-foreground
+ font-medium">{user.name}</TableCell>
+                      <TableCell className="text-muted-foreground
+">{user.email}</TableCell>
                       <TableCell>
                         <Badge
                           className={
@@ -135,7 +160,8 @@ export default function UsersPage() {
                           {user.role === "admin" ? "Admin" : "Cliente"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-zinc-400">{formatDate(user.registrationDate)}</TableCell>
+                      <TableCell className="text-muted-foreground
+">{formatDate(user.registrationDate)}</TableCell>
                       <TableCell>
                         <Badge
                           className={
@@ -153,7 +179,9 @@ export default function UsersPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                              className="border-border text-foreground
+ hover:bg-muted
+ bg-transparent"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -161,7 +189,8 @@ export default function UsersPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-zinc-700 text-red-400 hover:bg-zinc-800 hover:text-red-300 bg-transparent"
+                            className="border-border text-red-400 hover:bg-muted
+ hover:text-red-300 bg-transparent"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -175,7 +204,8 @@ export default function UsersPage() {
 
             {/* Pagination */}
             <div className="flex items-center justify-between">
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-muted-foreground
+">
                 Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredUsers.length)} de{" "}
                 {filteredUsers.length} usuarios
               </p>
@@ -183,19 +213,24 @@ export default function UsersPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                  className="border-border text-foreground
+ hover:bg-muted
+ bg-transparent"
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-sm text-zinc-400">
+                <span className="text-sm text-muted-foreground
+">
                   Página {currentPage} de {totalPages}
                 </span>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                  className="border-border text-foreground
+ hover:bg-muted
+ bg-transparent"
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                 >

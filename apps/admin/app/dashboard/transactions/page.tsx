@@ -138,7 +138,7 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background">
       <AdminSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -153,12 +153,12 @@ export default function TransactionsPage() {
                   <Package className="h-6 w-6 text-pink-600" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">Gestión de Pedidos</h1>
-                  <p className="text-zinc-400 mt-1">Monitorea y administra todos los pedidos de tu tienda</p>
+                  <h1 className="text-3xl font-bold text-foreground">Gestión de Pedidos</h1>
+                  <p className="text-muted-foreground mt-1">Monitorea y administra todos los pedidos de tu tienda</p>
                 </div>
               </div>
                 <Link href="/dashboard/orders/add">
-                  <Button className="bg-pink-600 hover:bg-pink-700 text-white">
+                  <Button className="bg-pink-600 hover:bg-pink-700 text-foreground">
                     <Plus className="h-5 w-5 mr-2" />
                     Crear Pedido Manual
                   </Button>
@@ -169,37 +169,37 @@ export default function TransactionsPage() {
             {/* Stats Cards */}
             {!isLoading && (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                <div className="bg-cardborder border-border rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-zinc-400">Total Órdenes</p>
-                      <p className="text-2xl font-bold text-white">{stats.total}</p>
+                      <p className="text-sm text-muted-foreground">Total Órdenes</p>
+                      <p className="text-2xl font-bold text-foreground">{stats.total}</p>
                     </div>
                     <Package className="h-8 w-8 text-zinc-600" />
                   </div>
                 </div>
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                <div className="bg-cardborder border-border rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-zinc-400">Pendientes</p>
+                      <p className="text-sm text-muted-foreground">Pendientes</p>
                       <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
                     </div>
                     <Clock className="h-8 w-8 text-yellow-400" />
                   </div>
                 </div>
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                <div className="bg-cardborder border-border rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-zinc-400">Enviadas</p>
+                      <p className="text-sm text-muted-foreground">Enviadas</p>
                       <p className="text-2xl font-bold text-purple-400">{stats.shipped}</p>
                     </div>
                     <Truck className="h-8 w-8 text-purple-400" />
                   </div>
                 </div>
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                <div className="bg-cardborder border-border rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-zinc-400">Entregadas</p>
+                      <p className="text-sm text-muted-foreground">Entregadas</p>
                       <p className="text-2xl font-bold text-green-400">{stats.delivered}</p>
                     </div>
                     <CheckCircle className="h-8 w-8 text-green-400" />
@@ -209,46 +209,52 @@ export default function TransactionsPage() {
             )}
 
             {/* Filters */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+            <div className="bg-cardborder border-border rounded-lg p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
                     placeholder="Buscar por ID de pedido o cliente..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                    className="pl-9 bg-muted border-border
+
+ text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
 
                 <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectTrigger className="bg-muted border-border
+
+ text-foreground">
                     <SelectValue placeholder="Estado del Pedido" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
-                    <SelectItem value="all" className="text-white">
+                  <SelectContent className="bg-muted border-border
+
+">
+                    <SelectItem value="all" className="text-foreground">
                       Todos los estados
                     </SelectItem>
-                    <SelectItem value="PENDING" className="text-white">
+                    <SelectItem value="PENDING" className="text-foreground">
                       Pendiente
                     </SelectItem>
-                    <SelectItem value="PAID" className="text-white">
+                    <SelectItem value="PAID" className="text-foreground">
                       Pagado
                     </SelectItem>
-                    <SelectItem value="PROCESSING" className="text-white">
+                    <SelectItem value="PROCESSING" className="text-foreground">
                       Procesando
                     </SelectItem>
-                    <SelectItem value="SHIPPED" className="text-white">
+                    <SelectItem value="SHIPPED" className="text-foreground">
                       Enviado
                     </SelectItem>
-                    <SelectItem value="DELIVERED" className="text-white">
+                    <SelectItem value="DELIVERED" className="text-foreground">
                       Entregado
                     </SelectItem>
-                    <SelectItem value="CANCELLED" className="text-white">
+                    <SelectItem value="CANCELLED" className="text-foreground">
                       Cancelado
                     </SelectItem>
-                    <SelectItem value="REFUNDED" className="text-white">
+                    <SelectItem value="REFUNDED" className="text-foreground">
                       Reembolsado
                     </SelectItem>
                   </SelectContent>
@@ -258,17 +264,17 @@ export default function TransactionsPage() {
 
             {/* Loading / Empty State */}
             {isLoading ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
+              <div className="bg-cardborder border-border rounded-lg p-12 text-center">
                 <Loader2 className="h-8 w-8 text-pink-600 animate-spin mx-auto mb-4" />
-                <p className="text-zinc-400">Cargando órdenes...</p>
+                <p className="text-muted-foreground">Cargando órdenes...</p>
               </div>
             ) : filteredOrders.length === 0 ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
-                <Package className="h-16 w-16 text-zinc-700 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-zinc-400 mb-2">
+              <div className="bg-cardborder border-border rounded-lg p-12 text-center">
+                <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-muted-foreground mb-2">
                   No hay órdenes
                 </h3>
-                <p className="text-zinc-500">
+                <p className="text-muted-foreground">
                   {orders.length === 0
                     ? "No hay órdenes registradas aún."
                     : "No se encontraron órdenes con los filtros aplicados."}
@@ -277,22 +283,22 @@ export default function TransactionsPage() {
             ) : (
               <>
                 {/* Transactions Table */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+                <div className="bg-card border  border-border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-zinc-800 hover:bg-zinc-900">
-                        <TableHead className="text-zinc-400">ID de Pedido</TableHead>
-                        <TableHead className="text-zinc-400">Cliente</TableHead>
-                        <TableHead className="text-zinc-400">Total</TableHead>
-                        <TableHead className="text-zinc-400">Items</TableHead>
-                        <TableHead className="text-zinc-400">Estado</TableHead>
-                        <TableHead className="text-zinc-400">Fecha</TableHead>
-                        <TableHead className="text-zinc-400 text-right">Acciones</TableHead>
+                      <TableRow className="border-border hover:bg-zinc-900">
+                        <TableHead className="text-muted-foreground">ID de Pedido</TableHead>
+                        <TableHead className="text-muted-foreground">Cliente</TableHead>
+                        <TableHead className="text-muted-foreground">Total</TableHead>
+                        <TableHead className="text-muted-foreground">Items</TableHead>
+                        <TableHead className="text-muted-foreground">Estado</TableHead>
+                        <TableHead className="text-muted-foreground">Fecha</TableHead>
+                        <TableHead className="text-muted-foreground text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedOrders.map((order) => (
-                        <TableRow key={order.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                        <TableRow key={order.id} className="border-border hover:bg-muted/50">
                           <TableCell>
                             <Link
                               href={`/dashboard/transactions/${order.id}`}
@@ -303,18 +309,18 @@ export default function TransactionsPage() {
                           </TableCell>
                           <TableCell>
                             <div>
-                              <p className="text-white font-medium">{order.users.name}</p>
-                              <p className="text-xs text-zinc-500">{order.users.email}</p>
+                              <p className="text-foreground font-medium">{order.users.name}</p>
+                              <p className="text-xs text-muted-foreground">{order.users.email}</p>
                             </div>
                           </TableCell>
-                          <TableCell className="text-white font-medium">
+                          <TableCell className="text-foreground font-medium">
                             {formatCurrency(order.total)}
                           </TableCell>
-                          <TableCell className="text-zinc-400">
+                          <TableCell className="text-muted-foreground">
                             {order.order_items.length} {order.order_items.length === 1 ? 'producto' : 'productos'}
                           </TableCell>
                           <TableCell>{getOrderStatusBadge(order.status)}</TableCell>
-                          <TableCell className="text-zinc-400">
+                          <TableCell className="text-muted-foreground">
                             {formatDate(order.created_at)}
                           </TableCell>
                           <TableCell className="text-right">
@@ -322,7 +328,7 @@ export default function TransactionsPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                                className="border-border text-foreground hover:bg-muted bg-transparent"
                                 aria-label="Ver detalles de la orden"
                               >
                                 <Eye className="h-4 w-4 mr-1" />
@@ -338,7 +344,7 @@ export default function TransactionsPage() {
 
                 {/* Pagination */}
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-sm text-muted-foreground">
                     Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredOrders.length)} de{" "}
                     {filteredOrders.length} {filteredOrders.length === 1 ? 'orden' : 'órdenes'}
                   </p>
@@ -346,20 +352,24 @@ export default function TransactionsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                      className="border-border
+
+ text-foreground hover:bg-muted bg-transparent"
                       onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
                       aria-label="Página anterior"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-sm text-zinc-400">
+                    <span className="text-sm text-muted-foreground">
                       Página {currentPage} de {totalPages}
                     </span>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                      className="border-border
+
+ text-foreground hover:bg-muted bg-transparent"
                       onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
                       aria-label="Página siguiente"

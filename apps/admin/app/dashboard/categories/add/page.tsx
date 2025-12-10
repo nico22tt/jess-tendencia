@@ -131,7 +131,7 @@ export default function AddCategoryPage() {
                 <h2 className="text-xl font-semibold  text-foreground mb-4">Información Básica</h2>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="categoryName" className="text-zinc-300">
+                    <Label htmlFor="categoryName" className="text-foreground">
                       Nombre de la Categoría *
                     </Label>
                     <Input
@@ -139,13 +139,13 @@ export default function AddCategoryPage() {
                       value={categoryName}
                       onChange={(e) => handleNameChange(e.target.value)}
                       placeholder="Ej: Ropa de Mujer"
-                      className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
+                      className="bg-muted border-border  text-foreground placeholder:text-muted-foreground"
                       required
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="urlSlug" className="text-zinc-300">
+                    <Label htmlFor="urlSlug" className="text-foreground">
                       URL Slug *
                     </Label>
                     <Input
@@ -153,7 +153,7 @@ export default function AddCategoryPage() {
                       value={urlSlug}
                       onChange={(e) => setUrlSlug(e.target.value)}
                       placeholder="ropa-de-mujer"
-                      className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
+                      className="bg-muted border-border  text-foreground placeholder:text-muted-foreground"
                       required
                     />
                     <p className="text-sm text-muted-foreground mt-1">
@@ -162,7 +162,7 @@ export default function AddCategoryPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description" className="text-zinc-300">
+                    <Label htmlFor="description" className="text-foreground">
                       Descripción
                     </Label>
                     <Textarea
@@ -171,7 +171,7 @@ export default function AddCategoryPage() {
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe la categoría..."
                       rows={4}
-                      className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
+                      className="bg-muted border-border  text-foreground placeholder:text-muted-foreground"
                     />
                   </div>
                 </div>
@@ -196,7 +196,7 @@ export default function AddCategoryPage() {
                   {/* Upload Area */}
                   <div className="flex-1">
                     <div className="space-y-2">
-                      <Label htmlFor="imageUrl" className="text-zinc-300">
+                      <Label htmlFor="imageUrl" className="text-foreground">
                         URL de la Imagen
                       </Label>
                       <Input
@@ -204,7 +204,7 @@ export default function AddCategoryPage() {
                         value={categoryImage}
                         onChange={(e) => setCategoryImage(e.target.value)}
                         placeholder="https://ejemplo.com/imagen.jpg"
-                        className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
+                        className="bg-muted border-border  text-foreground placeholder:text-muted-foreground"
                       />
                       <p className="text-xs text-muted-foreground">
                         Por ahora ingresa una URL de imagen. Recomendado: 800x800px
@@ -219,11 +219,11 @@ export default function AddCategoryPage() {
                 <h2 className="text-xl font-semibold  text-foreground mb-4">Organización</h2>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="parentCategory" className="text-zinc-300">
+                    <Label htmlFor="parentCategory" className="text-foreground">
                       Categoría Padre (Opcional)
                     </Label>
                     <Select value={parentCategory} onValueChange={setParentCategory}>
-                      <SelectTrigger className="bg-mutedborder-border  text-foreground">
+                      <SelectTrigger className="bg-muted border-border  text-foreground">
                         <SelectValue placeholder="Ninguna (Categoría principal)" />
                       </SelectTrigger>
                       <SelectContent className="bg-mutedborder-border">
@@ -243,7 +243,7 @@ export default function AddCategoryPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="displayOrder" className="text-zinc-300">
+                    <Label htmlFor="displayOrder" className="text-foreground">
                       Orden de Visualización
                     </Label>
                     <Input
@@ -252,7 +252,7 @@ export default function AddCategoryPage() {
                       value={displayOrder}
                       onChange={(e) => setDisplayOrder(e.target.value)}
                       placeholder="0"
-                      className="bg-mutedborder-border  text-foreground placeholder:text-muted-foreground"
+                      className="bg-muted border-border  text-foreground placeholder:text-muted-foreground"
                     />
                     <p className="text-sm text-muted-foreground mt-1">
                       Número menor aparece primero en el menú (ej: 1, 2, 3...)
@@ -266,7 +266,7 @@ export default function AddCategoryPage() {
                 <h2 className="text-xl font-semibold  text-foreground mb-4">Visibilidad</h2>
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label htmlFor="active" className="text-zinc-300">
+                    <Label htmlFor="active" className="text-foreground">
                       Estado de la Categoría
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">

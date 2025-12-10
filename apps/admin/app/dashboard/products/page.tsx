@@ -147,7 +147,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen  bg-background">
       <AdminSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -158,11 +158,17 @@ export default function ProductsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white">Inventario de Productos</h1>
-                <p className="text-zinc-400 mt-1">Gestiona todos los productos de tu tienda</p>
+                <h1 className="text-3xl font-bold text-foreground
+
+">Inventario de Productos</h1>
+                <p className="text-muted-foreground
+
+ mt-1">Gestiona todos los productos de tu tienda</p>
               </div>
               <Link href="/dashboard/products/add">
-                <Button className="bg-pink-600 hover:bg-pink-700 text-white">
+                <Button className="bg-pink-600 hover:bg-pink-700 text-foreground
+
+">
                   <Plus className="h-5 w-5 mr-2" />
                   Añadir Nuevo Producto
                 </Button>
@@ -170,29 +176,57 @@ export default function ProductsPage() {
             </div>
 
             {/* Filters */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+            <div className=" bg-card
+
+ border border-border
+
+ rounded-lg p-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground
+
+" />
                   <Input
                     type="text"
                     placeholder="Buscar por nombre o SKU..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                    className="pl-9 bg-muted
+
+ border-border
+
+ text-foreground
+
+ placeholder:text-muted-foreground
+
+"
                   />
                 </div>
 
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectTrigger className="bg-muted
+
+ border-border
+
+ text-foreground
+
+">
                     <SelectValue placeholder="Filtrar por categoría" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
-                    <SelectItem value="all" className="text-white">
+                  <SelectContent className="bg-muted
+
+ border-border
+
+">
+                    <SelectItem value="all" className="text-foreground
+
+">
                       Todas las categorías
                     </SelectItem>
                     {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id} className="text-white">
+                      <SelectItem key={cat.id} value={cat.id} className="text-foreground
+
+">
                         {cat.name}
                       </SelectItem>
                     ))}
@@ -200,17 +234,33 @@ export default function ProductsPage() {
                 </Select>
 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectTrigger className="bg-muted
+
+ border-border
+
+ text-foreground
+
+">
                     <SelectValue placeholder="Filtrar por estado" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
-                    <SelectItem value="all" className="text-white">
+                  <SelectContent className="bg-muted
+
+ border-border
+
+">
+                    <SelectItem value="all" className="text-foreground
+
+">
                       Todos los estados
                     </SelectItem>
-                    <SelectItem value="active" className="text-white">
+                    <SelectItem value="active" className="text-foreground
+
+">
                       Publicado
                     </SelectItem>
-                    <SelectItem value="inactive" className="text-white">
+                    <SelectItem value="inactive" className="text-foreground
+
+">
                       Borrador
                     </SelectItem>
                   </SelectContent>
@@ -220,12 +270,24 @@ export default function ProductsPage() {
 
             {/* Loading State */}
             {isLoading ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
-                <p className="text-zinc-400">Cargando productos...</p>
+              <div className=" bg-card
+
+ border border-border
+
+ rounded-lg p-12 text-center">
+                <p className="text-muted-foreground
+
+">Cargando productos...</p>
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
-                <p className="text-zinc-400">
+              <div className=" bg-card
+
+ border border-border
+
+ rounded-lg p-12 text-center">
+                <p className="text-muted-foreground
+
+">
                   {products.length === 0
                     ? "No hay productos. Crea uno para comenzar."
                     : "No se encontraron productos con los filtros aplicados."}
@@ -234,42 +296,78 @@ export default function ProductsPage() {
             ) : (
               <>
                 {/* Products Table */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+                <div className=" bg-card
+
+ border border-border
+
+ rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-zinc-800 hover:bg-zinc-800/50">
-                        <TableHead className="text-zinc-400">Producto</TableHead>
-                        <TableHead className="text-zinc-400">SKU</TableHead>
-                        <TableHead className="text-zinc-400">Precio</TableHead>
-                        <TableHead className="text-zinc-400">Stock</TableHead>
-                        <TableHead className="text-zinc-400">Categoría</TableHead>
-                        <TableHead className="text-zinc-400">Estado</TableHead>
-                        <TableHead className="text-zinc-400 text-right">Acciones</TableHead>
+                      <TableRow className="border-border
+
+ hover:bg-muted
+
+/50">
+                        <TableHead className="text-muted-foreground
+
+">Producto</TableHead>
+                        <TableHead className="text-muted-foreground
+
+">SKU</TableHead>
+                        <TableHead className="text-muted-foreground
+
+">Precio</TableHead>
+                        <TableHead className="text-muted-foreground
+
+">Stock</TableHead>
+                        <TableHead className="text-muted-foreground
+
+">Categoría</TableHead>
+                        <TableHead className="text-muted-foreground
+
+">Estado</TableHead>
+                        <TableHead className="text-muted-foreground
+
+ text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedProducts.map((product) => (
-                        <TableRow key={product.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                        <TableRow key={product.id} className="border-border
+
+ hover:bg-muted
+
+/50">
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0">
+                              <div className="w-12 h-12 rounded-lg bg-muted
+
+ overflow-hidden flex-shrink-0">
                                 <img
                                   src={getMainImage(product.images)}
                                   alt={product.name}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
-                              <span className="text-white font-medium">{product.name}</span>
+                              <span className="text-foreground
+
+ font-medium">{product.name}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-zinc-400">{product.sku}</TableCell>
+                          <TableCell className="text-muted-foreground
+
+">{product.sku}</TableCell>
                           <TableCell>
                             <div className="flex flex-col">
-                              <span className="text-white font-medium">
+                              <span className="text-foreground
+
+ font-medium">
                                 {formatPrice(product.salePrice || product.basePrice)}
                               </span>
                               {product.salePrice && (
-                                <span className="text-xs text-zinc-500 line-through">
+                                <span className="text-xs text-muted-foreground
+
+line-through">
                                   {formatPrice(product.basePrice)}
                                 </span>
                               )}
@@ -288,7 +386,9 @@ export default function ProductsPage() {
                               {product.stock} unidades
                             </span>
                           </TableCell>
-                          <TableCell className="text-zinc-400">{product.category.name}</TableCell>
+                          <TableCell className="text-muted-foreground
+
+">{product.category.name}</TableCell>
                           <TableCell>
                             <Badge
                               className={
@@ -306,7 +406,13 @@ export default function ProductsPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                                  className="border-border
+
+ text-foreground
+
+ hover:bg-muted
+
+ bg-transparent"
                                   aria-label="Editar producto"
                                 >
                                   <Edit className="h-4 w-4" />
@@ -315,7 +421,11 @@ export default function ProductsPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="border-zinc-700 text-red-400 hover:bg-zinc-800 hover:text-red-300 bg-transparent"
+                                className="border-border
+
+ text-red-400 hover:bg-muted
+
+ hover:text-red-300 bg-transparent"
                                 onClick={() => handleDelete(product.id, product.name)}
                                 aria-label="Eliminar producto"
                               >
@@ -331,7 +441,9 @@ export default function ProductsPage() {
 
                 {/* Pagination */}
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-sm text-muted-foreground
+
+">
                     Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredProducts.length)} de{" "}
                     {filteredProducts.length} productos
                   </p>
@@ -339,20 +451,34 @@ export default function ProductsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                      className="border-border
+
+ text-foreground
+
+ hover:bg-muted
+
+ bg-transparent"
                       onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
                       aria-label="Página anterior"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-sm text-zinc-400">
+                    <span className="text-sm text-muted-foreground
+
+">
                       Página {currentPage} de {totalPages}
                     </span>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                      className="border-border
+
+ text-foreground
+
+ hover:bg-muted
+
+ bg-transparent"
                       onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
                       aria-label="Página siguiente"

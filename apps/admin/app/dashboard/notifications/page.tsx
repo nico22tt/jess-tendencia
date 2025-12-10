@@ -226,7 +226,7 @@ export default function NotificationsPage() {
                 <Button
                   onClick={markAllAsRead}
                   variant="outline"
-                  className="border-border text-zinc-300 hover:bg-muted"
+                  className="border-border text-foreground hover:bg-muted"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Marcar todas como leídas

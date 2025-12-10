@@ -281,12 +281,18 @@ export default function EditProductPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-zinc-950">
+      <div className="flex h-screen bg-background
+
+
+">
         <AdminSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <AdminHeader />
           <main className="flex-1 flex items-center justify-center">
-            <p className="text-zinc-400">Cargando producto...</p>
+            <p className="text-muted-foreground
+
+
+">Cargando producto...</p>
           </main>
         </div>
       </div>
@@ -294,7 +300,10 @@ export default function EditProductPage() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background
+
+
+">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader />
@@ -307,7 +316,16 @@ export default function EditProductPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                    className=" border-border
+
+
+ text-foreground
+
+
+ hover:bg-muted
+
+
+ bg-transparent"
                     aria-label="Volver a productos"
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
@@ -315,14 +333,23 @@ export default function EditProductPage() {
                   </Button>
                 </Link>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">Editar Producto</h1>
-                  <p className="text-zinc-400 mt-1">Actualiza la información del producto</p>
+                  <h1 className="text-3xl font-bold text-foreground
+
+
+">Editar Producto</h1>
+                  <p className="text-muted-foreground
+
+
+ mt-1">Actualiza la información del producto</p>
                 </div>
               </div>
               <Button
                 onClick={handleSaveProduct}
                 disabled={isSaving}
-                className="bg-pink-600 hover:bg-pink-700 text-white disabled:bg-gray-600"
+                className="bg-pink-600 hover:bg-pink-700 text-foreground
+
+
+ disabled:bg-gray-600"
               >
                 {isSaving ? 'Guardando...' : 'Guardar Cambios'}
               </Button>
@@ -333,11 +360,23 @@ export default function EditProductPage() {
               {/* Left Column - Main Information */}
               <div className="space-y-6">
                 {/* General Information */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">Información General</h2>
+                <Card className="bg-card
+
+
+  border-border
+
+
+p-6">
+                  <h2 className="text-xl font-semibold text-foreground
+
+
+ mb-4">Información General</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="productName" className="text-zinc-300">
+                      <Label htmlFor="productName" className="text-foreground
+
+
+">
                         Nombre del Producto *
                       </Label>
                       <Input
@@ -345,13 +384,28 @@ export default function EditProductPage() {
                         value={productName}
                         onChange={(e) => setProductName(e.target.value)}
                         placeholder="Ej: Zapatillas Urbanas Blancas"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                         required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="description" className="text-zinc-300">
+                      <Label htmlFor="description" className="text-foreground
+
+
+">
                         Descripción Larga *
                       </Label>
                       <Textarea
@@ -360,13 +414,28 @@ export default function EditProductPage() {
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Describe el producto en detalle..."
                         rows={6}
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                         required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="urlSlug" className="text-zinc-300">
+                      <Label htmlFor="urlSlug" className="text-foreground
+
+
+">
                         URL Slug *
                       </Label>
                       <Input
@@ -374,7 +443,19 @@ export default function EditProductPage() {
                         value={urlSlug}
                         onChange={(e) => setUrlSlug(e.target.value)}
                         placeholder="zapatillas-urbanas-blancas"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                         required
                       />
                     </div>
@@ -382,12 +463,21 @@ export default function EditProductPage() {
                 </Card>
 
                 {/* Images and Gallery */}
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">Imágenes y Galería</h2>
+                <Card className="bg-card  border-border
+
+
+p-6">
+                  <h2 className="text-xl font-semibold text-foreground
+
+
+ mb-4">Imágenes y Galería</h2>
 
                   {/* Input para subir imágenes desde PC */}
                   <div className="space-y-2 mb-4">
-                    <Label htmlFor="imageFile" className="text-zinc-300">
+                    <Label htmlFor="imageFile" className="text-foreground
+
+
+">
                       Subir Imagen desde tu equipo
                     </Label>
                     <input
@@ -395,14 +485,26 @@ export default function EditProductPage() {
                       type="file"
                       accept="image/*"
                       id="imageFile"
-                      className="bg-zinc-800 border-zinc-700 text-white px-2 py-1 rounded w-full"
+                      className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ px-2 py-1 rounded w-full"
                       onChange={handleFileInputChange}
                     />
                   </div>
 
                   {/* Agregar imagen por URL */}
                   <div className="space-y-2 mb-4">
-                    <Label htmlFor="imageUrl" className="text-zinc-300">
+                    <Label htmlFor="imageUrl" className="text-foreground
+
+
+">
                       O agrega una URL de Imagen
                     </Label>
                     <div className="flex gap-2">
@@ -411,7 +513,19 @@ export default function EditProductPage() {
                         value={newImageUrl}
                         onChange={(e) => setNewImageUrl(e.target.value)}
                         placeholder="https://ejemplo.com/imagen.jpg"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault()
@@ -430,18 +544,27 @@ export default function EditProductPage() {
                   </div>
 
                   <div className="mt-6">
-                    <h3 className="text-sm font-medium text-zinc-300 mb-3">
+                    <h3 className="text-sm font-medium text-foreground
+
+
+ mb-3">
                       Imágenes Subidas ({uploadedImages.length})
                     </h3>
                     {uploadedImages.length === 0 ? (
-                      <p className="text-zinc-500 text-sm text-center py-8">
+                      <p className="text-muted-foreground
+
+
+ text-sm text-center py-8">
                         No hay imágenes. Agrega al menos una imagen.
                       </p>
                     ) : (
                       <div className="grid grid-cols-3 gap-4">
                         {uploadedImages.map((image) => (
                           <div key={image.id} className="relative group">
-                            <div className="aspect-square rounded-lg bg-zinc-800 overflow-hidden relative">
+                            <div className="aspect-square rounded-lg bg-muted
+
+
+ overflow-hidden relative">
                               <Image
                                 src={image.url || "/placeholder.svg"}
                                 alt="Product"
@@ -465,8 +588,8 @@ export default function EditProductPage() {
                               onClick={() => handleSetMainImage(image.id!)}
                               className={`mt-2 w-full py-1.5 px-3 rounded text-xs font-medium transition-colors ${
                                 image.isMain
-                                  ? "bg-pink-600 text-white"
-                                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                                  ? "bg-pink-600 text-foreground"
+                                  : "bg-muted text-muted-foreground hover:bg-zinc-700"
                               }`}
                             >
                               {image.isMain ? (
@@ -488,23 +611,50 @@ export default function EditProductPage() {
 
               {/* Right Column - Inventory and Classification */}
               <div className="space-y-6">
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">Inventario y Precios</h2>
+                <Card className="bg-card
+
+
+  border-border
+
+
+p-6">
+                  <h2 className="text-xl font-semibold text-foreground
+
+
+ mb-4">Inventario y Precios</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="sku" className="text-zinc-300">SKU *</Label>
+                      <Label htmlFor="sku" className="text-foreground
+
+
+">SKU *</Label>
                       <Input
                         id="sku"
                         value={sku}
                         onChange={(e) => setSku(e.target.value)}
                         placeholder="ZAP-001"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                         required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="basePrice" className="text-zinc-300">
+                      <Label htmlFor="basePrice" className="text-foreground
+
+
+">
                         Precio Base (CLP) *
                       </Label>
                       <Input
@@ -513,13 +663,28 @@ export default function EditProductPage() {
                         value={basePrice}
                         onChange={(e) => setBasePrice(e.target.value)}
                         placeholder="45990"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                         required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="salePrice" className="text-zinc-300">
+                      <Label htmlFor="salePrice" className="text-foreground
+
+
+">
                         Precio de Oferta (CLP)
                       </Label>
                       <Input
@@ -528,39 +693,99 @@ export default function EditProductPage() {
                         value={salePrice}
                         onChange={(e) => setSalePrice(e.target.value)}
                         placeholder="39990"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                       />
-                      <p className="text-sm text-zinc-500 mt-1">Opcional</p>
+                      <p className="text-sm text-muted-foreground
+
+
+ mt-1">Opcional</p>
                     </div>
 
                     <div>
-                      <Label htmlFor="stock" className="text-zinc-300">Cantidad en Stock</Label>
+                      <Label htmlFor="stock" className="text-foreground
+
+
+">Cantidad en Stock</Label>
                       <Input
                         id="stock"
                         type="number"
                         value={stock}
                         onChange={(e) => setStock(e.target.value)}
                         placeholder="0"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                       />
                     </div>
                   </div>
                 </Card>
 
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">Clasificación</h2>
+                <Card className="bg-card
+
+
+  border-border
+
+
+p-6">
+                  <h2 className="text-xl font-semibold text-foreground
+
+
+ mb-4">Clasificación</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="category" className="text-zinc-300">
+                      <Label htmlFor="category" className="text-foreground
+
+
+">
                         Categoría Principal *
                       </Label>
                       <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                        <SelectTrigger className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+">
                           <SelectValue placeholder="Selecciona una categoría" />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-800 border-zinc-700">
+                        <SelectContent className="bg-muted
+
+
+  border-border
+
+
+">
                           {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id} className="text-white">
+                            <SelectItem key={cat.id} value={cat.id} className="text-foreground
+
+
+">
                               {cat.name}
                             </SelectItem>
                           ))}
@@ -569,7 +794,10 @@ export default function EditProductPage() {
                     </div>
 
                     <div>
-                      <Label htmlFor="subcategory" className="text-zinc-300">
+                      <Label htmlFor="subcategory" className="text-foreground
+
+
+">
                         Subcategoría
                       </Label>
                       <Input
@@ -577,32 +805,74 @@ export default function EditProductPage() {
                         value={subcategory}
                         onChange={(e) => setSubcategory(e.target.value)}
                         placeholder="Ej: Urbanas, Deportivas"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="brand" className="text-zinc-300">Marca *</Label>
+                      <Label htmlFor="brand" className="text-foreground
+
+
+">Marca *</Label>
                       <Input
                         id="brand"
                         value={brand}
                         onChange={(e) => setBrand(e.target.value)}
                         placeholder="Ej: Nike, Adidas"
-                        className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="bg-muted
+
+
+  border-border
+
+
+ text-foreground
+
+
+ placeholder:text-muted-foreground
+
+
+"
                         required
                       />
                     </div>
                   </div>
                 </Card>
 
-                <Card className="bg-zinc-900 border-zinc-800 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">Visibilidad</h2>
+                <Card className="bg-card
+
+
+  border-border
+
+
+p-6">
+                  <h2 className="text-xl font-semibold text-foreground
+
+
+ mb-4">Visibilidad</h2>
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <Label htmlFor="published" className="text-zinc-300">
+                      <Label htmlFor="published" className="text-foreground
+
+
+">
                         Estado del Producto
                       </Label>
-                      <p className="text-sm text-zinc-500 mt-1">
+                      <p className="text-sm text-muted-foreground
+
+
+ mt-1">
                         {isPublished
                           ? "El producto está publicado y visible"
                           : "El producto está en borrador"}
