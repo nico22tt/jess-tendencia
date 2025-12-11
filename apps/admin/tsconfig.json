@@ -1,5 +1,5 @@
 {
-  "extends": "@jess/typescript-config/nextjs.json",
+  "extends": "../../packages/typescript-config/nextjs.json",
   "compilerOptions": {
     "plugins": [{ "name": "next" }],
     "baseUrl": ".",                      // Asegura rutas absolutas
