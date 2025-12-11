@@ -40,6 +40,9 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/api/**/*': ['../../packages/prisma/generated/client/**/*'],
   },
-}
 
-export default nextConfig
+  // 👇 Desactivar Turbopack en Next 16
+  turbopack: false,
+};
+
+export default nextConfig;
