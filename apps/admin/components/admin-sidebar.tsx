@@ -62,7 +62,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           <button
             title="Cerrar menú"
             onClick={onClose}
-            className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-card/95 backdrop-blur-sm border border-border shadow-2xl"
+            className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -114,27 +114,27 @@ export function AdminSidebar() {
 
   return (
     <>
-      {/* Sidebar Desktop - fijo */}
-      <aside className="hidden lg:flex w-64 lg:w-72 xl:w-80 fixed left-0 top-0 h-screen z-40 bg-card text-foreground border-r border-border flex-col shadow-lg">
+      {/* Sidebar Desktop - fijo con ancho consistente w-72 */}
+      <aside className="hidden lg:flex w-72 fixed left-0 top-0 h-screen z-40 bg-card text-foreground border-r border-border flex-col shadow-lg">
         <SidebarContent />
       </aside>
 
       {/* Sidebar Mobile - drawer desde la izquierda */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          {/* Overlay con blur que cubre todo incluyendo el botón */}
+          {/* Overlay con blur */}
           <div
             className="absolute inset-0 bg-background/40 backdrop-blur-md transition-opacity duration-200"
             onClick={toggleSidebar}
           />
-          {/* Drawer que sale desde la izquierda */}
+          {/* Drawer */}
           <aside className="absolute left-0 top-0 w-64 h-full bg-card border-r border-border shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
             <SidebarContent onClose={toggleSidebar} />
           </aside>
         </div>
       )}
 
-      {/* Botón menú mobile - solo visible cuando el sidebar está cerrado */}
+      {/* Botón menú mobile */}
       {!sidebarOpen && (
         <button
           className="lg:hidden fixed top-4 left-4 z-40 p-3 rounded-xl bg-card/95 backdrop-blur-sm border border-border shadow-2xl hover:bg-muted transition-colors"

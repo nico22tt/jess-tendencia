@@ -77,7 +77,7 @@ export function AdminHeader({ user, profile, onMenuClick }: AdminHeaderProps) { 
   if (!mounted) return null
 
   return (
-    <div className="flex items-center justify-between px-6 py-4">
+    <div className="flex items-center justify-between px-6 py-4 pt-3">
       <div className="flex items-center gap-3">
         {/* Botón de menú mobile */}
         {onMenuClick && (  // 👈 Solo muestra si hay onMenuClick

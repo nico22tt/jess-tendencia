@@ -8,9 +8,11 @@ import { BrowserUsageChart } from "@/components/browser-usage-chart"
 import { TodoList } from "@/components/todo-list"
 import { VisitorsChart } from "@/components/visitors-chart"
 import { PopularProducts } from "@/components/popular-products"
+import { ReactNode } from "react"
 
 type Props = {
   user: any
+  children?: ReactNode
 }
 
 export function AdminDashboardClient({ user }: Props) {
@@ -19,8 +21,8 @@ export function AdminDashboardClient({ user }: Props) {
       {/* Sidebar - maneja su propio estado mobile */}
       <AdminSidebar />
 
-      {/* Contenido principal */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Contenido principal - AGREGADO lg:ml-72 aquí 👇 */}
+      <div className="flex-1 lg:ml-72 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="sticky top-0 z-30 bg-card border-b border-border">
           <AdminHeader user={user} />
