@@ -20,8 +20,8 @@ export default function AdminDashboard({ user, profile }: Props) {
       {/* Sidebar */}
       <AdminSidebar />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main Content con margen izquierdo lg:ml-72 */}
+      <div className="flex-1 lg:ml-72 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="sticky top-0 z-30 bg-card border-b border-border">
           <AdminHeader user={user} profile={profile} />
@@ -32,17 +32,17 @@ export default function AdminDashboard({ user, profile }: Props) {
           <div className="max-w-[1600px] mx-auto space-y-6">
             {/* Top Row - Charts and Transactions */}
             <div className="grid grid-cols-12 gap-6">
-              {/* Revenue Chart - 40% width */}
+              {/* Revenue Chart */}
               <div className="col-span-12 lg:col-span-8">
                 <RevenueChart />
               </div>
 
-              {/* Latest Transactions - 25% width */}
+              {/* Latest Transactions */}
               <div className="col-span-12 md:col-span-6 lg:col-span-3">
                 <LatestTransactions />
               </div>
 
-              {/* Browser Usage - 25% width */}
+              {/* Browser Usage */}
               <div className="col-span-12 md:col-span-6 lg:col-span-4">
                 <BrowserUsageChart />
               </div>
