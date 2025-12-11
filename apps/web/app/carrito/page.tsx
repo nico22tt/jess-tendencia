@@ -6,7 +6,6 @@ import Image from "next/image"
 import { Button } from "@jess/ui/button"
 import Link from "next/link"
 import { createClient } from "@utils/supabase/client"
-import { RecommendationsCarousel } from "@/components/recommendations-carousel" // Ajusta la ruta
 
 function getCartItemPrice(p: any): number {
   if (typeof p?.salePrice === "number" && p.salePrice > 0) return p.salePrice
@@ -208,11 +207,6 @@ export default function CartPage() {
           )}
         </div>
       </main>
-
-      {/* Carousel de recomendaciones solo cuando hay productos en el carrito */}
-      {hasItems && (
-        <RecommendationsCarousel />
-      )}
     </div>
   )
 }

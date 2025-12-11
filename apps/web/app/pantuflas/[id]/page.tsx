@@ -78,9 +78,29 @@ export default function SlipperProductPage(props: Props) {
 
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
-  const allImages = Array.isArray(product.images)
-    ? product.images.filter((img) => typeof img === "string" && img.trim())
-    : []
+  const images: any = product?.images
+  let arr: Array<string | { url: string; isMain?: boolean }> = []
+
+  if (Array.isArray(images)) {
+    if (typeof images[0] === "string") {
+      arr = images.filter((img) => typeof img === "string" && img.trim())
+    } else {
+      arr = images
+    }
+  } else if (typeof images === "string" && images.trim()) {
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) arr = parsed
+    } catch {
+      arr = []
+    }
+  } else if (images && typeof images === "object") {
+    arr = [images]
+  }
+
+  const allImages = arr
+    .map((img) => (typeof img === "string" ? img : img?.url))
+    .filter((url): url is string => !!url && url.trim() !== "")
 
   if (
     typeof product.image === "string" &&
@@ -89,7 +109,9 @@ export default function SlipperProductPage(props: Props) {
   ) {
     allImages.unshift(product.image)
   }
+
   if (!allImages.length) allImages.push("/placeholder.svg")
+
 
   const sizes: string[] =
     (product.sizes?.filter(Boolean) ?? []).length ? product.sizes.filter(Boolean) : ["Único"]

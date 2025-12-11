@@ -24,6 +24,7 @@ const menuItems: MenuItem[] = [
       { name: "Zapatillas", href: "/zapatillas" },
       { name: "Botas", href: "/botas" },
       { name: "Botines", href: "/botines" },
+      { name: "Pantuflas", href: "/pantuflas" }
     ],
   },
   {

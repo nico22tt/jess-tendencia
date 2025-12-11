@@ -39,11 +39,55 @@ const formatPrice = (price: number) =>
     minimumFractionDigits: 0,
   }).format(price)
 
+// ✅ FUNCIÓN IDÉNTICA A ACCESORIOS: Manejo robusto de imágenes
+const parseProductImages = (product: Product): string[] => {
+  const images: any = product?.images
+  let arr: Array<string | { url: string; isMain?: boolean }> = []
+
+  // Si es un array
+  if (Array.isArray(images)) {
+    // Si son strings directos
+    if (typeof images[0] === "string") {
+      arr = images.filter((img) => typeof img === "string" && img.trim())
+    } else {
+      // Si son objetos con url
+      arr = images
+    }
+  } 
+  // Si es un string JSON, parsearlo
+  else if (typeof images === "string" && images.trim()) {
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) arr = parsed
+    } catch {
+      arr = []
+    }
+  } 
+  // Si es un objeto único
+  else if (images && typeof images === "object") {
+    arr = [images]
+  }
+
+  // Convertir todo a strings
+  const urlStrings = arr
+    .map((img) => (typeof img === "string" ? img : img?.url))
+    .filter((url): url is string => !!url && url.trim() !== "")
+
+  // Agregar imagen principal si existe y no está en el array
+  if (typeof product.image === "string" && product.image.trim() && !urlStrings.includes(product.image)) {
+    urlStrings.unshift(product.image)
+  }
+
+  // Fallback si no hay imágenes
+  return urlStrings.length > 0 ? urlStrings : ["/placeholder.svg"]
+}
+
 type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
 type Props = { params: Params } | { params: ParamsPromise }
 
 export default function BootPage(props: Props) {
+  const supabase = createClient()
   const paramsObj: Params =
     typeof (props.params as any)?.then === "function"
       ? use(props.params as ParamsPromise)
@@ -55,10 +99,13 @@ export default function BootPage(props: Props) {
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  const [user, setUser] = useState<any>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
+    // ✅ Cargar usuario
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+
     fetch(`/api/products/${paramsObj.id}`)
       .then((res) => {
         if (!res.ok) throw new Error("No existe el producto")
@@ -78,53 +125,53 @@ export default function BootPage(props: Props) {
         }
       })
       .catch(() => router.replace("/404"))
-  }, [paramsObj.id, router])
+  }, [paramsObj.id, router, supabase])
 
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
-  const allImages = Array.isArray(product.images)
-    ? product.images.filter((img) => typeof img === "string" && img.trim())
-    : []
-  if (
-    typeof product.image === "string" &&
-    product.image.trim() &&
-    !allImages.includes(product.image)
-  ) {
-    allImages.unshift(product.image)
-  }
-  if (!allImages.length) allImages.push("/placeholder.svg")
+  // ✅ USA LA NUEVA FUNCIÓN DE IMÁGENES
+  const allImages = parseProductImages(product)
 
   const sizes =
     product.sizes && product.sizes.length ? product.sizes : ["36", "37", "38", "39", "40"]
 
+  // ✅ HANDLE ADDTOCART MEJORADO (igual que accesorios)
   const handleAddToCart = async () => {
     if (sizes.length > 1 && !selectedSize) {
       alert("Por favor selecciona una talla")
       return
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
     if (!user) {
+      alert("Debes iniciar sesión para agregar productos al carrito")
       router.push("/login")
       return
     }
 
-    const res = await fetch("/api/cart", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: user.id,
-        productId: product.id,
-        quantity,
-      }),
-    })
+    if (!product) return
 
-    if (!res.ok) {
-      console.error("Error al agregar al carrito")
-      return
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          productId: product.id,
+          quantity,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.details || data.error || "Error al agregar al carrito")
+      }
+
+      alert("✅ Producto agregado al carrito")
+      router.push("/cart")
+    } catch (error: any) {
+      console.error("Error al agregar al carrito:", error)
+      alert(`❌ ${error.message}`)
     }
   }
 
@@ -136,10 +183,11 @@ export default function BootPage(props: Props) {
           <div className="lg:col-span-3">
             <div className="aspect-square relative bg-gray-50 rounded-lg overflow-hidden mb-4">
               <Image
-                src={allImages[selectedImage] || "/placeholder.svg"}
+                src={allImages[selectedImage]}
                 alt={product.name}
                 fill
                 className="object-cover"
+                priority
               />
               {product.label && (
                 <Badge
@@ -165,7 +213,7 @@ export default function BootPage(props: Props) {
                     }`}
                   >
                     <Image
-                      src={typeof img === "string" && img.trim() ? img : "/placeholder.svg"}
+                      src={img}
                       alt={`Vista ${index + 1}`}
                       fill
                       className="object-cover"
@@ -196,6 +244,7 @@ export default function BootPage(props: Props) {
                 </span>
               </div>
             </div>
+
             <div className="flex items-center gap-3">
               <span className="text-4xl font-bold text-pink-600">
                 {formatPrice(getDisplayPrice(product))}
@@ -287,6 +336,7 @@ export default function BootPage(props: Props) {
                   </button>
                 </div>
               </div>
+
               <Button
                 onClick={handleAddToCart}
                 className="w-full bg-pink-600 hover:bg-pink-700 text-white gap-2 font-semibold py-6 text-lg"
@@ -294,6 +344,7 @@ export default function BootPage(props: Props) {
                 <ShoppingCart className="h-5 w-5" />
                 Agregar al carro
               </Button>
+
               <Button
                 variant="outline"
                 className="w-full gap-2 py-6 text-lg border-pink-600 text-pink-600 hover:bg-pink-50"

@@ -35,6 +35,39 @@ const formatPrice = (price: number) =>
     minimumFractionDigits: 0,
   }).format(price)
 
+// ✅ FUNCIÓN ROBUSTA DE IMÁGENES
+const parseProductImages = (product: Product): string[] => {
+  const images: any = product?.images
+  let arr: Array<string | { url: string; isMain?: boolean }> = []
+
+  if (Array.isArray(images)) {
+    if (typeof images[0] === "string") {
+      arr = images.filter((img) => typeof img === "string" && img.trim())
+    } else {
+      arr = images
+    }
+  } else if (typeof images === "string" && images.trim()) {
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) arr = parsed
+    } catch {
+      arr = []
+    }
+  } else if (images && typeof images === "object") {
+    arr = [images]
+  }
+
+  const urlStrings = arr
+    .map((img) => (typeof img === "string" ? img : img?.url))
+    .filter((url): url is string => !!url && url.trim() !== "")
+
+  if (typeof product.image === "string" && product.image.trim() && !urlStrings.includes(product.image)) {
+    urlStrings.unshift(product.image)
+  }
+
+  return urlStrings.length > 0 ? urlStrings : ["/placeholder.svg"]
+}
+
 type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
 type Props = { params: Params } | { params: ParamsPromise }
@@ -52,6 +85,7 @@ function getStockBySize(product: Product, size: string): number | null {
 }
 
 export default function JeansProductPage(props: Props) {
+  const supabase = createClient()
   const paramsObj: Params =
     typeof (props.params as any)?.then === "function"
       ? use(props.params as ParamsPromise)
@@ -63,10 +97,13 @@ export default function JeansProductPage(props: Props) {
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  const [user, setUser] = useState<any>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
+    // ✅ Cargar usuario
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+
     fetch(`/api/products/${paramsObj.id}`)
       .then((res) => {
         if (!res.ok) throw new Error("No existe el producto")
@@ -86,21 +123,12 @@ export default function JeansProductPage(props: Props) {
         }
       })
       .catch(() => router.replace("/404"))
-  }, [paramsObj.id, router])
+  }, [paramsObj.id, router, supabase])
 
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
-  const allImages = Array.isArray(product.images)
-    ? product.images.filter((img) => typeof img === "string" && img.trim())
-    : []
-  if (
-    typeof product.image === "string" &&
-    product.image.trim() &&
-    !allImages.includes(product.image)
-  ) {
-    allImages.unshift(product.image)
-  }
-  if (!allImages.length) allImages.push("/placeholder.svg")
+  // ✅ IMÁGENES ROBUSTAS
+  const allImages = parseProductImages(product)
 
   // Tallas dinámicas
   let sizes: string[] = []
@@ -121,21 +149,22 @@ export default function JeansProductPage(props: Props) {
   const showSizeSelector =
     sizes.length > 0 && !sizes.every((t: string) => t.toLowerCase().includes("único"))
 
-  const handleAddToCart = async () => {
-    if (showSizeSelector && !selectedSize) {
-      alert("Por favor selecciona una talla")
-      return
-    }
+// ✅ HANDLE ADDTOCART MEJORADO
+const handleAddToCart = async () => {
+  if (showSizeSelector && !selectedSize) {
+    alert("Por favor selecciona una talla")
+    return
+  }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+  if (!user) {
+    alert("Debes iniciar sesión para agregar productos al carrito")
+    router.push("/login")
+    return
+  }
 
-    if (!user) {
-      router.push("/login")
-      return
-    }
+  if (!product) return
 
+  try {
     const res = await fetch("/api/cart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -146,13 +175,19 @@ export default function JeansProductPage(props: Props) {
       }),
     })
 
+    const data = await res.json()
+
     if (!res.ok) {
-      console.error("Error al agregar al carrito")
-      return
+      throw new Error(data.details || data.error || "Error al agregar al carrito")
     }
 
-    // opcional: router.push("/carrito")
+    alert("✅ Producto agregado al carrito")
+    router.push("/cart")
+  } catch (error: any) {
+    console.error("Error al agregar al carrito:", error)
+    alert(`❌ ${error.message}`)
   }
+}
 
   return (
     <main className="min-h-screen bg-white">
@@ -162,10 +197,11 @@ export default function JeansProductPage(props: Props) {
           <div className="lg:col-span-3">
             <div className="aspect-square relative bg-gray-50 rounded-lg overflow-hidden mb-4">
               <Image
-                src={allImages[selectedImage] || "/placeholder.svg"}
+                src={allImages[selectedImage]}
                 alt={product.name}
                 fill
                 className="object-cover"
+                priority
               />
               {product.label && (
                 <Badge
@@ -189,7 +225,7 @@ export default function JeansProductPage(props: Props) {
                     }`}
                   >
                     <Image
-                      src={typeof img === "string" && img.trim() ? img : "/placeholder.svg"}
+                      src={img}
                       alt={`Vista ${index + 1}`}
                       fill
                       className="object-cover"
@@ -274,14 +310,13 @@ export default function JeansProductPage(props: Props) {
                       <button
                         key={size}
                         onClick={() => !outOfStock && setSelectedSize(size)}
-                        className={`px-4 py-2 border-2 rounded-md transition-all relative group
-                          ${
-                            selectedSize === size && !outOfStock
-                              ? "border-pink-500 bg-pink-50"
-                              : outOfStock
-                              ? "border-gray-200 bg-gray-100 text-gray-400 line-through cursor-not-allowed"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
+                        className={`px-4 py-2 border-2 rounded-md transition-all relative group ${
+                          selectedSize === size && !outOfStock
+                            ? "border-pink-500 bg-pink-50"
+                            : outOfStock
+                            ? "border-gray-200 bg-gray-100 text-gray-400 line-through cursor-not-allowed"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
                         disabled={outOfStock}
                         title={outOfStock ? "Sin stock" : undefined}
                       >
@@ -392,16 +427,16 @@ export default function JeansProductPage(props: Props) {
                           </tr>
                         </thead>
                         <tbody>
-                          <tr><td className="px-4 py-2">36</td><td className="px-4 py-2">64-68</td><td className="px-4 py-2">94-98</td><td className="px-4 py-2">55-58</td></tr>
-                          <tr><td className="px-4 py-2">38</td><td className="px-4 py-2">68-70</td><td className="px-4 py-2">98-100</td><td className="px-4 py-2">57-60</td></tr>
-                          <tr><td className="px-4 py-2">40</td><td className="px-4 py-2">70-72</td><td className="px-4 py-2">100-102</td><td className="px-4 py-2">58-61</td></tr>
-                          <tr><td className="px-4 py-2">42</td><td className="px-4 py-2">72-74</td><td className="px-4 py-2">102-104</td><td className="px-4 py-2">60-62</td></tr>
-                          <tr><td className="px-4 py-2">44</td><td className="px-4 py-2">74-78</td><td className="px-4 py-2">104-108</td><td className="px-4 py-2">61-64</td></tr>
-                          <tr><td className="px-4 py-2">46</td><td className="px-4 py-2">78-82</td><td className="px-4 py-2">108-112</td><td className="px-4 py-2">63-66</td></tr>
-                          <tr><td className="px-4 py-2">48</td><td className="px-4 py-2">82-86</td><td className="px-4 py-2">112-118</td><td className="px-4 py-2">66-69</td></tr>
-                          <tr><td className="px-4 py-2">50</td><td className="px-4 py-2">86-94</td><td className="px-4 py-2">118-126</td><td className="px-4 py-2">69-72</td></tr>
-                          <tr><td className="px-4 py-2">52</td><td className="px-4 py-2">94-100</td><td className="px-4 py-2">126-132</td><td className="px-4 py-2">72-73</td></tr>
-                          <tr><td className="px-4 py-2">54</td><td className="px-4 py-2">100-108</td><td className="px-4 py-2">134-138</td><td className="px-4 py-2">76-77</td></tr>
+                          <tr><td className="px-4 py-2 border-t">36</td><td className="px-4 py-2 border-t">64-68</td><td className="px-4 py-2 border-t">94-98</td><td className="px-4 py-2 border-t">55-58</td></tr>
+                          <tr><td className="px-4 py-2 border-t">38</td><td className="px-4 py-2 border-t">68-70</td><td className="px-4 py-2 border-t">98-100</td><td className="px-4 py-2 border-t">57-60</td></tr>
+                          <tr><td className="px-4 py-2 border-t">40</td><td className="px-4 py-2 border-t">70-72</td><td className="px-4 py-2 border-t">100-102</td><td className="px-4 py-2 border-t">58-61</td></tr>
+                          <tr><td className="px-4 py-2 border-t">42</td><td className="px-4 py-2 border-t">72-74</td><td className="px-4 py-2 border-t">102-104</td><td className="px-4 py-2 border-t">60-62</td></tr>
+                          <tr><td className="px-4 py-2 border-t">44</td><td className="px-4 py-2 border-t">74-78</td><td className="px-4 py-2 border-t">104-108</td><td className="px-4 py-2 border-t">61-64</td></tr>
+                          <tr><td className="px-4 py-2 border-t">46</td><td className="px-4 py-2 border-t">78-82</td><td className="px-4 py-2 border-t">108-112</td><td className="px-4 py-2 border-t">63-66</td></tr>
+                          <tr><td className="px-4 py-2 border-t">48</td><td className="px-4 py-2 border-t">82-86</td><td className="px-4 py-2 border-t">112-118</td><td className="px-4 py-2 border-t">66-69</td></tr>
+                          <tr><td className="px-4 py-2 border-t">50</td><td className="px-4 py-2 border-t">86-94</td><td className="px-4 py-2 border-t">118-126</td><td className="px-4 py-2 border-t">69-72</td></tr>
+                          <tr><td className="px-4 py-2 border-t">52</td><td className="px-4 py-2 border-t">94-100</td><td className="px-4 py-2 border-t">126-132</td><td className="px-4 py-2 border-t">72-73</td></tr>
+                          <tr><td className="px-4 py-2 border-t">54</td><td className="px-4 py-2 border-t">100-108</td><td className="px-4 py-2 border-t">134-138</td><td className="px-4 py-2 border-t">76-77</td></tr>
                         </tbody>
                       </table>
                       <div className="text-xs text-gray-500 bg-gray-50 border rounded px-3 py-2 mb-3">
@@ -409,13 +444,6 @@ export default function JeansProductPage(props: Props) {
                       </div>
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-4">
-                      {/* Puedes quitar esta imagen si no la usas */}
-                      {/* <img
-                        src="/guia-medidas-americanino.png"
-                        alt="Referencia de medidas"
-                        className="w-48 border rounded bg-white mb-4 md:mb-0"
-                        style={{ maxWidth: "180px" }}
-                      /> */}
                       <div>
                         <div className="font-bold mb-1">Cómo tomar tus medidas:</div>
                         <ul className="text-xs text-gray-600 space-y-1 list-disc pl-5">

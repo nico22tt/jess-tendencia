@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@j
 import { Heart, ShoppingCart, Star, Minus, Plus, Truck, RotateCcw, Shield } from "lucide-react"
 import Image from "next/image"
 import dynamic from "next/dynamic"
+import { createClient } from "@utils/supabase/client"
 import type { Product } from "@jess/shared/types/product"
 
 const ProductCarousel = dynamic(
@@ -34,11 +35,55 @@ const formatPrice = (price: number) =>
     minimumFractionDigits: 0,
   }).format(price)
 
+// ✅ NUEVA FUNCIÓN: Maneja imágenes como strings u objetos
+const parseProductImages = (product: Product): string[] => {
+  const images: any = product?.images
+  let arr: Array<string | { url: string; isMain?: boolean }> = []
+
+  // Si es un array
+  if (Array.isArray(images)) {
+    // Si son strings directos
+    if (typeof images[0] === "string") {
+      arr = images.filter((img) => typeof img === "string" && img.trim())
+    } else {
+      // Si son objetos con url
+      arr = images
+    }
+  } 
+  // Si es un string JSON, parsearlo
+  else if (typeof images === "string" && images.trim()) {
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) arr = parsed
+    } catch {
+      arr = []
+    }
+  } 
+  // Si es un objeto único
+  else if (images && typeof images === "object") {
+    arr = [images]
+  }
+
+  // Convertir todo a strings
+  const urlStrings = arr
+    .map((img) => (typeof img === "string" ? img : img?.url))
+    .filter((url): url is string => !!url && url.trim() !== "")
+
+  // Agregar imagen principal si existe y no está en el array
+  if (typeof product.image === "string" && product.image.trim() && !urlStrings.includes(product.image)) {
+    urlStrings.unshift(product.image)
+  }
+
+  // Fallback si no hay imágenes
+  return urlStrings.length > 0 ? urlStrings : ["/placeholder.svg"]
+}
+
 type ParamsPromise = Promise<{ id: string }>
 type Params = { id: string }
 type Props = { params: Params } | { params: ParamsPromise }
 
 export default function AccesorioPage(props: Props) {
+  const supabase = createClient()
   const paramsObj: Params =
     typeof (props.params as any)?.then === "function"
       ? use(props.params as ParamsPromise)
@@ -49,9 +94,13 @@ export default function AccesorioPage(props: Props) {
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  const [user, setUser] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
+    // ✅ Cargar usuario
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+
     fetch(`/api/products/${paramsObj.id}`)
       .then((res) => {
         if (!res.ok) throw new Error("No existe el producto")
@@ -71,25 +120,47 @@ export default function AccesorioPage(props: Props) {
         }
       })
       .catch(() => router.replace("/404"))
-  }, [paramsObj.id, router])
+  }, [paramsObj.id, router, supabase])
+
+  // ✅ FUNCIÓN CORREGIDA: Agregar al carrito
+  const handleAddToCart = async () => {
+    if (!user) {
+      alert("Debes iniciar sesión para agregar productos al carrito")
+      router.push("/login")
+      return
+    }
+
+    if (!product) return
+
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          productId: product.id,
+          quantity: quantity,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || "Error al agregar al carrito")
+      }
+
+      alert("✅ Producto agregado al carrito")
+      router.push("/cart")
+    } catch (error: any) {
+      console.error("Error al agregar al carrito:", error)
+      alert(`❌ ${error.message}`)
+    }
+  }
 
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
-  const allImages = Array.isArray(product.images)
-    ? product.images.filter((img) => typeof img === "string" && img.trim())
-    : []
-  if (
-    typeof product.image === "string" &&
-    product.image.trim() &&
-    !allImages.includes(product.image)
-  ) {
-    allImages.unshift(product.image)
-  }
-  if (!allImages.length) allImages.push("/placeholder.svg")
-
-  const handleAddToCart = () => {
-    // aquí solo navegarías o mostrarías un mensaje; ya no hay contexto de carrito
-  }
+  // ✅ USA LA NUEVA FUNCIÓN
+  const allImages = parseProductImages(product)
 
   return (
     <main className="min-h-screen bg-white">
@@ -99,10 +170,11 @@ export default function AccesorioPage(props: Props) {
           <div className="lg:col-span-3">
             <div className="aspect-square relative bg-gray-50 rounded-lg overflow-hidden mb-4">
               <Image
-                src={allImages[selectedImage] || "/placeholder.svg"}
+                src={allImages[selectedImage]}
                 alt={product.name}
                 fill
                 className="object-cover"
+                priority
               />
               {product.label && (
                 <Badge
@@ -128,7 +200,7 @@ export default function AccesorioPage(props: Props) {
                     }`}
                   >
                     <Image
-                      src={typeof img === "string" && img.trim() ? img : "/placeholder.svg"}
+                      src={img}
                       alt={`Vista ${index + 1}`}
                       fill
                       className="object-cover"
@@ -178,7 +250,7 @@ export default function AccesorioPage(props: Props) {
               )}
             </div>
 
-            {/* Variantes de color si existen */}
+            {/* Variantes */}
             {product.product_variants && product.product_variants.length > 0 && (
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-2 block">
@@ -261,7 +333,7 @@ export default function AccesorioPage(props: Props) {
           </div>
         </div>
 
-        {/* Descripción y detalles */}
+        {/* Descripción */}
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">

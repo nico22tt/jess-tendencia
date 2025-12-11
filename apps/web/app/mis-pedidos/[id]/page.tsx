@@ -17,26 +17,40 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!orderId) return
-    async function loadOrder() {
+useEffect(() => {
+  if (!orderId) return
+
+  async function loadOrder() {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { cache: "no-store" })
+      const text = await res.text()
+      console.log("ORDER DETAIL status:", res.status)
+      console.log("ORDER DETAIL raw body:", text)
+
+      let data: any = {}
       try {
-        const res = await fetch(`/api/orders/${orderId}`)
-        const data = await res.json()
-        if (data.success) {
-          setOrder(data.order)
-        } else {
-          setOrder(null)
-        }
+        data = text ? JSON.parse(text) : {}
       } catch (e) {
-        console.error(e)
-        setOrder(null)
-      } finally {
-        setLoading(false)
+        console.error("Error parseando JSON de /api/orders/[id]:", e)
       }
+
+      if (!res.ok || !data.success) {
+        console.error("Error API orden:", data)
+        setOrder(null)
+      } else {
+        setOrder(data.order)
+      }
+    } catch (e) {
+      console.error("fetch /api/orders error:", e)
+      setOrder(null)
+    } finally {
+      setLoading(false)
     }
-    loadOrder()
-  }, [orderId])
+  }
+
+  loadOrder()
+}, [orderId])
+
 
   return (
     <ProtectedRoute>
@@ -67,8 +81,8 @@ export default function OrderDetailPage() {
                 <CardContent className="space-y-4">
                   <p>
                     Fecha:{" "}
-                    {order.created_at
-                      ? new Date(order.created_at).toLocaleString("es-CL")
+                    {order.createdAt
+                      ? new Date(order.createdAt).toLocaleString("es-CL")
                       : "-"}
                   </p>
                   <p>
