@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   description: "Panel de administración",
 }
 
+
 export default function RootLayout({
   children,
 }: {
