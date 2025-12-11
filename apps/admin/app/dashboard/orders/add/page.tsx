@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { AdminSidebar } from "@/components/admin-sidebar"
-import { AdminHeader } from "@/components/admin-header"
+import { createClient } from "@utils/supabase/client"
+import { AdminDashboardLayout } from "@/components/admin-dashboard-layout"
 import { Button } from "@jess/ui/button"
 import { Input } from "@jess/ui/input"
 import { Label } from "@jess/ui/label"
@@ -49,6 +49,8 @@ interface OrderItem {
 
 export default function CreateOrderPage() {
   const router = useRouter()
+  const supabase = createClient()
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   
   // Estados para productos y usuarios
@@ -77,8 +79,18 @@ export default function CreateOrderPage() {
   const [orderStatus, setOrderStatus] = useState("PENDING")
 
   useEffect(() => {
+    checkAuth()
     fetchData()
   }, [])
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.role !== "admin") {
+      router.push("/login")
+      return
+    }
+    setUser(user)
+  }
 
   const fetchData = async () => {
     try {
@@ -240,400 +252,315 @@ export default function CreateOrderPage() {
     }).format(amount)
   }
 
-  if (loadingData) {
+  if (loadingData || !user) {
     return (
-      <div className="flex h-screen bg-background
-
-">
-        <AdminSidebar />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-background
-
-">
-      <AdminSidebar />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader />
-
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-6xl mx-auto space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link href="/dashboard/transactions">
-                  <Button variant="outline" size="sm" className="border-border text-foreground
- hover:bg-muted
-bg-transparent">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Volver
-                  </Button>
-                </Link>
-                <div>
-                  <h1 className="text-3xl font-bold text-foreground
-">Crear Pedido Manual</h1>
-                  <p className="text-muted-foreground
-mt-1">Crea un pedido para un cliente existente</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Columna izquierda - Productos y datos */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Seleccionar Cliente */}
-                <Card className="bg-card
-border-border p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <User className="h-5 w-5 text-pink-600" />
-                    <h2 className="text-xl font-semibold text-foreground
-">Cliente</h2>
-                  </div>
-                  <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                    <SelectTrigger className="bg-muted
-border-border text-foreground
-">
-                      <SelectValue placeholder="Selecciona un cliente" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-muted
-border-border">
-                      {users.map(user => (
-                        <SelectItem key={user.id} value={user.id} className="text-foreground
-">
-                          {user.name} ({user.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Card>
-
-                {/* Agregar Productos */}
-                <Card className="bg-card
-border-border p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Package className="h-5 w-5 text-pink-600" />
-                    <h2 className="text-xl font-semibold text-foreground
-">Productos</h2>
-                  </div>
-                  
-                  {/* Buscador de productos */}
-                  <div className="relative mb-4">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                    <Input
-                      type="text"
-                      placeholder="Buscar producto por nombre o SKU..."
-                      value={searchProduct}
-                      onChange={(e) => setSearchProduct(e.target.value)}
-                      className="pl-9 bg-muted
-border-border text-foreground
-"
-                    />
-                  </div>
-
-                  {/* Resultados de búsqueda */}
-                  {searchProduct && (
-                    <div className="mb-4 max-h-48 overflow-y-auto bg-muted
-rounded-lg border border-border">
-                      {filteredProducts.length === 0 ? (
-                        <p className="text-zinc-500 text-center py-4">No se encontraron productos</p>
-                      ) : (
-                        filteredProducts.slice(0, 5).map(product => (
-                          <button
-                            key={product.id}
-                            onClick={() => addProductToOrder(product)}
-                            className="w-full text-left p-3 hover:bg-zinc-700 transition-colors border-b border-border last:border-0"
-                          >
-                            <p className="text-foreground
-font-medium">{product.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-zinc-400">SKU: {product.sku}</span>
-                              <span className="text-xs text-zinc-400">•</span>
-                              <span className="text-xs text-pink-400">{formatCurrency(product.basePrice)}</span>
-                              <span className="text-xs text-zinc-400">•</span>
-                              <span className="text-xs text-zinc-400">Stock: {product.stock}</span>
-                            </div>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-
-                  {/* Lista de productos agregados */}
-                  <div className="space-y-3">
-                    {orderItems.length === 0 ? (
-                      <p className="text-zinc-500 text-center py-8">No hay productos agregados</p>
-                    ) : (
-                      orderItems.map(item => (
-                        <div key={item.productId} className="flex items-center gap-4 p-4 bg-muted
-rounded-lg">
-                          <div className="flex-1">
-                            <p className="text-foreground
-font-medium">{item.productName}</p>
-                            <p className="text-sm text-zinc-400">SKU: {item.sku}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value))}
-                              className="w-20 bg-zinc-700 border-zinc-600 text-foreground
-text-center"
-                            />
-                            <span className="text-zinc-400">×</span>
-                            <span className="text-foreground
-font-medium w-24 text-right">
-                              {formatCurrency(item.unitPrice)}
-                            </span>
-                          </div>
-                          <div className="text-right w-28">
-                            <p className="text-foreground
-font-semibold">{formatCurrency(item.subtotal)}</p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeProduct(item.productId)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </Card>
-
-                {/* Dirección de envío */}
-                <Card className="bg-card
-border-border p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <MapPin className="h-5 w-5 text-pink-600" />
-                    <h2 className="text-xl font-semibold text-foreground
-">Dirección de Envío</h2>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-foreground
-">Nombre completo</Label>
-                      <Input
-                        value={shippingName}
-                        onChange={(e) => setShippingName(e.target.value)}
-                        className="bg-muted
-border-border text-foreground
-mt-1"
-                        placeholder="Juan Pérez"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-foreground
-">Email</Label>
-                      <Input
-                        type="email"
-                        value={shippingEmail}
-                        onChange={(e) => setShippingEmail(e.target.value)}
-                        className="bg-muted
-border-border text-foreground
-mt-1"
-                        placeholder="juan@example.com"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-foreground
-">Teléfono</Label>
-                      <Input
-                        value={shippingPhone}
-                        onChange={(e) => setShippingPhone(e.target.value)}
-                        className="bg-muted
-border-border text-foreground
-mt-1"
-                        placeholder="+56 9 1234 5678"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-foreground
-">Ciudad</Label>
-                      <Input
-                        value={shippingCity}
-                        onChange={(e) => setShippingCity(e.target.value)}
-                        className="bg-muted
-border-border text-foreground
-mt-1"
-                        placeholder="Santiago"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-foreground
-">Región</Label>
-                      <Input
-                        value={shippingRegion}
-                        onChange={(e) => setShippingRegion(e.target.value)}
-                        className="bg-muted
-border-border text-foreground
-mt-1"
-                        placeholder="Metropolitana"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-foreground
-">Código Postal</Label>
-                      <Input
-                        value={shippingZip}
-                        onChange={(e) => setShippingZip(e.target.value)}
-                        className="bg-muted
-border-border text-foreground
-mt-1"
-                        placeholder="8320000"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label className="text-foreground
-">Dirección</Label>
-                      <Input
-                        value={shippingAddress}
-                        onChange={(e) => setShippingAddress(e.target.value)}
-                        className="bg-muted
-border-border text-foreground
-mt-1"
-                        placeholder="Av. Providencia 1234, Depto 501"
-                      />
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              {/* Columna derecha - Resumen */}
-              <div className="space-y-6">
-                {/* Totales */}
-                <Card className="bg-card
-border-border p-6">
-                  <h2 className="text-xl font-semibold text-foreground
-mb-4">Resumen</h2>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-zinc-400">
-                      <span>Subtotal:</span>
-                      <span>{formatCurrency(totals.subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-zinc-400">
-                      <span>Envío:</span>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={shippingCost}
-                        onChange={(e) => setShippingCost(e.target.value)}
-                        className="w-32 bg-muted
-border-border text-foreground
-text-right"
-                      />
-                    </div>
-                    <div className="flex justify-between text-zinc-400">
-                      <span>IVA (19%):</span>
-                      <span>{formatCurrency(totals.tax)}</span>
-                    </div>
-                    <div className="pt-3 border-t border-border flex justify-between text-foreground
-text-lg font-bold">
-                      <span>Total:</span>
-                      <span className="text-pink-600">{formatCurrency(totals.total)}</span>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Opciones adicionales */}
-                <Card className="bg-card
-border-border p-6">
-                  <h2 className="text-xl font-semibold text-foreground
-mb-4">Opciones</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-foreground
-">Estado inicial</Label>
-                      <Select value={orderStatus} onValueChange={setOrderStatus}>
-                        <SelectTrigger className="bg-muted
-border-border text-foreground
-mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-muted
-border-border">
-                          <SelectItem value="PENDING" className="text-foreground
-">Pendiente</SelectItem>
-                          <SelectItem value="PAID" className="text-foreground
-">Pagado</SelectItem>
-                          <SelectItem value="PROCESSING" className="text-foreground
-">Procesando</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label className="text-foreground
-">Método de pago</Label>
-                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                        <SelectTrigger className="bg-muted
-border-border text-foreground
-mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-muted
-border-border">
-                          <SelectItem value="cash" className="text-foreground
-">Efectivo</SelectItem>
-                          <SelectItem value="transfer" className="text-foreground
-">Transferencia</SelectItem>
-                          <SelectItem value="credit_card" className="text-foreground
-">Tarjeta</SelectItem>
-                          <SelectItem value="debit_card" className="text-foreground
-">Débito</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label className="text-foreground
-">Notas (opcional)</Label>
-                      <Textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="bg-muted
-border-border text-foreground
-mt-1"
-                        placeholder="Notas adicionales sobre el pedido..."
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Botón crear */}
-                <Button
-                  onClick={handleSubmit}
-                  disabled={loading || orderItems.length === 0}
-                  className="w-full bg-pink-600 hover:bg-pink-700 text-foreground
-"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Creando...
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Crear Pedido
-                    </>
-                  )}
-                </Button>
-              </div>
+    <AdminDashboardLayout user={user}>
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/transactions">
+              <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-muted bg-transparent">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Crear Pedido Manual</h1>
+              <p className="text-muted-foreground mt-1">Crea un pedido para un cliente existente</p>
             </div>
           </div>
-        </main>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Columna izquierda - Productos y datos */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Seleccionar Cliente */}
+            <Card className="bg-card border-border p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <User className="h-5 w-5 text-pink-600" />
+                <h2 className="text-xl font-semibold text-foreground">Cliente</h2>
+              </div>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger className="bg-muted border-border text-foreground">
+                  <SelectValue placeholder="Selecciona un cliente" />
+                </SelectTrigger>
+                <SelectContent className="bg-muted border-border">
+                  {users.map(user => (
+                    <SelectItem key={user.id} value={user.id} className="text-foreground">
+                      {user.name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Card>
+
+            {/* Agregar Productos */}
+            <Card className="bg-card border-border p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Package className="h-5 w-5 text-pink-600" />
+                <h2 className="text-xl font-semibold text-foreground">Productos</h2>
+              </div>
+              
+              {/* Buscador de productos */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                <Input
+                  type="text"
+                  placeholder="Buscar producto por nombre o SKU..."
+                  value={searchProduct}
+                  onChange={(e) => setSearchProduct(e.target.value)}
+                  className="pl-9 bg-muted border-border text-foreground"
+                />
+              </div>
+
+              {/* Resultados de búsqueda */}
+              {searchProduct && (
+                <div className="mb-4 max-h-48 overflow-y-auto bg-muted rounded-lg border border-border">
+                  {filteredProducts.length === 0 ? (
+                    <p className="text-zinc-500 text-center py-4">No se encontraron productos</p>
+                  ) : (
+                    filteredProducts.slice(0, 5).map(product => (
+                      <button
+                        key={product.id}
+                        onClick={() => addProductToOrder(product)}
+                        className="w-full text-left p-3 hover:bg-zinc-700 transition-colors border-b border-border last:border-0"
+                      >
+                        <p className="text-foreground font-medium">{product.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-zinc-400">SKU: {product.sku}</span>
+                          <span className="text-xs text-zinc-400">•</span>
+                          <span className="text-xs text-pink-400">{formatCurrency(product.basePrice)}</span>
+                          <span className="text-xs text-zinc-400">•</span>
+                          <span className="text-xs text-zinc-400">Stock: {product.stock}</span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* Lista de productos agregados */}
+              <div className="space-y-3">
+                {orderItems.length === 0 ? (
+                  <p className="text-zinc-500 text-center py-8">No hay productos agregados</p>
+                ) : (
+                  orderItems.map(item => (
+                    <div key={item.productId} className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-foreground font-medium">{item.productName}</p>
+                        <p className="text-sm text-zinc-400">SKU: {item.sku}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value))}
+                          className="w-20 bg-zinc-700 border-zinc-600 text-foreground text-center"
+                        />
+                        <span className="text-zinc-400">×</span>
+                        <span className="text-foreground font-medium w-24 text-right">
+                          {formatCurrency(item.unitPrice)}
+                        </span>
+                      </div>
+                      <div className="text-right w-28">
+                        <p className="text-foreground font-semibold">{formatCurrency(item.subtotal)}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeProduct(item.productId)}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+
+            {/* Dirección de envío */}
+            <Card className="bg-card border-border p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="h-5 w-5 text-pink-600" />
+                <h2 className="text-xl font-semibold text-foreground">Dirección de Envío</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-foreground">Nombre completo</Label>
+                  <Input
+                    value={shippingName}
+                    onChange={(e) => setShippingName(e.target.value)}
+                    className="bg-muted border-border text-foreground mt-1"
+                    placeholder="Juan Pérez"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground">Email</Label>
+                  <Input
+                    type="email"
+                    value={shippingEmail}
+                    onChange={(e) => setShippingEmail(e.target.value)}
+                    className="bg-muted border-border text-foreground mt-1"
+                    placeholder="juan@example.com"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground">Teléfono</Label>
+                  <Input
+                    value={shippingPhone}
+                    onChange={(e) => setShippingPhone(e.target.value)}
+                    className="bg-muted border-border text-foreground mt-1"
+                    placeholder="+56 9 1234 5678"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground">Ciudad</Label>
+                  <Input
+                    value={shippingCity}
+                    onChange={(e) => setShippingCity(e.target.value)}
+                    className="bg-muted border-border text-foreground mt-1"
+                    placeholder="Santiago"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground">Región</Label>
+                  <Input
+                    value={shippingRegion}
+                    onChange={(e) => setShippingRegion(e.target.value)}
+                    className="bg-muted border-border text-foreground mt-1"
+                    placeholder="Metropolitana"
+                  />
+                </div>
+                <div>
+                  <Label className="text-foreground">Código Postal</Label>
+                  <Input
+                    value={shippingZip}
+                    onChange={(e) => setShippingZip(e.target.value)}
+                    className="bg-muted border-border text-foreground mt-1"
+                    placeholder="8320000"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-foreground">Dirección</Label>
+                  <Input
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    className="bg-muted border-border text-foreground mt-1"
+                    placeholder="Av. Providencia 1234, Depto 501"
+                  />
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Columna derecha - Resumen */}
+          <div className="space-y-6">
+            {/* Totales */}
+            <Card className="bg-card border-border p-6">
+              <h2 className="text-xl font-semibold text-foreground mb-4">Resumen</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between text-zinc-400">
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(totals.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-zinc-400">
+                  <span>Envío:</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={shippingCost}
+                    onChange={(e) => setShippingCost(e.target.value)}
+                    className="w-32 bg-muted border-border text-foreground text-right"
+                  />
+                </div>
+                <div className="flex justify-between text-zinc-400">
+                  <span>IVA (19%):</span>
+                  <span>{formatCurrency(totals.tax)}</span>
+                </div>
+                <div className="pt-3 border-t border-border flex justify-between text-foreground text-lg font-bold">
+                  <span>Total:</span>
+                  <span className="text-pink-600">{formatCurrency(totals.total)}</span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Opciones adicionales */}
+            <Card className="bg-card border-border p-6">
+              <h2 className="text-xl font-semibold text-foreground mb-4">Opciones</h2>
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-foreground">Estado inicial</Label>
+                  <Select value={orderStatus} onValueChange={setOrderStatus}>
+                    <SelectTrigger className="bg-muted border-border text-foreground mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-muted border-border">
+                      <SelectItem value="PENDING" className="text-foreground">Pendiente</SelectItem>
+                      <SelectItem value="PAID" className="text-foreground">Pagado</SelectItem>
+                      <SelectItem value="PROCESSING" className="text-foreground">Procesando</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-foreground">Método de pago</Label>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger className="bg-muted border-border text-foreground mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-muted border-border">
+                      <SelectItem value="cash" className="text-foreground">Efectivo</SelectItem>
+                      <SelectItem value="transfer" className="text-foreground">Transferencia</SelectItem>
+                      <SelectItem value="credit_card" className="text-foreground">Tarjeta</SelectItem>
+                      <SelectItem value="debit_card" className="text-foreground">Débito</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-foreground">Notas (opcional)</Label>
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="bg-muted border-border text-foreground mt-1"
+                    placeholder="Notas adicionales sobre el pedido..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </Card>
+
+            {/* Botón crear */}
+            <Button
+              onClick={handleSubmit}
+              disabled={loading || orderItems.length === 0}
+              className="w-full bg-pink-600 hover:bg-pink-700 text-foreground"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creando...
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Crear Pedido
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
+    </AdminDashboardLayout>
   )
 }
