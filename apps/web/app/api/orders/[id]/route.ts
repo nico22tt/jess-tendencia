@@ -4,14 +4,14 @@ import prisma from "@jess/shared/lib/prisma"
 
 export async function GET(
   _req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> },
 ) {
-  const id = context.params.id
+  const { id } = await context.params
 
   if (!id) {
     return NextResponse.json(
       { success: false, error: "Falta el id de la orden." },
-      { status: 400 }
+      { status: 400 },
     )
   }
 
@@ -21,26 +21,26 @@ export async function GET(
       include: {
         order_items: {
           include: {
-            products: {
-              select: { name: true },
-            },
+            products: true, // name, sku, images, etc.
           },
         },
+        user_addresses: true, // datos de envío si existen
       },
     })
 
     if (!order) {
       return NextResponse.json(
         { success: false, error: "Orden no encontrada." },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
     return NextResponse.json({ success: true, order })
   } catch (err: any) {
+    console.error("Error consultando orden:", err)
     return NextResponse.json(
       { success: false, error: err.message || "Error consultando orden" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

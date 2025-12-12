@@ -41,22 +41,40 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function loadOrder() {
-      try {
-        const res = await fetch(`/api/orders/${orderId}`)
-        if (!res.ok) throw new Error("No se pudo cargar la orden")
-        const data = await res.json()
-        setOrder(data)
-      } catch (error) {
-        console.error(error)
-      } finally {
-        setLoading(false)
-      }
-    }
+useEffect(() => {
+  if (!orderId) return
 
-    if (orderId) loadOrder()
-  }, [orderId])
+  async function loadOrder() {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { cache: "no-store" })
+      const text = await res.text()
+      console.log("ORDER DETAIL status:", res.status)
+      console.log("ORDER DETAIL raw body:", text)
+
+      let data: any = {}
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch (e) {
+        console.error("Error parseando JSON de /api/orders/[id]:", e)
+      }
+
+      if (!res.ok || !data.success) {
+        console.error("Error API orden:", data)
+        setOrder(null)
+      } else {
+        setOrder(data.order)
+      }
+    } catch (e) {
+      console.error("fetch /api/orders error:", e)
+      setOrder(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  loadOrder()
+}, [orderId])
+
 
   if (loading) {
     return (

@@ -44,6 +44,7 @@ export function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
   const [totalItems, setTotalItems] = useState<number>(0)
+  const [searchTerm, setSearchTerm] = useState("")
   const supabase = createClient()
   const router = useRouter()
 
@@ -83,6 +84,13 @@ export function Header() {
 
   const handleMouseLeave = () => {
     setActiveDropdown(null)
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const term = searchTerm.trim()
+    if (!term) return
+    router.push(`/buscar?q=${encodeURIComponent(term)}`)
   }
 
   return (
@@ -165,10 +173,18 @@ export function Header() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          <div className="relative max-w-sm hidden md:block">
+          <form
+            className="relative max-w-sm hidden md:block"
+            onSubmit={handleSearchSubmit}
+          >
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input placeholder="Buscar productos..." className="pl-10 bg-card border-border" />
-          </div>
+            <Input
+              placeholder="Buscar productos..."
+              className="pl-10 bg-card border-border"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </form>
           <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
             <Heart className="h-5 w-5" />
           </Button>

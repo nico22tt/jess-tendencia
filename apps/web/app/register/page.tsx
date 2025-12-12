@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -72,11 +72,16 @@ export default function RegisterPage() {
     setErrors({})
     setSuccessMsg("")
 
-    // Registro vía supabase.auth
+    const origin = typeof window !== "undefined" ? window.location.origin : ""
+
+    // Registro vía supabase.auth con redirect a /login tras confirmar el email
     const { data, error } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
-      options: { data: { name: formData.name, role: "client" } }
+      options: { 
+        data: { name: formData.name, role: "client" },
+        emailRedirectTo: `${origin}/login`
+      }
     })
 
     setIsLoading(false)
@@ -100,12 +105,15 @@ export default function RegisterPage() {
       })
     }
 
+    // Caso típico con confirmación de email activada: user existe pero session es null
     if (data.user && !data.session) {
-      setSuccessMsg("Te enviamos un enlace de confirmación a tu email. Por favor verifica tu correo antes de iniciar sesión.")
+      // En lugar de quedarse en esta página, lo llevamos al login
+      router.replace("/login")
       return
     }
 
-    router.replace('/mi-cuenta')
+    // Si por configuración tuvieras sesión inmediata sin confirmación
+    router.replace("/mi-cuenta")
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -123,22 +131,30 @@ export default function RegisterPage() {
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="text-center space-y-2">
               <CardTitle className="text-2xl font-bold text-gray-900">Crear Cuenta</CardTitle>
-              <CardDescription className="text-gray-600">Únete a la comunidad de Jess Tendencia</CardDescription>
+              <CardDescription className="text-gray-600">
+                Únete a la comunidad de Jess Tendencia
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                {successMsg && (
-                  <Alert className="py-2 bg-green-50 border-green-400">
-                    <AlertDescription className="text-xs text-green-800">{successMsg}</AlertDescription>
-                  </Alert>
-                )}
+              {successMsg && (
+                <Alert className="py-2 bg-green-50 border-green-400">
+                  <AlertDescription className="text-xs text-green-800">
+                    {successMsg}
+                  </AlertDescription>
+                </Alert>
+              )}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {errors.general && (
                   <Alert variant="destructive" className="py-2">
-                    <AlertDescription className="text-xs">{errors.general}</AlertDescription>
+                    <AlertDescription className="text-xs">
+                      {errors.general}
+                    </AlertDescription>
                   </Alert>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nombre Completo</Label>
+                  <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                    Nombre Completo
+                  </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
@@ -152,11 +168,17 @@ export default function RegisterPage() {
                     />
                   </div>
                   {errors.name && (
-                    <Alert variant="destructive" className="py-2"><AlertDescription className="text-xs">{errors.name}</AlertDescription></Alert>
+                    <Alert variant="destructive" className="py-2">
+                      <AlertDescription className="text-xs">
+                        {errors.name}
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">Correo Electrónico</Label>
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Correo Electrónico
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
@@ -170,11 +192,17 @@ export default function RegisterPage() {
                     />
                   </div>
                   {errors.email && (
-                    <Alert variant="destructive" className="py-2"><AlertDescription className="text-xs">{errors.email}</AlertDescription></Alert>
+                    <Alert variant="destructive" className="py-2">
+                      <AlertDescription className="text-xs">
+                        {errors.email}
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">Contraseña</Label>
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Contraseña
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
@@ -196,11 +224,17 @@ export default function RegisterPage() {
                     </button>
                   </div>
                   {errors.password && (
-                    <Alert variant="destructive" className="py-2"><AlertDescription className="text-xs">{errors.password}</AlertDescription></Alert>
+                    <Alert variant="destructive" className="py-2">
+                      <AlertDescription className="text-xs">
+                        {errors.password}
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirmar Contraseña</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                    Confirmar Contraseña
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
@@ -222,7 +256,11 @@ export default function RegisterPage() {
                     </button>
                   </div>
                   {errors.confirmPassword && (
-                    <Alert variant="destructive" className="py-2"><AlertDescription className="text-xs">{errors.confirmPassword}</AlertDescription></Alert>
+                    <Alert variant="destructive" className="py-2">
+                      <AlertDescription className="text-xs">
+                        {errors.confirmPassword}
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
                 <Button
@@ -236,7 +274,10 @@ export default function RegisterPage() {
               <div className="text-center">
                 <div className="text-sm text-gray-600">
                   ¿Ya tienes cuenta?{" "}
-                  <Link href="/login" className="text-pink-600 hover:text-pink-700 font-medium hover:underline">
+                  <Link
+                    href="/login"
+                    className="text-pink-600 hover:text-pink-700 font-medium hover:underline"
+                  >
                     Iniciar sesión
                   </Link>
                 </div>

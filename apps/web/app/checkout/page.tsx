@@ -161,7 +161,7 @@ export default function CheckoutPage() {
 
       const { order_id } = await createOrder(orderData)
       await clearCartInDb(userId, items)
-      router.push(`/ordenes/${order_id}`)
+      router.push(`/checkout/${order_id}`)
     } catch (err) {
       console.error(err)
       alert("Error creando la orden. Intenta de nuevo.")
