@@ -1,149 +1,183 @@
-"use client"
+"use client";
 
-import { use, useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@utils/supabase/client"
-import { AdminDashboardLayout } from "@/components/admin-dashboard-layout"
-import { Button } from "@jess/ui/button"
-import { Input } from "@jess/ui/input"
-import { Label } from "@jess/ui/label"
-import { Textarea } from "@jess/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jess/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@jess/ui/card"
-import { Separator } from "@jess/ui/separator"
-import { ArrowLeft, Save, Package, Loader2, TrendingUp, AlertTriangle } from "lucide-react"
+import { use, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@utils/supabase/client";
+import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
+import { Button } from "@jess/ui/button";
+import { Input } from "@jess/ui/input";
+import { Label } from "@jess/ui/label";
+import { Textarea } from "@jess/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@jess/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@jess/ui/card";
+import { Separator } from "@jess/ui/separator";
+import {
+  ArrowLeft,
+  Save,
+  Package,
+  Loader2,
+  TrendingUp,
+  AlertTriangle,
+} from "lucide-react";
 
 interface Product {
-  id: string
-  name: string
-  sku: string
-  stock: number
-  category: string
-  minStock: number
+  id: string;
+  name: string;
+  sku: string;
+  stock: number;
+  category: string;
+  minStock: number;
 }
 
-export default function EditInventoryPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  const router = useRouter()
-  const supabase = createClient()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [product, setProduct] = useState<Product | null>(null)
-  
+type AdjustmentType = "add" | "subtract" | "set";
+
+export default function EditInventoryPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [product, setProduct] = useState<Product | null>(null);
+
   // Estados del formulario
-  const [adjustmentType, setAdjustmentType] = useState<"add" | "subtract" | "set">("add")
-  const [adjustmentAmount, setAdjustmentAmount] = useState("")
-  const [adjustmentNote, setAdjustmentNote] = useState("")
-  const [newMinStock, setNewMinStock] = useState("")
+  const [adjustmentType, setAdjustmentType] =
+    useState<AdjustmentType>("add");
+  const [adjustmentAmount, setAdjustmentAmount] = useState("");
+  const [adjustmentNote, setAdjustmentNote] = useState("");
+  const [newMinStock, setNewMinStock] = useState("");
 
   useEffect(() => {
-    checkAuth()
-    fetchProduct()
-  }, [id])
+    checkAuth();
+    fetchProduct();
+  }, [id]);
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user || user.user_metadata?.role !== "admin") {
-      router.push("/login")
-      return
+      router.push("/login");
+      return;
     }
-    setUser(user)
-  }
+    setUser(user);
+  };
 
   const fetchProduct = async () => {
     try {
-      setLoading(true)
-      const res = await fetch(`/api/inventory`)
-      const data = await res.json()
+      setLoading(true);
+      const res = await fetch(`/api/inventory`);
+      const data = await res.json();
 
       if (data.success) {
-        const foundProduct = data.data.find((p: Product) => p.id === id)
+        const foundProduct = data.data.find((p: Product) => p.id === id);
         if (foundProduct) {
-          setProduct(foundProduct)
-          setNewMinStock(foundProduct.minStock.toString())
+          setProduct(foundProduct);
+          setNewMinStock(foundProduct.minStock.toString());
         } else {
-          alert("Producto no encontrado")
-          router.back()
+          alert("Producto no encontrado");
+          router.back();
         }
       }
     } catch (error) {
-      console.error("Error:", error)
-      alert("Error al cargar producto")
+      console.error("Error:", error);
+      alert("Error al cargar producto");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleAdjustStock = async () => {
     if (!product || !adjustmentAmount) {
-      alert("Por favor ingresa una cantidad válida")
-      return
+      alert("Por favor ingresa una cantidad válida");
+      return;
     }
 
-    const amount = parseInt(adjustmentAmount)
+    const amount = parseInt(adjustmentAmount, 10);
     if (isNaN(amount) || amount <= 0) {
-      alert("La cantidad debe ser un número positivo")
-      return
+      alert("La cantidad debe ser un número positivo");
+      return;
+    }
+
+    // Motivo obligatorio para salidas/mermas o ajustes directos
+    const requiresReason =
+      adjustmentType === "subtract" || adjustmentType === "set";
+    if (requiresReason && !adjustmentNote.trim()) {
+      alert("Por favor indica el motivo del ajuste (merma, daño, inventario físico, etc.)");
+      return;
     }
 
     try {
-      setSaving(true)
+      setSaving(true);
       const res = await fetch(`/api/inventory/${product.id}/adjust`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: adjustmentType,
           amount,
-          note: adjustmentNote
-        })
-      })
+          note: adjustmentNote,
+        }),
+      });
 
-      const result = await res.json()
+      const result = await res.json();
 
       if (result.success) {
-        alert("Stock ajustado exitosamente")
-        // Recargar datos del producto
-        await fetchProduct()
-        // Reset form
-        setAdjustmentAmount("")
-        setAdjustmentNote("")
+        alert("Stock ajustado exitosamente");
+        await fetchProduct();
+        setAdjustmentAmount("");
+        setAdjustmentNote("");
       } else {
-        alert("Error al ajustar stock: " + (result.error || ""))
+        alert("Error al ajustar stock: " + (result.error || ""));
       }
     } catch (error) {
-      console.error("Error:", error)
-      alert("Error al ajustar stock")
+      console.error("Error:", error);
+      alert("Error al ajustar stock");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const calculateNewStock = () => {
-    if (!product || !adjustmentAmount) return product?.stock || 0
+    if (!product || !adjustmentAmount) return product?.stock || 0;
 
-    const amount = parseInt(adjustmentAmount)
-    if (isNaN(amount)) return product.stock
+    const amount = parseInt(adjustmentAmount, 10);
+    if (isNaN(amount)) return product.stock;
 
-    let newStock = product.stock
+    let newStock = product.stock;
 
     if (adjustmentType === "add") {
-      newStock += amount
+      newStock += amount;
     } else if (adjustmentType === "subtract") {
-      newStock = Math.max(0, newStock - amount)
+      newStock = Math.max(0, newStock - amount);
     } else if (adjustmentType === "set") {
-      newStock = amount
+      newStock = amount;
     }
 
-    return newStock
-  }
+    return newStock;
+  };
 
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
       </div>
-    )
+    );
   }
 
   if (!product) {
@@ -153,11 +187,11 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
           <p className="text-muted-foreground">Producto no encontrado</p>
         </div>
       </AdminDashboardLayout>
-    )
+    );
   }
 
-  const newStock = calculateNewStock()
-  const stockDifference = newStock - product.stock
+  const newStock = calculateNewStock();
+  const stockDifference = newStock - product.stock;
 
   return (
     <AdminDashboardLayout user={user}>
@@ -173,7 +207,9 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Editar Inventario</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              Editar Inventario
+            </h1>
             <p className="text-muted-foreground mt-1">{product.name}</p>
           </div>
         </div>
@@ -190,19 +226,27 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-muted-foreground">Nombre</Label>
-                <p className="text-foreground font-medium mt-1">{product.name}</p>
+                <p className="text-foreground font-medium mt-1">
+                  {product.name}
+                </p>
               </div>
               <div>
                 <Label className="text-muted-foreground">SKU</Label>
-                <p className="text-foreground font-medium mt-1">{product.sku}</p>
+                <p className="text-foreground font-medium mt-1">
+                  {product.sku}
+                </p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Categoría</Label>
-                <p className="text-foreground font-medium mt-1">{product.category}</p>
+                <p className="text-foreground font-medium mt-1">
+                  {product.category}
+                </p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Stock Mínimo</Label>
-                <p className="text-foreground font-medium mt-1">{product.minStock} unidades</p>
+                <p className="text-foreground font-medium mt-1">
+                  {product.minStock} unidades
+                </p>
               </div>
             </div>
           </CardContent>
@@ -214,8 +258,12 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-muted-foreground">Stock Actual</Label>
-                <p className="text-4xl font-bold text-foreground mt-2">{product.stock}</p>
-                <p className="text-smtext-muted-foreground mt-1">unidades disponibles</p>
+                <p className="text-4xl font-bold text-foreground mt-2">
+                  {product.stock}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  unidades disponibles
+                </p>
               </div>
               <Package className="h-16 w-16 text-pink-600" />
             </div>
@@ -227,16 +275,23 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
           <CardHeader>
             <CardTitle className="text-foreground">Ajustar Stock</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Modifica la cantidad de unidades disponibles
+              Registra entradas por compra, mermas y ajustes por inventario
+              físico.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Tipo de Ajuste */}
             <div>
-              <Label htmlFor="adjustmentType" className="text-muted-foreground">
+              <Label
+                htmlFor="adjustmentType"
+                className="text-muted-foreground"
+              >
                 Tipo de ajuste
               </Label>
-              <Select value={adjustmentType} onValueChange={(v: any) => setAdjustmentType(v)}>
+              <Select
+                value={adjustmentType}
+                onValueChange={(v: AdjustmentType) => setAdjustmentType(v)}
+              >
                 <SelectTrigger className="bg-muted border-border text-foreground mt-2">
                   <SelectValue />
                 </SelectTrigger>
@@ -244,19 +299,19 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
                   <SelectItem value="add" className="text-foreground">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-green-400" />
-                      Sumar unidades (Entrada de inventario)
+                      Entrada por compra / proveedor
                     </div>
                   </SelectItem>
                   <SelectItem value="subtract" className="text-foreground">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 rotate-180 text-red-400" />
-                      Restar unidades (Salida de inventario)
+                      Salida por merma / daño
                     </div>
                   </SelectItem>
                   <SelectItem value="set" className="text-foreground">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-yellow-400" />
-                      Establecer cantidad exacta
+                      Ajuste por inventario físico (establecer stock exacto)
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -273,8 +328,8 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
                 type="number"
                 min="0"
                 placeholder={
-                  adjustmentType === "set" 
-                    ? "Ingresa el stock total deseado" 
+                  adjustmentType === "set"
+                    ? "Ingresa el stock total deseado"
                     : "Ingresa la cantidad a ajustar"
                 }
                 value={adjustmentAmount}
@@ -288,20 +343,32 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
               <div className="bg-muted border border-border rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Stock actual</p>
-                    <p className="text-2xl font-bold text-foreground">{product.stock}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Stock actual
+                    </p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {product.stock}
+                    </p>
                   </div>
                   <div className="text-2xl font-bold text-zinc-600">→</div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Nuevo stock</p>
-                    <p className={`text-2xl font-bold ${
-                      stockDifference > 0 ? "text-green-400" : 
-                      stockDifference < 0 ? "text-red-400" : "text-foreground"
-                    }`}>
+                    <p className="text-sm text-muted-foreground">
+                      Nuevo stock
+                    </p>
+                    <p
+                      className={`text-2xl font-bold ${
+                        stockDifference > 0
+                          ? "text-green-400"
+                          : stockDifference < 0
+                          ? "text-red-400"
+                          : "text-foreground"
+                      }`}
+                    >
                       {newStock}
                       {stockDifference !== 0 && (
                         <span className="text-sm ml-2">
-                          ({stockDifference > 0 ? "+" : ""}{stockDifference})
+                          ({stockDifference > 0 ? "+" : ""}
+                          {stockDifference})
                         </span>
                       )}
                     </p>
@@ -313,11 +380,14 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
             {/* Nota */}
             <div>
               <Label htmlFor="note" className="text-muted-foreground">
-                Motivo del ajuste (opcional)
+                Motivo del ajuste
+                {adjustmentType === "subtract" || adjustmentType === "set"
+                  ? " (obligatorio)"
+                  : " (opcional para entradas)"}
               </Label>
               <Textarea
                 id="note"
-                placeholder="Ej: Reposición de proveedor, Venta directa, Ajuste por inventario físico..."
+                placeholder="Ej: Compra a proveedor X, par dañado, ajuste por inventario físico..."
                 value={adjustmentNote}
                 onChange={(e) => setAdjustmentNote(e.target.value)}
                 className="bg-muted border-border text-foreground mt-2"
@@ -360,12 +430,14 @@ export default function EditInventoryPage({ params }: { params: Promise<{ id: st
         {/* Botón para ver historial */}
         <Button
           variant="outline"
-          onClick={() => router.push(`/dashboard/inventory/${product.id}/history`)}
-          className="w-full order-border text-foreground hover:bg-muted bg-blue-600"
+          onClick={() =>
+            router.push(`/dashboard/inventory/${product.id}/history`)
+          }
+          className="w-full border-border text-foreground hover:bg-muted bg-blue-600"
         >
           Ver Historial de Movimientos
         </Button>
       </div>
     </AdminDashboardLayout>
-  )
+  );
 }

@@ -7,73 +7,58 @@ import { AdminDashboardLayout } from "@/components/admin-dashboard-layout"
 import { RevenueChart } from "@/components/revenue-chart"
 import { LatestTransactions } from "@/components/latest-transactions"
 import { BrowserUsageChart } from "@/components/browser-usage-chart"
-import { TodoList } from "@/components/todo-list"
 import { VisitorsChart } from "@/components/visitors-chart"
 import { PopularProducts } from "@/components/popular-products"
+import { Loader2 } from "lucide-react"
 
 export default function AdminDashboard() {
   const router = useRouter()
   const supabase = createClient()
   const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     checkAuth()
   }, [])
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || user.user_metadata?.role !== "admin") {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || user.user_metadata?.role !== "admin") {
+        router.push("/login")
+        return
+      }
+      setUser(user)
+    } catch (error) {
+      console.error("Auth error:", error)
       router.push("/login")
-      return
+    } finally {
+      setLoading(false)
     }
-    setUser(user)
   }
 
-  if (!user) {
+  if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Cargando...</p>
+        <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
       </div>
     )
   }
 
   return (
     <AdminDashboardLayout user={user}>
-      <div className="max-w-[1600px] mx-auto space-y-6">
-        {/* Top Row - Charts and Transactions */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Revenue Chart */}
-          <div className="col-span-12 lg:col-span-8">
-            <RevenueChart />
-          </div>
-
-          {/* Latest Transactions */}
-          <div className="col-span-12 md:col-span-6 lg:col-span-3">
-            <LatestTransactions />
-          </div>
-
-          {/* Browser Usage */}
-          <div className="col-span-12 md:col-span-6 lg:col-span-4">
-            <BrowserUsageChart />
-          </div>
+      <div className="space-y-6">
+        {/* Primera fila - 2 Gráficos grandes */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <RevenueChart />
+          <VisitorsChart />
         </div>
 
-        {/* Bottom Row - Lists and Products */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Todo List */}
-          <div className="col-span-12 md:col-span-6 lg:col-span-3">
-            <TodoList />
-          </div>
-
-          {/* Total Visitors Chart */}
-          <div className="col-span-12 md:col-span-6 lg:col-span-5">
-            <VisitorsChart />
-          </div>
-
-          {/* Popular Products */}
-          <div className="col-span-12 lg:col-span-4">
-            <PopularProducts />
-          </div>
+        {/* Segunda fila - 3 Cards que ocupan TODO el ancho */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <LatestTransactions />
+          <PopularProducts />
+          <BrowserUsageChart />
         </div>
       </div>
     </AdminDashboardLayout>

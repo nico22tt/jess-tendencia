@@ -1,14 +1,14 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "./generated/client"
+  provider      = "prisma-client-js"
+  output        = "./generated/client"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["auth", "public"]
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  schemas   = ["auth", "public"]
 }
 
 model User {
@@ -50,27 +50,30 @@ model Category {
 }
 
 model Product {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String
-  description      String
-  urlSlug          String             @unique @map("url_slug")
-  sku              String             @unique
-  basePrice        Int                @map("base_price")
-  salePrice        Int?               @map("sale_price")
-  stock            Int?               @default(0)
-  categoryId       String             @map("category_id") @db.Uuid
-  subcategory      String?
-  brand            String
-  isPublished      Boolean?           @default(false) @map("is_published")
-  images           Json
-  createdAt        DateTime?          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime?          @default(now()) @map("updated_at") @db.Timestamptz(6)
-  cart_items       cart_items[]
-  notifications    Notification[]
-  order_items      order_items[]
-  product_variants product_variants[]
-  category         Category           @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  stockMovements   StockMovement[]
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String
+  description          String
+  urlSlug              String                 @unique @map("url_slug")
+  sku                  String                 @unique
+  basePrice            Int                    @map("base_price")
+  salePrice            Int?                   @map("sale_price")
+  stock                Int?                   @default(0)
+  categoryId           String                 @map("category_id") @db.Uuid
+  subcategory          String?
+  brand                String
+  isPublished          Boolean?               @default(false) @map("is_published")
+  images               Json
+  createdAt            DateTime?              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime?              @default(now()) @map("updated_at") @db.Timestamptz(6)
+  average_cost         Decimal?               @db.Decimal(10, 2)
+  last_cost            Decimal?               @db.Decimal(10, 2)
+  cart_items           cart_items[]
+  notifications        Notification[]
+  order_items          order_items[]
+  product_variants     product_variants[]
+  category             Category               @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  purchase_order_items purchase_order_items[]
+  stockMovements       StockMovement[]
 
   @@map("products")
   @@schema("public")
@@ -116,10 +119,13 @@ model orders {
   updatedAt        DateTime?       @default(now()) @map("updated_at") @db.Timestamptz(6)
   amount           Decimal?        @db.Decimal
   user_address_id  String?         @db.Uuid
+  payment_status   String?         @default("PENDING")
+  paid_at          DateTime?       @db.Timestamptz(6)
   notifications    Notification[]
   order_items      order_items[]
   user_addresses   user_addresses? @relation(fields: [user_address_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users            User            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stock_movements  StockMovement[]
 
   @@index([createdAt(sort: Desc)], map: "idx_orders_created_at")
   @@index([order_number], map: "idx_orders_order_number")
@@ -149,19 +155,29 @@ model product_variants {
 }
 
 model StockMovement {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId     String   @map("product_id") @db.Uuid
-  type          String
-  amount        Int
-  previousStock Int      @map("previous_stock")
-  newStock      Int      @map("new_stock")
-  reason        String?
-  userId        String?  @map("user_id") @db.Uuid
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId      String            @map("product_id") @db.Uuid
+  type           StockMovementType
+  quantity       Int
+  previousStock  Int               @map("previous_stock")
+  newStock       Int               @map("new_stock")
+  reason         String?
+  userId         String?           @map("user_id") @db.Uuid
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  unit_cost      Decimal?          @db.Decimal
+  unit_price     Decimal?          @db.Decimal
+  total_value    Decimal?          @db.Decimal
+  order_id       String?           @db.Uuid
+  reference_type String?           @db.VarChar(50)
+  reference_id   String?           @db.Uuid
+  notes          String?
+  orders         orders?           @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product        Product           @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([productId], map: "idx_stock_movements_product_id")
   @@index([createdAt(sort: Desc)], map: "idx_stock_movements_created_at")
+  @@index([order_id], map: "idx_stock_movements_order_id")
+  @@index([reference_type, reference_id], map: "idx_stock_movements_reference")
   @@map("stock_movements")
   @@schema("public")
 }
@@ -623,6 +639,94 @@ model cart_items {
   @@schema("public")
 }
 
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model oauth_client_states {
+  id            String   @id @db.Uuid
+  provider_type String
+  code_verifier String?
+  created_at    DateTime @db.Timestamptz(6)
+
+  @@index([created_at], map: "idx_oauth_client_states_created_at")
+  @@schema("auth")
+}
+
+model purchase_order_items {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  purchase_order_id String          @db.Uuid
+  product_id        String          @db.Uuid
+  quantity_ordered  Int
+  quantity_received Int             @default(0)
+  unit_price        Decimal         @default(0) @db.Decimal
+  created_at        DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?       @default(now()) @db.Timestamptz(6)
+  products          Product         @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  purchase_orders   purchase_orders @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([purchase_order_id], map: "idx_po_items_po_id")
+  @@index([product_id], map: "idx_po_items_product_id")
+  @@schema("public")
+}
+
+model purchase_orders {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supplier_id          String                 @db.Uuid
+  status               PurchaseOrderStatus    @default(PENDING)
+  order_number         String                 @unique
+  order_date           DateTime               @default(now()) @db.Timestamptz(6)
+  expected_date        DateTime?              @db.Timestamptz(6)
+  subtotal             Decimal                @default(0) @db.Decimal
+  tax                  Decimal                @default(0) @db.Decimal
+  total                Decimal                @default(0) @db.Decimal
+  notes                String?
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  payment_status       String?                @default("PENDING")
+  payment_method       String?
+  paid_at              DateTime?              @db.Timestamptz(6)
+  purchase_order_items purchase_order_items[]
+  suppliers            suppliers              @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([order_date(sort: Desc)], map: "idx_purchase_orders_order_date")
+  @@index([supplier_id], map: "idx_purchase_orders_supplier_id")
+  @@schema("public")
+}
+
+model suppliers {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  email           String?
+  phone           String?
+  address         String?
+  tax_id          String?
+  is_active       Boolean           @default(true)
+  created_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  purchase_orders purchase_orders[]
+
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cash_flow {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type           String   @db.VarChar(50)
+  category       String   @db.VarChar(50)
+  amount         Int
+  description    String
+  payment_method String?  @db.VarChar(50)
+  reference_type String?  @db.VarChar(50)
+  reference_id   String?  @db.Uuid
+  date           DateTime @db.Timestamptz(6)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([category], map: "idx_cash_flow_category")
+  @@index([date], map: "idx_cash_flow_date")
+  @@index([reference_type, reference_id], map: "idx_cash_flow_reference")
+  @@index([type], map: "idx_cash_flow_type")
+  @@schema("public")
+}
+
 enum aal_level {
   aal1
   aal2
@@ -691,4 +795,21 @@ enum one_time_token_type {
   phone_change_token
 
   @@schema("auth")
+}
+
+enum PurchaseOrderStatus {
+  PENDING
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+
+  @@schema("public")
+}
+
+enum StockMovementType {
+  PURCHASE
+  SALE
+  ADJUSTMENT
+
+  @@schema("public")
 }

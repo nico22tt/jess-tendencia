@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@jess/shared/lib/prisma"
 import { getStockStatusType } from "@jess/shared/lib/notifications"
+import { registerStockMovement } from "@jess/shared/lib/service"
+import { registerShrinkageInCashFlow } from "@/lib/cash-flow-helpers"
 
 export async function POST(
   request: NextRequest,
@@ -11,6 +13,7 @@ export async function POST(
     const body = await request.json()
     const { type, amount, note } = body
 
+    // type: "add" | "subtract" | "set"
     if (!type || !amount || amount <= 0) {
       return NextResponse.json(
         { success: false, error: "Datos inválidos" },
@@ -20,7 +23,13 @@ export async function POST(
 
     const product = await prisma.product.findUnique({
       where: { id },
-      select: { stock: true, name: true, sku: true }
+      select: {
+        stock: true,
+        name: true,
+        sku: true,
+        last_cost: true, // ✅ CORREGIDO: es last_cost, no cost
+        basePrice: true, // ✅ AGREGAR: precio de venta como fallback
+      },
     })
 
     if (!product) {
@@ -30,63 +39,63 @@ export async function POST(
       )
     }
 
-    const previousStock = product.stock || 0
-    let newStock = previousStock
+    const previousStock = product.stock ?? 0
+    let movementType: "PURCHASE" | "SALE" | "ADJUSTMENT"
+    let movementAmount: number
 
+    // Traducción de la UI actual a tipos de movimiento realistas
     if (type === "add") {
-      newStock += amount
+      movementType = "PURCHASE" // entrada de inventario
+      movementAmount = amount // +cantidad
     } else if (type === "subtract") {
-      newStock = Math.max(0, newStock - amount)
-    } else if (type === "set") {
-      newStock = amount
+      movementType = "ADJUSTMENT" // salida por merma/ajuste
+      movementAmount = -amount // -cantidad
+    } else {
+      // "set" => ajuste directo al valor indicado
+      movementType = "ADJUSTMENT"
+      movementAmount = amount - previousStock
     }
 
-    const minStock = 10
-
+    // Ejecutar todo en una transacción
     const result = await prisma.$transaction(async (tx) => {
+      // Registrar movimiento y actualizar stock usando el servicio
+      const { newStock } = await registerStockMovement({
+        productId: id,
+        type: movementType,
+        amount: movementAmount,
+        reason: note,
+        userId: null,
+      })
+
       const updatedProduct = await tx.product.update({
         where: { id },
         data: {
           stock: newStock,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         select: {
           id: true,
           name: true,
           sku: true,
           stock: true,
-          updatedAt: true
-        }
+          updatedAt: true,
+        },
       })
 
-      await tx.stockMovement.create({
-        data: {
-          productId: id,
-          type: type === "add" ? "entry" : type === "subtract" ? "exit" : "adjustment",
-          amount: type === "subtract" ? -amount : amount,
-          previousStock,
-          newStock,
-          reason:
-            note ||
-            (type === "add"
-              ? "Entrada manual"
-              : type === "subtract"
-              ? "Salida manual"
-              : "Ajuste manual"),
-          userId: null
-        }
-      })
-
+      // Notificación "inventario ajustado"
       await tx.notification.create({
         data: {
           type: "stock_adjusted",
           title: "Inventario ajustado",
           message: `Se ajustó el stock de "${product.name}" (SKU: ${product.sku}) de ${previousStock} a ${newStock} unidades`,
-          productId: id
-        }
+          productId: id,
+        },
       })
 
+      // Notificaciones de stock bajo/critico/agotado
+      const minStock = 10
       const stockStatusType = getStockStatusType(newStock, minStock)
+
       if (stockStatusType) {
         let statusTitle = ""
         let statusMessage = ""
@@ -107,13 +116,40 @@ export async function POST(
             type: stockStatusType,
             title: statusTitle,
             message: statusMessage,
-            productId: id
-          }
+            productId: id,
+          },
         })
       }
 
       return updatedProduct
     })
+
+    // ✅ Si hubo reducción de stock (merma), registrar en cash flow
+      if (movementAmount < 0) {
+        try {
+          // Usar last_cost, si no existe usar basePrice, si no existe usar 0
+          const unitCost = product.last_cost 
+            ? Number(product.last_cost) 
+            : (product.basePrice || 0) // ✅ Fallback al precio de venta
+
+          const shrinkageQuantity = Math.abs(movementAmount)
+
+          await registerShrinkageInCashFlow({
+            productId: id,
+            productName: product.name,
+            productSku: product.sku,
+            quantity: shrinkageQuantity,
+            unitCost: unitCost,
+            reason: note || "Ajuste de inventario negativo",
+          })
+
+          console.log(
+            `✓ Merma registrada en cash flow: ${product.name} - ${shrinkageQuantity} unidades - $${shrinkageQuantity * unitCost}`
+          )
+        } catch (cashFlowError) {
+          console.error("Error registrando merma en cash flow:", cashFlowError)
+        }
+      }
 
     return NextResponse.json({
       success: true,
@@ -122,8 +158,8 @@ export async function POST(
         stock: result.stock,
         lastUpdated: result.updatedAt
           ? result.updatedAt.toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0]
-      }
+          : new Date().toISOString().split("T")[0],
+      },
     })
   } catch (error) {
     console.error("Error al ajustar stock:", error)

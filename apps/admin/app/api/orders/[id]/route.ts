@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@jess/shared/lib/prisma"
 import { createNotification } from "@jess/shared/lib/notifications"
+import {
+  registerOrderInCashFlow,
+  removeOrderFromCashFlow,
+  registerRefundInCashFlow,
+} from "@/lib/cash-flow-helpers"
 
 export async function GET(
   request: NextRequest,
@@ -67,7 +72,7 @@ export async function PUT(
       )
     }
 
-    // Validar contra el constraint del DB
+    // Validar estado
     const allowed = [
       "PENDING",
       "PAID",
@@ -101,11 +106,16 @@ export async function PUT(
       )
     }
 
+    // ✅ Actualizar orden
     const updatedOrder = await prisma.orders.update({
       where: { id },
       data: {
         status,
         updatedAt: new Date(),
+        // ✅ Si se marca como PAID, guardar fecha de pago
+        ...(status === "PAID" && !currentOrder.paid_at
+          ? { paid_at: new Date() }
+          : {}),
       },
       include: {
         users: {
@@ -130,8 +140,43 @@ export async function PUT(
       },
     })
 
-    // Notificación si el estado cambió
+    // ✅ LÓGICA DE CASH FLOW
     if (currentOrder.status !== status) {
+      // Caso 1: Orden marcada como PAID → Registrar ingreso
+      if (status === "PAID" && currentOrder.status !== "PAID") {
+        try {
+          await registerOrderInCashFlow(id)
+          console.log(`✓ Order ${currentOrder.order_number} registered in cash flow`)
+        } catch (error) {
+          console.error("Error registering in cash flow:", error)
+          // No fallar la request si falla el cash flow
+        }
+      }
+
+      // Caso 2: Orden marcada como REFUNDED → Registrar reembolso
+      if (status === "REFUNDED") {
+        try {
+          // Primero eliminar la entrada de ingreso si existe
+          await removeOrderFromCashFlow(id)
+          // Luego registrar el reembolso
+          await registerRefundInCashFlow(id)
+          console.log(`✓ Refund registered for order ${currentOrder.order_number}`)
+        } catch (error) {
+          console.error("Error registering refund:", error)
+        }
+      }
+
+      // Caso 3: Orden cancelada después de estar PAID → Eliminar ingreso
+      if (status === "CANCELLED" && currentOrder.status === "PAID") {
+        try {
+          await removeOrderFromCashFlow(id)
+          console.log(`✓ Order ${currentOrder.order_number} removed from cash flow`)
+        } catch (error) {
+          console.error("Error removing from cash flow:", error)
+        }
+      }
+
+      // ✅ Notificación
       await createNotification({
         type: "order_status",
         title: "Estado de orden actualizado",
