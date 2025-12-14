@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@jess/shared/lib/prisma";
 import { registerStockMovement } from "@jess/shared/lib/service";
 
-// Utilidad: Genera número de orden único (puedes mejorar con lógica secuencial)
 const generateOrderNumber = () =>
   "ORD-" +
   Math.floor(Date.now() / 1000) +
@@ -24,7 +23,7 @@ export async function GET(req: NextRequest) {
   try {
     const orders = await prisma.orders.findMany({
       where: { user_id: userId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "desc" }, // ✅ snake_case
       include: {
         order_items: {
           include: {
@@ -44,17 +43,18 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/orders
+// POST /api/orders
 export async function POST(req: NextRequest) {
   try {
     const {
       user_id,
       user_address_id,
-      shipping_method, // delivery | retiro_loja
+      shipping_method,
       client_name,
       client_email,
       client_phone,
       notes,
-      items, // [{product_id, name, price, quantity, size}]
+      items,
       shipping = 0,
       tax = 0,
     } = await req.json();
@@ -70,6 +70,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Campos obligatorios faltantes." },
         { status: 400 }
+      );
+    }
+
+    // ✅ VALIDAR que no sea el usuario sincronizado
+    if (user_id === '25f597bd-fd93-4aa7-b50d-4900199cf474') {
+      return NextResponse.json(
+        { success: false, error: "Usuario no válido. Por favor inicie sesión nuevamente." },
+        { status: 401 }
       );
     }
 
@@ -103,20 +111,20 @@ export async function POST(req: NextRequest) {
       shipping_email = client_email;
     }
 
-    // Cálculo de subtotal y total
     const subtotal = items.reduce(
       (sum: number, it: any) => sum + it.price * it.quantity,
       0
     );
     const total = subtotal + (shipping || 0) + (tax || 0);
 
-    // Transacción: crear orden + ítems + movimientos de stock
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.orders.create({
         data: {
           order_number: generateOrderNumber(),
           user_id,
-          status: "PENDING",
+          status: "PAID", // ✅ Cambiar a PAID directamente
+          payment_status: "PAID", // ✅ Cambiar a PAID directamente
+          paid_at: new Date(), // ✅ Agregar fecha de pago
           subtotal,
           shipping: shipping || 0,
           tax: tax || 0,
@@ -131,6 +139,8 @@ export async function POST(req: NextRequest) {
           notes: notes || "",
           payment_method: "WEBPAY",
           user_address_id: user_address_id || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
           order_items: {
             create: items.map((item: any) => ({
               product_id: item.product_id,
@@ -145,7 +155,6 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Registrar salida de stock por cada ítem vendido
       for (const item of createdOrder.order_items) {
         await registerStockMovement({
           productId: item.product_id,
@@ -159,8 +168,11 @@ export async function POST(req: NextRequest) {
       return createdOrder;
     });
 
+    console.log("✅ Orden creada como PAID:", order.order_number);
+
     return NextResponse.json({ success: true, order_id: order.id });
   } catch (err: any) {
+    console.error("Error al crear orden:", err);
     return NextResponse.json(
       { success: false, error: err.message || "Error al crear orden" },
       { status: 500 }

@@ -54,45 +54,53 @@ export default function CheckoutSuccessPage({ params }: { params: Promise<{ id: 
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
       
-      // Luego cargar orden
-      await fetchOrder()
+      // ✅ Pasar el user a fetchOrder para que lo use
+      await fetchOrder(user)
     }
 
     init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  const fetchOrder = async () => {
+  const fetchOrder = async (currentUser?: any) => {
     setLoading(true)
-    const res = await fetch(`/api/orders/${id}`, { cache: 'no-store' })
-    if (!res.ok) {
-      setError("No se pudo cargar tu orden.")
-      setLoading(false)
-      return
-    }
-    const json = await res.json()
-    if (!json.success) {
-      setError(json.error || "No se pudo cargar la orden.")
-    } else {
-      setOrder(json.order)
-      
-      // ✅ LIMPIAR CARRITO AUTOMÁTICAMENTE DESPUÉS DE COMPRA EXITOSA
-      if (user?.id) {
-        setClearingCart(true)
-        try {
-          const clearRes = await fetch(`/api/cart?userId=${user.id}&action=clear`, {
-            method: 'PATCH'
-          })
-          if (clearRes.ok) {
-            console.log("✅ Carrito limpiado después de compra exitosa")
+    try {
+      const res = await fetch(`/api/orders/${id}`, { cache: 'no-store' })
+      if (!res.ok) {
+        setError("No se pudo cargar tu orden.")
+        setLoading(false)
+        return
+      }
+      const json = await res.json()
+      if (!json.success) {
+        setError(json.error || "No se pudo cargar la orden.")
+      } else {
+        setOrder(json.order)
+        
+        // ✅ LIMPIAR CARRITO AUTOMÁTICAMENTE DESPUÉS DE COMPRA EXITOSA
+        const userToUse = currentUser || user
+        if (userToUse?.id) {
+          setClearingCart(true)
+          try {
+            const clearRes = await fetch(`/api/cart?userId=${userToUse.id}&action=clear`, {
+              method: 'PATCH'
+            })
+            if (clearRes.ok) {
+              console.log("✅ Carrito limpiado después de compra exitosa")
+            }
+          } catch (err) {
+            console.error("Error limpiando carrito:", err)
+          } finally {
+            setClearingCart(false)
           }
-        } catch (err) {
-          console.error("Error limpiando carrito:", err)
-        } finally {
-          setClearingCart(false)
         }
       }
+    } catch (err) {
+      console.error("Error cargando orden:", err)
+      setError("Error al cargar la orden.")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   if (loading) {
@@ -102,6 +110,7 @@ export default function CheckoutSuccessPage({ params }: { params: Promise<{ id: 
       </main>
     )
   }
+  
   if (error || !order) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-8">

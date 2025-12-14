@@ -14,12 +14,16 @@ import { createClient } from "@utils/supabase/client"
 function useSupabaseUser() {
   const supabase = createClient()
   const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+      setLoading(false)
+    })
   }, [supabase])
 
-  return { user }
+  return { user, loading }
 }
 
 async function saveAddress(
@@ -41,7 +45,10 @@ async function createOrder(orderData: any) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(orderData),
   })
-  if (!resp.ok) throw new Error("Error creando la orden")
+  if (!resp.ok) {
+    const error = await resp.json()
+    throw new Error(error.error || "Error creando la orden")
+  }
   return await resp.json()
 }
 
@@ -56,11 +63,11 @@ async function clearCartInDb(userId: string, items: any[]) {
 }
 
 export default function CheckoutPage() {
-  const { user } = useSupabaseUser()
+  const { user, loading: authLoading } = useSupabaseUser()
   const userId = user?.id
   const router = useRouter()
 
-  const { items, total, loading, getCartItemPrice } = useCheckoutCart(userId)
+  const { items, total, loading: cartLoading, getCartItemPrice } = useCheckoutCart(userId)
   const { addresses, selectedAddress, setSelectedAddress, setAddresses } =
     useUserAddresses(userId)
 
@@ -78,21 +85,31 @@ export default function CheckoutPage() {
   const [shippingMethod, setShippingMethod] =
     useState<"delivery" | "retiro_loja">("delivery")
   const [form, setForm] = useState({
-      name: "",
-      email: "",
-      phone: "",
-      notes: "",
-    })
+    name: "",
+    email: "",
+    phone: "",
+    notes: "",
+  })
 
-    // cuando llega el user, rellenar datos si aún están vacíos
-    useEffect(() => {
-      if (!user) return
-      setForm((prev) => ({
-        ...prev,
-        name: prev.name || user.user_metadata?.full_name || user.name || "",
-        email: prev.email || user.email || "",
-      }))
-    }, [user])
+  // ✅ PROTEGER LA PÁGINA: Redirigir si no hay usuario
+  useEffect(() => {
+    if (authLoading) return // Esperar a que termine de cargar
+
+    if (!user || !user.id) {
+      alert("Debes iniciar sesión para acceder al checkout.")
+      router.push("/login")
+    }
+  }, [user, authLoading, router])
+
+  // cuando llega el user, rellenar datos si aún están vacíos
+  useEffect(() => {
+    if (!user) return
+    setForm((prev) => ({
+      ...prev,
+      name: prev.name || user.user_metadata?.full_name || user.name || "",
+      email: prev.email || user.email || "",
+    }))
+  }, [user])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -109,25 +126,48 @@ export default function CheckoutPage() {
 
   const handleCreateAddress = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!userId) return
-    const addr = await saveAddress(userId, newAddr)
-    setAddresses((prev: Address[]) => [...prev, addr])
-    setSelectedAddress(addr.id)
-    setShowNewAddress(false)
-    setNewAddr({
-      alias: "",
-      recipient_name: "",
-      phone_number: "",
-      address_line_1: "",
-      address_line_2: "",
-      city: "",
-      region: "",
-      zip_code: "",
-    })
+    if (!userId) {
+      alert("Debes iniciar sesión para continuar.")
+      return
+    }
+    try {
+      const addr = await saveAddress(userId, newAddr)
+      setAddresses((prev: Address[]) => [...prev, addr])
+      setSelectedAddress(addr.id)
+      setShowNewAddress(false)
+      setNewAddr({
+        alias: "",
+        recipient_name: "",
+        phone_number: "",
+        address_line_1: "",
+        address_line_2: "",
+        city: "",
+        region: "",
+        zip_code: "",
+      })
+    } catch (err) {
+      console.error("Error guardando dirección:", err)
+      alert("Error al guardar la dirección. Intenta de nuevo.")
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // ✅ VALIDAR QUE HAY USER_ID ANTES DE CONTINUAR
+    if (!userId) {
+      alert("Debes iniciar sesión para continuar con la compra.")
+      router.push("/login")
+      return
+    }
+
+    // ✅ Validar que no sea el usuario sincronizado
+    if (userId === '25f597bd-fd93-4aa7-b50d-4900199cf474') {
+      alert("Sesión inválida. Por favor cierra sesión y vuelve a iniciar.")
+      router.push("/login")
+      return
+    }
+
     if (
       !form.name ||
       !form.email ||
@@ -137,7 +177,11 @@ export default function CheckoutPage() {
       alert("Por favor completa todos los campos obligatorios.")
       return
     }
-    if (!userId || !items.length) return
+
+    if (!items.length) {
+      alert("Tu carrito está vacío.")
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -159,17 +203,37 @@ export default function CheckoutPage() {
         })),
       }
 
+      console.log("📦 Creando orden con user_id:", userId)
+      console.log("📧 Email del usuario:", form.email)
+
       const { order_id } = await createOrder(orderData)
       await clearCartInDb(userId, items)
       router.push(`/checkout/${order_id}`)
-    } catch (err) {
-      console.error(err)
-      alert("Error creando la orden. Intenta de nuevo.")
+    } catch (err: any) {
+      console.error("Error en checkout:", err)
+      alert(err.message || "Error creando la orden. Intenta de nuevo.")
       setIsSubmitting(false)
     }
   }
 
-  if (loading) {
+  // ✅ Mostrar loading mientras carga la autenticación
+  if (authLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-xl mb-2">Verificando sesión...</div>
+          <div className="text-sm text-gray-500">Por favor espera</div>
+        </div>
+      </main>
+    )
+  }
+
+  // ✅ Si no hay usuario después de cargar, no mostrar nada (el useEffect redirige)
+  if (!user || !userId) {
+    return null
+  }
+
+  if (cartLoading) {
     return (
       <main className="min-h-screen p-8">
         <h1 className="text-3xl mb-6">Finalizar compra</h1>
@@ -231,40 +295,39 @@ export default function CheckoutPage() {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Datos cliente */}
-      <section>
-        <h2 className="text-xl font-semibold mb-3">Tus datos</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block mb-1">Nombre completo *</label>
-            <Input
-              name="name"
-              value={form.name}
-              onChange={handleForm}
-              required
-            />
+        <section>
+          <h2 className="text-xl font-semibold mb-3">Tus datos</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-1">Nombre completo *</label>
+              <Input
+                name="name"
+                value={form.name}
+                onChange={handleForm}
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1">Correo electrónico *</label>
+              <Input
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleForm}
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1">Teléfono *</label>
+              <Input
+                name="phone"
+                value={form.phone}
+                onChange={handleForm}
+                required
+              />
+            </div>
           </div>
-          <div>
-            <label className="block mb-1">Correo electrónico *</label>
-            <Input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleForm}
-              required
-            />
-          </div>
-          <div>
-            <label className="block mb-1">Teléfono *</label>
-            <Input
-              name="phone"
-              value={form.phone}
-              onChange={handleForm}
-              required
-            />
-          </div>
-        </div>
-      </section>
-
+        </section>
 
         {/* Envío */}
         <section>
