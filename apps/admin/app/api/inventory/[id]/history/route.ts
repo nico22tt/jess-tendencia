@@ -45,7 +45,7 @@ export async function GET(
         movements: movements.map((m: Movement) => ({
           id: m.id,
           type: m.type,
-          amount: m.amount,
+          amount: m.quantity,
           previousStock: m.previousStock,
           newStock: m.newStock,
           reason: m.reason,
