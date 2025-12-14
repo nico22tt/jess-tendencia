@@ -16,7 +16,15 @@ import {
   FileText,
   BarChart,
   Store,
-  DollarSign, // ✅ NUEVO
+  DollarSign,
+  Clock1,
+  LucideCalendarClock,
+  History,
+  Footprints,
+  ShovelIcon,
+  LucideBotOff,
+  SearchCode,
+  PackageSearch, // ✅ NUEVO
 } from "lucide-react"
 import { cn } from "@jess/ui/utils"
 import { useState } from "react"
@@ -35,9 +43,11 @@ const navigationSections = [
     title: "Products",
     items: [
       { name: "Gestionar Inventario", icon: Package, href: "/dashboard/inventory" },
-      { name: "Ver todos los Productos", icon: Package, href: "/dashboard/products" },
+      { name: "Historial de Inventario", icon: History, href: "/dashboard/purchases/reports/movements" },
+      { name: "Ver todos los Productos", icon: PackageSearch, href: "/dashboard/products" },
       { name: "Crear nuevo Producto", icon: Plus, href: "/dashboard/products/add" },
       { name: "Crear nueva Categoria", icon: Plus, href: "/dashboard/categories/add" },
+      
     ],
   },
   {

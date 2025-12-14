@@ -534,20 +534,6 @@ export default function AddProductPage() {
                     className=" bg-muted border-border text-foreground placeholder:text-zinc-500"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="stock" className=" text-foreground">Stock General</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    placeholder="0"
-                    className=" bg-muted border-border text-foreground placeholder:text-zinc-500"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Si tienes variantes, el stock se gestiona por talla
-                  </p>
-                </div>
               </div>
             </Card>
 
@@ -583,16 +569,6 @@ export default function AddProductPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className=" text-foreground text-sm">Stock</Label>
-                    <Input
-                      type="number"
-                      value={newVariantStock}
-                      onChange={(e) => setNewVariantStock(e.target.value)}
-                      placeholder="10"
-                      className=" bg-muted border-border text-foreground text-sm"
-                    />
-                  </div>
                   <div>
                     <Label className=" text-foreground text-sm">Ajuste Precio</Label>
                     <Input
@@ -630,10 +606,6 @@ export default function AddProductPage() {
                         <p className="text-foreground font-medium text-sm">
                           Talla: {variant.size}
                           {variant.color && ` - ${variant.color}`}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Stock: {variant.stock} unidades
-                          {variant.priceAdjustment !== 0 && ` | Ajuste: $${variant.priceAdjustment}`}
                         </p>
                       </div>
                       <Button

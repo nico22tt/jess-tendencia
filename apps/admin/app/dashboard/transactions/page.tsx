@@ -25,19 +25,19 @@ import Link from "next/link"
 
 interface Order {
   id: string
-  order_number: string
+  orderNumber: string // ✅ camelCase
   status: string
   total: number
-  created_at: string
+  createdAt: string // ✅ camelCase
   users: {
     id: string
     name: string
     email: string
-  }
-  order_items: Array<{
+  } | null // ✅ Permitir null
+  orderItems: Array<{ // ✅ camelCase
     id: string
     quantity: number
-    unit_price: number
+    unitPrice: number // ✅ camelCase
     products: {
       id: string
       name: string
@@ -83,6 +83,7 @@ export default function TransactionsPage() {
       const data = await res.json()
 
       if (data.success) {
+        console.log('📦 Primera orden:', data.data[0]) // ✅ Debug
         setOrders(data.data)
       } else {
         console.error('Error al cargar órdenes:', data.error)
@@ -98,10 +99,14 @@ export default function TransactionsPage() {
 
   // Filtrar órdenes
   const filteredOrders = orders.filter((order) => {
+    // ✅ Proteger contra usuarios null
+    const userName = order.users?.name || 'Usuario desconocido'
+    const userEmail = order.users?.email || ''
+    
     const matchesSearch =
-      order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.users.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.users.email.toLowerCase().includes(searchQuery.toLowerCase())
+      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      userEmail.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesSearch
   })
 
@@ -118,14 +123,28 @@ export default function TransactionsPage() {
     delivered: orders.filter(o => o.status === 'DELIVERED').length,
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("es-CL", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  // ✅ Mejorar formatDate para manejar diferentes tipos
+  const formatDate = (dateString: string | Date | null | undefined) => {
+    if (!dateString) return 'Fecha no disponible'
+    
+    try {
+      const date = typeof dateString === 'string' ? new Date(dateString) : dateString
+      
+      if (isNaN(date.getTime())) {
+        return 'Fecha inválida'
+      }
+      
+      return date.toLocaleDateString("es-CL", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (error) {
+      console.error('Error formateando fecha:', error)
+      return 'Fecha inválida'
+    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -173,19 +192,18 @@ export default function TransactionsPage() {
               <p className="text-muted-foreground mt-1">Monitorea y administra todos los pedidos de tu tienda</p>
             </div>
           </div>
-            <Link href="/dashboard/orders/add">
-              <Button className="bg-pink-600 hover:bg-pink-700 text-foreground">
-                <Plus className="h-5 w-5 mr-2" />
-                Crear Pedido Manual
-              </Button>
-            </Link>
-
+          <Link href="/dashboard/orders/add">
+            <Button className="bg-pink-600 hover:bg-pink-700 text-foreground">
+              <Plus className="h-5 w-5 mr-2" />
+              Crear Pedido Manual
+            </Button>
+          </Link>
         </div>
 
         {/* Stats Cards */}
         {!isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-cardborder border-border rounded-lg p-4">
+            <div className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Órdenes</p>
@@ -194,7 +212,7 @@ export default function TransactionsPage() {
                 <Package className="h-8 w-8 text-zinc-600" />
               </div>
             </div>
-            <div className="bg-cardborder border-border rounded-lg p-4">
+            <div className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Pendientes</p>
@@ -203,7 +221,7 @@ export default function TransactionsPage() {
                 <Clock className="h-8 w-8 text-yellow-400" />
               </div>
             </div>
-            <div className="bg-cardborder border-border rounded-lg p-4">
+            <div className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Enviadas</p>
@@ -212,7 +230,7 @@ export default function TransactionsPage() {
                 <Truck className="h-8 w-8 text-purple-400" />
               </div>
             </div>
-            <div className="bg-cardborder border-border rounded-lg p-4">
+            <div className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Entregadas</p>
@@ -225,7 +243,7 @@ export default function TransactionsPage() {
         )}
 
         {/* Filters */}
-        <div className="bg-cardborder border-border rounded-lg p-4">
+        <div className="bg-card border border-border rounded-lg p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -274,12 +292,12 @@ export default function TransactionsPage() {
 
         {/* Loading / Empty State */}
         {isLoading ? (
-          <div className="bg-cardborder border-border rounded-lg p-12 text-center">
+          <div className="bg-card border border-border rounded-lg p-12 text-center">
             <Loader2 className="h-8 w-8 text-pink-600 animate-spin mx-auto mb-4" />
             <p className="text-muted-foreground">Cargando órdenes...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="bg-cardborder border-border rounded-lg p-12 text-center">
+          <div className="bg-card border border-border rounded-lg p-12 text-center">
             <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-muted-foreground mb-2">
               No hay órdenes
@@ -293,7 +311,7 @@ export default function TransactionsPage() {
         ) : (
           <>
             {/* Transactions Table */}
-            <div className="bg-card border  border-border rounded-lg overflow-hidden">
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-zinc-900">
@@ -314,24 +332,28 @@ export default function TransactionsPage() {
                           href={`/dashboard/transactions/${order.id}`}
                           className="text-pink-400 hover:text-pink-300 font-medium hover:underline"
                         >
-                          {order.order_number}
+                          {order.orderNumber}
                         </Link>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="text-foreground font-medium">{order.users.name}</p>
-                          <p className="text-xs text-muted-foreground">{order.users.email}</p>
+                          <p className="text-foreground font-medium">
+                            {order.users?.name || 'Usuario desconocido'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {order.users?.email || 'Sin email'}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell className="text-foreground font-medium">
                         {formatCurrency(order.total)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {order.order_items.length} {order.order_items.length === 1 ? 'producto' : 'productos'}
+                        {order.orderItems.length} {order.orderItems.length === 1 ? 'producto' : 'productos'}
                       </TableCell>
                       <TableCell>{getOrderStatusBadge(order.status)}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {formatDate(order.created_at)}
+                        {formatDate(order.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Link href={`/dashboard/transactions/${order.id}`}>

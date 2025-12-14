@@ -529,18 +529,6 @@ export default function EditProductPage() {
                   />
                   <p className="text-sm text-muted-foreground mt-1">Opcional</p>
                 </div>
-
-                <div>
-                  <Label htmlFor="stock" className="text-foreground">Cantidad en Stock</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    placeholder="0"
-                    className="bg-muted  border-border text-foreground placeholder:text-muted-foreground"
-                  />
-                </div>
               </div>
             </Card>
 

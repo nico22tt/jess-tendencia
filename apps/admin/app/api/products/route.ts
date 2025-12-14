@@ -6,8 +6,23 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const categoryId = searchParams.get('categoryId')
+    const supplierId = searchParams.get('supplierId')
 
-    const where = categoryId ? { categoryId } : {}
+    // ✅ Construir where dinámicamente
+    const where: any = {}
+    
+    if (categoryId) {
+      where.categoryId = categoryId
+    }
+
+    // ✅ Filtrar por proveedor si se especifica
+    if (supplierId) {
+      where.product_suppliers = {
+        some: {
+          supplier_id: supplierId
+        }
+      }
+    }
 
     const products = await prisma.product.findMany({
       where,
@@ -19,13 +34,71 @@ export async function GET(request: NextRequest) {
             name: true,
             slug: true
           }
-        }
+        },
+        // ✅ Incluir product_suppliers solo si se filtra por proveedor
+        product_suppliers: supplierId ? {
+          where: {
+            supplier_id: supplierId
+          },
+          include: {
+            suppliers: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        } : false
+      }
+    })
+
+    // ✅ Formatear respuesta
+    const formatted = products.map((p) => {
+      // @ts-ignore - product_suppliers puede ser array o false
+      const supplierInfo = supplierId && Array.isArray(p.product_suppliers) && p.product_suppliers.length > 0 
+        ? p.product_suppliers[0] 
+        : null
+
+      return {
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        urlSlug: p.urlSlug,
+        sku: p.sku,
+        basePrice: p.basePrice,
+        salePrice: p.salePrice,
+        stock: p.stock,
+        categoryId: p.categoryId,
+        category: p.category,
+        subcategory: p.subcategory,
+        brand: p.brand,
+        isPublished: p.isPublished,
+        images: p.images,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        averageCost: p.average_cost,
+        lastCost: p.last_cost,
+        // ✅ Info del proveedor si está disponible
+        ...(supplierInfo && {
+          supplierCost: supplierInfo.unit_cost,
+          supplierSku: supplierInfo.supplier_sku || p.sku,
+          leadTimeDays: supplierInfo.lead_time_days,
+          minimumOrderQty: supplierInfo.minimum_order_qty,
+          isPreferredSupplier: supplierInfo.is_preferred
+        })
       }
     })
 
     return NextResponse.json({
       success: true,
-      data: products
+      data: formatted,
+      meta: {
+        total: formatted.length,
+        ...(supplierId && {
+          supplierId,
+          filtered: true
+        })
+      }
     })
   } catch (error) {
     console.error('Error al obtener productos:', error)
