@@ -4,10 +4,10 @@ import { Decimal } from "@prisma/client/runtime/library";
 
 export async function POST(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> } // ✅ Cambio aquí
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; // ✅ Await aquí
+    const { id } = await context.params;
     const body = await request.json();
     const { items, notes } = body;
 
@@ -36,82 +36,109 @@ export async function POST(
       );
     }
 
-    // ✅ Procesar en transacción
-    await prisma.$transaction(async (tx) => {
-      for (const item of items) {
-        const { itemId, quantityReceived } = item;
+    // ✅ Validar los items ANTES de empezar
+    for (const item of items) {
+      const { itemId, quantityReceived } = item;
 
-        if (!quantityReceived || quantityReceived <= 0) {
-          continue;
-        }
+      if (!quantityReceived || quantityReceived <= 0) {
+        continue;
+      }
 
-        // Obtener item de la orden
-        const orderItem = purchaseOrder.purchase_order_items.find(
-          (oi) => oi.id === itemId
+      const orderItem = purchaseOrder.purchase_order_items.find(
+        (oi) => oi.id === itemId
+      );
+
+      if (!orderItem) {
+        return NextResponse.json(
+          { success: false, error: `Item ${itemId} no encontrado` },
+          { status: 400 }
         );
+      }
 
-        if (!orderItem) {
-          throw new Error(`Item ${itemId} no encontrado en la orden`);
-        }
+      const newQuantityReceived =
+        Number(orderItem.quantity_received) + Number(quantityReceived);
 
-        const newQuantityReceived =
-          Number(orderItem.quantity_received) + Number(quantityReceived);
+      if (newQuantityReceived > Number(orderItem.quantity_ordered)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `No se puede recibir más de lo ordenado para el item ${itemId}`,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
-        if (newQuantityReceived > Number(orderItem.quantity_ordered)) {
-          throw new Error(
-            `No se puede recibir más de lo ordenado para ${orderItem.product_id}`
-          );
-        }
+    // ✅ Procesar cada item SECUENCIALMENTE (sin transacción global)
+    for (const item of items) {
+      const { itemId, quantityReceived } = item;
 
-        // ✅ 1. Actualizar item de la orden
-        await tx.purchase_order_items.update({
+      if (!quantityReceived || quantityReceived <= 0) {
+        continue;
+      }
+
+      const orderItem = purchaseOrder.purchase_order_items.find(
+        (oi) => oi.id === itemId
+      );
+
+      if (!orderItem) continue;
+
+      const newQuantityReceived =
+        Number(orderItem.quantity_received) + Number(quantityReceived);
+      const unitCost = Number(orderItem.unit_price);
+
+      // Obtener producto actual
+      const product = await prisma.product.findUnique({
+        where: { id: orderItem.product_id },
+      });
+
+      if (!product) {
+        console.error(`Producto ${orderItem.product_id} no encontrado`);
+        continue;
+      }
+
+      const currentStock = Number(product.stock) || 0;
+      const newStock = currentStock + Number(quantityReceived);
+
+      // Calcular nuevo costo promedio
+      const currentAverageCost = Number(product.average_cost) || 0;
+      const currentStockValue = currentStock * currentAverageCost;
+      const newStockValue = Number(quantityReceived) * unitCost;
+      const totalStockValue = currentStockValue + newStockValue;
+      const newAverageCost =
+        newStock > 0 ? totalStockValue / newStock : unitCost;
+
+      console.log("📊 Cálculo de costos:", {
+        producto: product.name,
+        stockAnterior: currentStock,
+        stockNuevo: newStock,
+        costoPromedioAnterior: currentAverageCost,
+        costoPromedioNuevo: newAverageCost,
+        ultimoCosto: unitCost,
+      });
+
+      // ✅ Actualizar en una transacción pequeña por item
+      await prisma.$transaction([
+        // 1. Actualizar cantidad recibida del item
+        prisma.purchase_order_items.update({
           where: { id: itemId },
           data: {
             quantity_received: newQuantityReceived,
           },
-        });
+        }),
 
-        // ✅ 2. Obtener producto actual
-        const product = await tx.product.findUnique({
-          where: { id: orderItem.product_id },
-        });
-
-        if (!product) {
-          throw new Error(`Producto ${orderItem.product_id} no encontrado`);
-        }
-
-        const currentStock = Number(product.stock) || 0;
-        const newStock = currentStock + Number(quantityReceived);
-        const unitCost = Number(orderItem.unit_price);
-
-        // ✅ 3. Calcular nuevo costo promedio
-        const currentAverageCost = Number(product.average_cost) || 0;
-        const currentStockValue = currentStock * currentAverageCost;
-        const newStockValue = Number(quantityReceived) * unitCost;
-        const totalStockValue = currentStockValue + newStockValue;
-        const newAverageCost = newStock > 0 ? totalStockValue / newStock : unitCost;
-
-        console.log("📊 Cálculo de costos:", {
-          producto: product.name,
-          stockAnterior: currentStock,
-          stockNuevo: newStock,
-          costoPromedioAnterior: currentAverageCost,
-          costoPromedioNuevo: newAverageCost,
-          ultimoCosto: unitCost,
-        });
-
-        // ✅ 4. Actualizar producto con nuevos costos
-        await tx.product.update({
+        // 2. Actualizar stock y costos del producto
+        prisma.product.update({
           where: { id: orderItem.product_id },
           data: {
             stock: newStock,
             average_cost: new Decimal(newAverageCost.toFixed(2)),
             last_cost: new Decimal(unitCost.toFixed(2)),
           },
-        });
+        }),
 
-        // ✅ 5. Crear movimiento de stock (INGRESO)
-        await tx.stockMovement.create({
+        // 3. Crear movimiento de stock
+        prisma.stockMovement.create({
           data: {
             productId: orderItem.product_id,
             type: "PURCHASE",
@@ -127,29 +154,30 @@ export async function POST(
             reason: `Recepción de compra - OC ${purchaseOrder.order_number}`,
             notes: notes || null,
           },
-        });
-      }
+        }),
+      ]);
 
-      // ✅ 6. Verificar si todos los items fueron recibidos completamente
-      const allItemsReceived = purchaseOrder.purchase_order_items.every(
-        (oi) => {
-          const received = items.find((i: any) => i.itemId === oi.id);
-          const totalReceived =
-            Number(oi.quantity_received) + (received?.quantityReceived || 0);
-          return totalReceived >= Number(oi.quantity_ordered);
-        }
-      );
+      console.log(`✅ Item ${orderItem.product_id} procesado correctamente`);
+    }
 
-      // ✅ 7. Actualizar estado de la orden
-      await tx.purchase_orders.update({
-        where: { id },
-        data: {
-          status: allItemsReceived ? "RECEIVED" : "PARTIALLY_RECEIVED",
-        },
-      });
+    // ✅ Verificar si todos los items fueron recibidos completamente
+    const updatedOrderItems = await prisma.purchase_order_items.findMany({
+      where: { purchase_order_id: id },
     });
 
-    // ✅ Obtener orden actualizada
+    const allItemsReceived = updatedOrderItems.every((oi) => {
+      return Number(oi.quantity_received) >= Number(oi.quantity_ordered);
+    });
+
+    // ✅ Actualizar estado de la orden
+    await prisma.purchase_orders.update({
+      where: { id },
+      data: {
+        status: allItemsReceived ? "RECEIVED" : "PARTIALLY_RECEIVED",
+      },
+    });
+
+    // Obtener orden actualizada
     const updatedOrder = await prisma.purchase_orders.findUnique({
       where: { id },
       include: {
