@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { use, useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@utils/supabase/client"
-import { AdminDashboardLayout } from "@/components/admin-dashboard-layout"
-import { Button } from "@jess/ui/button"
-import { Badge } from "@jess/ui/badge"
-import { ScrollArea } from "@jess/ui/scroll-area"
+import { use, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@utils/supabase/client";
+import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
+import { Button } from "@jess/ui/button";
+import { Badge } from "@jess/ui/badge";
+import { ScrollArea } from "@jess/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -14,76 +14,106 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@jess/ui/table"
-import { ArrowLeft, History, TrendingUp, TrendingDown, Package, Loader2 } from "lucide-react"
+} from "@jess/ui/table";
+import {
+  ArrowLeft,
+  History,
+  TrendingUp,
+  TrendingDown,
+  Package,
+  Loader2,
+} from "lucide-react";
+
+type MovementType = "PURCHASE" | "SALE" | "ADJUSTMENT";
 
 interface StockMovement {
-  id: string
-  type: "entry" | "exit" | "adjustment"
-  amount: number
-  previousStock: number
-  newStock: number
-  reason: string
-  user: string
-  date: string
-  time: string
+  id: string;
+  type: MovementType;
+  amount: number;
+  previousStock: number;
+  newStock: number;
+  reason: string;
+  user: string;
+  date: string;
+  time: string;
 }
 
-const typeConfig = {
-  entry: { label: "Entrada", color: "bg-green-500/10 text-green-400 border-green-500/20", icon: TrendingUp },
-  exit: { label: "Salida", color: "bg-red-500/10 text-red-400 border-red-500/20", icon: TrendingDown },
-  adjustment: { label: "Ajuste", color: "bg-blue-500/10 text-blue-400 border-blue-500/20", icon: Package },
-}
+const typeConfig: Record<
+  MovementType,
+  { label: string; color: string; icon: React.ComponentType<any> }
+> = {
+  PURCHASE: {
+    label: "Compra / Entrada",
+    color: "bg-green-500/10 text-green-400 border-green-500/20",
+    icon: TrendingUp,
+  },
+  SALE: {
+    label: "Venta / Salida",
+    color: "bg-red-500/10 text-red-400 border-red-500/20",
+    icon: TrendingDown,
+  },
+  ADJUSTMENT: {
+    label: "Ajuste / Merma",
+    color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    icon: Package,
+  },
+};
 
-export default function InventoryHistoryPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  const router = useRouter()
-  const supabase = createClient()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [product, setProduct] = useState<any>(null)
-  const [movements, setMovements] = useState<StockMovement[]>([])
+export default function InventoryHistoryPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState<any>(null);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
 
   useEffect(() => {
-    checkAuth()
-    fetchHistory()
-  }, [id])
+    checkAuth();
+    fetchHistory();
+  }, [id]);
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user || user.user_metadata?.role !== "admin") {
-      router.push("/login")
-      return
+      router.push("/login");
+      return;
     }
-    setUser(user)
-  }
+    setUser(user);
+  };
 
   const fetchHistory = async () => {
     try {
-      setLoading(true)
-      const res = await fetch(`/api/inventory/${id}/history`)
-      const data = await res.json()
+      setLoading(true);
+      const res = await fetch(`/api/inventory/${id}/history`);
+      const data = await res.json();
 
       if (data.success) {
-        setProduct(data.data.product)
-        setMovements(data.data.movements)
+        setProduct(data.data.product);
+        setMovements(data.data.movements);
       } else {
-        alert("Error al cargar historial")
+        alert("Error al cargar historial");
       }
     } catch (error) {
-      console.error("Error:", error)
-      alert("Error al cargar historial")
+      console.error("Error:", error);
+      alert("Error al cargar historial");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
       </div>
-    )
+    );
   }
 
   if (!product) {
@@ -93,7 +123,7 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
           <p className="text-muted-foreground">Producto no encontrado</p>
         </div>
       </AdminDashboardLayout>
-    )
+    );
   }
 
   return (
@@ -114,7 +144,9 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
               <History className="h-6 w-6 text-pink-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Historial de Movimientos</h1>
+              <h1 className="text-3xl font-bold text-foreground">
+                Historial de Movimientos
+              </h1>
               <p className="text-muted-foreground mt-1">
                 {product.name} - SKU: {product.sku}
               </p>
@@ -127,8 +159,12 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Stock Actual</p>
-              <p className="text-4xl font-bold text-foreground mt-2">{product.currentStock}</p>
-              <p className="text-sm text-muted-foreground mt-1">unidades disponibles</p>
+              <p className="text-4xl font-bold text-foreground mt-2">
+                {product.currentStock}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                unidades disponibles
+              </p>
             </div>
             <Package className="h-16 w-16 text-pink-600" />
           </div>
@@ -137,8 +173,12 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
         {/* Movements Table */}
         <div className="bg-card border border-border rounded-lg overflow-hidden">
           <div className="p-4 border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground">Movimientos Registrados</h2>
-            <p className="text-sm text-muted-foreground mt-1">Historial completo de entradas y salidas</p>
+            <h2 className="text-lg font-semibold text-foreground">
+              Movimientos Registrados
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Historial completo de entradas, ventas y mermas
+            </p>
           </div>
           <ScrollArea className="h-[500px]">
             {movements.length === 0 ? (
@@ -149,50 +189,81 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-card">
-                    <TableHead className="text-muted-foreground">Fecha y Hora</TableHead>
-                    <TableHead className="text-muted-foreground">Tipo</TableHead>
-                    <TableHead className="text-muted-foreground">Cantidad</TableHead>
-                    <TableHead className="text-muted-foreground">Stock Anterior</TableHead>
-                    <TableHead className="text-muted-foreground">Stock Nuevo</TableHead>
-                    <TableHead className="text-muted-foreground">Motivo</TableHead>
-                    <TableHead className="text-muted-foreground">Usuario</TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Fecha y Hora
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Tipo
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Cantidad
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Stock Anterior
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Stock Nuevo
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Motivo
+                    </TableHead>
+                    <TableHead className="text-muted-foreground">
+                      Usuario
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {movements.map((movement) => {
-                    const config = typeConfig[movement.type]
-                    const Icon = config.icon
+                    const config = typeConfig[movement.type];
+                    if (!config) return null;
+                    const Icon = config.icon;
+
+                    // color de cantidad según si entra o sale stock
+                    const amountColor =
+                      movement.amount > 0 ? "text-green-400" : "text-red-400";
 
                     return (
-                      <TableRow key={movement.id} className="border-border hover:bg-muted/50">
+                      <TableRow
+                        key={movement.id}
+                        className="border-border hover:bg-muted/50"
+                      >
                         <TableCell className="text-muted-foreground">
                           <div>
                             <p className="font-medium">{movement.date}</p>
-                            <p className="text-sm text-muted-foreground">{movement.time}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {movement.time}
+                            </p>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={config.color}>
+                          <Badge
+                            variant="outline"
+                            className={config.color}
+                          >
                             <Icon className="h-3 w-3 mr-1" />
                             {config.label}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <span
-                            className={`font-semibold ${
-                              movement.amount > 0 ? "text-green-400" : "text-red-400"
-                            }`}
-                          >
+                          <span className={`font-semibold ${amountColor}`}>
                             {movement.amount > 0 ? "+" : ""}
                             {movement.amount}
                           </span>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{movement.previousStock}</TableCell>
-                        <TableCell className="text-foreground font-semibold">{movement.newStock}</TableCell>
-                        <TableCell className="text-muted-foreground">{movement.reason}</TableCell>
-                        <TableCell className="text-muted-foreground">{movement.user}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {movement.previousStock}
+                        </TableCell>
+                        <TableCell className="text-foreground font-semibold">
+                          {movement.newStock}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {movement.reason}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {movement.user}
+                        </TableCell>
                       </TableRow>
-                    )
+                    );
                   })}
                 </TableBody>
               </Table>
@@ -201,5 +272,5 @@ export default function InventoryHistoryPage({ params }: { params: Promise<{ id:
         </div>
       </div>
     </AdminDashboardLayout>
-  )
+  );
 }

@@ -13,6 +13,10 @@ import {
   ShoppingCart,
   X,
   Menu,
+  FileText,
+  BarChart,
+  Store,
+  DollarSign, // ✅ NUEVO
 } from "lucide-react"
 import { cn } from "@jess/ui/utils"
 import { useState } from "react"
@@ -22,6 +26,7 @@ const navigationSections = [
     title: "Application",
     items: [
       { name: "Home", icon: Home, href: "/dashboard" },
+      { name: "Flujo de Caja", icon: DollarSign, href: "/dashboard/cash-flow" }, // ✅ NUEVO
       { name: "Notificaciones", icon: Inbox, href: "/dashboard/notifications" },
       { name: "Settings", icon: Settings, href: "/dashboard/settings" },
     ],
@@ -33,6 +38,15 @@ const navigationSections = [
       { name: "Ver todos los Productos", icon: Package, href: "/dashboard/products" },
       { name: "Crear nuevo Producto", icon: Plus, href: "/dashboard/products/add" },
       { name: "Crear nueva Categoria", icon: Plus, href: "/dashboard/categories/add" },
+    ],
+  },
+  {
+    title: "Compras",
+    items: [
+      { name: "Dashboard de Compras", icon: ShoppingCart, href: "/dashboard/purchases" },
+      { name: "Proveedores", icon: Store, href: "/dashboard/purchases/suppliers" },
+      { name: "Órdenes de Compra", icon: FileText, href: "/dashboard/purchases/purchase-orders" },
+      { name: "Reporte de Valorización", icon: BarChart, href: "/dashboard/purchases/reports/stock-value" },
     ],
   },
   {
