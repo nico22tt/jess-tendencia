@@ -128,7 +128,7 @@ export async function POST(
         }),
 
         // 2. Actualizar stock y costos del producto
-        prisma.product.update({
+        prisma.product    .update({
           where: { id: orderItem.product_id },
           data: {
             stock: newStock,
