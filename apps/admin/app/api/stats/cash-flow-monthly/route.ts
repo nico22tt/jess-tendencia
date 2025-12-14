@@ -20,19 +20,30 @@ export async function GET() {
       },
     })
 
-    // Agrupar por mes
-    const monthlyData = new Map<string, { income: number; expense: number }>()
+    // Agrupar por mes con número de mes para ordenar
+    const monthlyData = new Map<string, { 
+      income: number
+      expense: number
+      monthNumber: number 
+    }>()
 
     entries.forEach((entry) => {
-      const month = new Date(entry.date).toLocaleDateString("es-CL", {
+      const date = new Date(entry.date)
+      const monthNumber = date.getMonth() + 1 // 1-12
+      
+      // Formato: "ene." "feb." etc.
+      const month = date.toLocaleDateString("es-CL", {
         month: "short",
       })
 
-      if (!monthlyData.has(month)) {
-        monthlyData.set(month, { income: 0, expense: 0 })
+      // Clave única: "1-ene." "2-feb." etc.
+      const key = `${monthNumber}-${month}`
+
+      if (!monthlyData.has(key)) {
+        monthlyData.set(key, { income: 0, expense: 0, monthNumber })
       }
 
-      const data = monthlyData.get(month)!
+      const data = monthlyData.get(key)!
       if (entry.type === "INCOME") {
         data.income += entry.amount
       } else {
@@ -40,12 +51,16 @@ export async function GET() {
       }
     })
 
-    const data = Array.from(monthlyData.entries()).map(([month, values]) => ({
-      month,
-      income: values.income,
-      expense: values.expense,
-      balance: values.income - values.expense,
-    }))
+    // Convertir a array y ordenar cronológicamente
+    const data = Array.from(monthlyData.entries())
+      .map(([key, values]) => ({
+        month: key.split('-')[1], // Solo "ene." sin el número
+        monthNumber: values.monthNumber,
+        income: values.income,
+        expense: values.expense,
+        balance: values.income - values.expense,
+      }))
+      .sort((a, b) => a.monthNumber - b.monthNumber) // ✅ Ordenar por número de mes
 
     return NextResponse.json({ success: true, data })
   } catch (error) {
