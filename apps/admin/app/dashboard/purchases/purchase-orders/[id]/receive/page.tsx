@@ -92,6 +92,14 @@ export default function ReceivePurchaseOrderPage({
     try {
       setLoading(true);
       const res = await fetch(`/api/purchases/orders/${id}`);
+      
+      // ✅ Verificar que la respuesta sea JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("❌ Respuesta no es JSON:", await res.text());
+        throw new Error("El servidor no devolvió JSON");
+      }
+
       const data = await res.json();
 
       if (data.success) {
@@ -154,6 +162,15 @@ export default function ReceivePurchaseOrderPage({
     try {
       setSaving(true);
 
+      console.log("📦 Enviando recepción:", {
+        items: itemsToReceive.map(([itemId, qty]) => ({
+          itemId,
+          quantityReceived: qty,
+        })),
+        notes,
+      });
+
+      // ✅ CORRECCIÓN: Ruta correcta del endpoint
       const res = await fetch(`/api/purchases/orders/${id}/receive`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -166,19 +183,28 @@ export default function ReceivePurchaseOrderPage({
         }),
       });
 
+      console.log("📡 Status:", res.status, res.statusText);
+
+      // ✅ Verificar que la respuesta sea JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const textResponse = await res.text();
+        console.error("❌ Respuesta no es JSON:", textResponse);
+        throw new Error("El servidor devolvió HTML en lugar de JSON");
+      }
+
       const data = await res.json();
+      console.log("📦 Respuesta:", data);
 
       if (data.success) {
-        alert(
-          `Mercadería recibida correctamente. Estado: ${data.data.newStatus}`
-        );
+        alert("Mercadería recibida correctamente");
         router.push(`/dashboard/purchases/purchase-orders/${id}`);
       } else {
         alert(data.error || "Error al recibir mercadería");
       }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Error al recibir mercadería");
+    } catch (error: any) {
+      console.error("❌ Error:", error);
+      alert(error.message || "Error al recibir mercadería");
     } finally {
       setSaving(false);
     }
@@ -246,7 +272,7 @@ export default function ReceivePurchaseOrderPage({
 
   return (
     <AdminDashboardLayout user={user}>
-      <div className="space-y-6 max-w-5xl">
+      <div className="space-y-6 max-w-5xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button
@@ -300,104 +326,106 @@ export default function ReceivePurchaseOrderPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border hover:bg-card">
-                    <TableHead className="text-muted-foreground">
-                      Producto
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      SKU
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Stock Actual
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Ordenado
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Ya Recibido
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Pendiente
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Recibir Ahora
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Precio Unit.
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {order.items.map((item) => {
-                    const pending =
-                      item.quantityOrdered - item.quantityReceived;
-                    const receivingNow = receivedQuantities[item.id] || 0;
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border hover:bg-card">
+                      <TableHead className="text-muted-foreground">
+                        Producto
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        SKU
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Stock Actual
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Ordenado
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Ya Recibido
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Pendiente
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Recibir Ahora
+                      </TableHead>
+                      <TableHead className="text-muted-foreground">
+                        Precio Unit.
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {order.items.map((item) => {
+                      const pending =
+                        item.quantityOrdered - item.quantityReceived;
+                      const receivingNow = receivedQuantities[item.id] || 0;
 
-                    return (
-                      <TableRow key={item.id} className="border-border">
-                        <TableCell className="font-medium text-foreground">
-                          {item.product.name}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {item.product.sku}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          <Badge
-                            variant="outline"
-                            className="bg-purple-500/10 text-purple-400 border-purple-500/20"
-                          >
-                            {item.product.currentStock}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {item.quantityOrdered}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={
-                              item.quantityReceived > 0
-                                ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                                : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                            }
-                          >
-                            {item.quantityReceived}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="bg-orange-500/10 text-orange-400 border-orange-500/20"
-                          >
-                            {pending}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max={pending}
-                            value={receivingNow}
-                            onChange={(e) =>
-                              handleQuantityChange(
-                                item.id,
-                                parseInt(e.target.value) || 0
-                              )
-                            }
-                            className="w-24 bg-card border-border text-foreground"
-                            disabled={pending === 0}
-                          />
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          ${parseFloat(item.unitPrice).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                      return (
+                        <TableRow key={item.id} className="border-border">
+                          <TableCell className="font-medium text-foreground">
+                            {item.product.name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-xs">
+                            {item.product.sku}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            <Badge
+                              variant="outline"
+                              className="bg-purple-500/10 text-purple-400 border-purple-500/20"
+                            >
+                              {item.product.currentStock}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {item.quantityOrdered}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                item.quantityReceived > 0
+                                  ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                  : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                              }
+                            >
+                              {item.quantityReceived}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className="bg-orange-500/10 text-orange-400 border-orange-500/20"
+                            >
+                              {pending}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={pending}
+                              value={receivingNow}
+                              onChange={(e) =>
+                                handleQuantityChange(
+                                  item.id,
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              className="w-24 bg-card border-border text-foreground"
+                              disabled={pending === 0}
+                            />
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            ${parseFloat(item.unitPrice).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
 
@@ -435,9 +463,7 @@ export default function ReceivePurchaseOrderPage({
                     {order.items
                       .reduce((sum, item) => {
                         const qty = receivedQuantities[item.id] || 0;
-                        return (
-                          sum + qty * parseFloat(item.unitPrice)
-                        );
+                        return sum + qty * parseFloat(item.unitPrice);
                       }, 0)
                       .toLocaleString()}
                   </span>

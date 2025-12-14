@@ -31,13 +31,6 @@ import {
   TableRow,
 } from "@jess/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@jess/ui/dialog";
-import {
   ArrowLeft,
   Save,
   Loader2,
@@ -45,6 +38,7 @@ import {
   Plus,
   Trash2,
   Search,
+  X,
 } from "lucide-react";
 
 interface Supplier {
@@ -56,7 +50,17 @@ interface Product {
   id: string;
   name: string;
   sku: string;
-  stock: number;
+  stock: number | null;
+  category?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  // ✅ Info del proveedor
+  supplierCost?: number;
+  supplierSku?: string;
+  leadTimeDays?: number;
+  minimumOrderQty?: number;
 }
 
 interface OrderItem {
@@ -89,8 +93,17 @@ export default function NewPurchaseOrderPage() {
   useEffect(() => {
     checkAuth();
     fetchSuppliers();
-    fetchProducts();
   }, []);
+
+  // ✅ Cargar productos cuando cambia el proveedor
+  useEffect(() => {
+    if (formData.supplierId) {
+      fetchProducts();
+    } else {
+      setProducts([]);
+      setItems([]); // Limpiar items al cambiar proveedor
+    }
+  }, [formData.supplierId]);
 
   const checkAuth = async () => {
     const {
@@ -117,14 +130,36 @@ export default function NewPurchaseOrderPage() {
   };
 
   const fetchProducts = async () => {
+    if (!formData.supplierId) {
+      setProducts([]);
+      return;
+    }
+
     try {
-      const res = await fetch("/api/products");
+      console.log("🔍 Cargando productos del proveedor:", formData.supplierId);
+
+      const res = await fetch(
+        `/api/products?supplierId=${formData.supplierId}`
+      );
+
+      if (!res.ok) {
+        console.error("❌ HTTP Error:", res.status, res.statusText);
+        return;
+      }
+
       const data = await res.json();
-      if (data.success) {
+      console.log("📦 Respuesta API:", data);
+
+      if (data.success && data.data) {
+        console.log(`✅ ${data.data.length} productos del proveedor cargados`);
         setProducts(data.data);
+      } else {
+        console.error("❌ API error:", data.error || "Respuesta sin datos");
+        setProducts([]);
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("❌ Error en fetch:", error);
+      setProducts([]);
     }
   };
 
@@ -141,8 +176,8 @@ export default function NewPurchaseOrderPage() {
         productId: product.id,
         productName: product.name,
         sku: product.sku,
-        quantity: 1,
-        unitPrice: 0,
+        quantity: product.minimumOrderQty || 1, // ✅ Cantidad mínima
+        unitPrice: Number(product.supplierCost) || 0, // ✅ Precio del proveedor
       },
     ]);
     setIsProductDialogOpen(false);
@@ -170,7 +205,7 @@ export default function NewPurchaseOrderPage() {
       (sum, item) => sum + item.quantity * item.unitPrice,
       0
     );
-    const tax = 0; // Ajustar según tu configuración
+    const tax = 0;
     const total = subtotal + tax;
     return { subtotal, tax, total };
   };
@@ -228,11 +263,12 @@ export default function NewPurchaseOrderPage() {
     }
   };
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
-      p.sku.toLowerCase().includes(searchProduct.toLowerCase())
-  );
+  const filteredProducts = products.filter((p) => {
+    const searchLower = searchProduct.toLowerCase();
+    const matchesName = p.name?.toLowerCase().includes(searchLower) || false;
+    const matchesSku = p.sku?.toLowerCase().includes(searchLower) || false;
+    return matchesName || matchesSku;
+  });
 
   const { subtotal, tax, total } = calculateTotal();
 
@@ -246,7 +282,7 @@ export default function NewPurchaseOrderPage() {
 
   return (
     <AdminDashboardLayout user={user}>
-      <div className="space-y-6 max-w-5xl">
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button
@@ -272,9 +308,9 @@ export default function NewPurchaseOrderPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Order Info */}
-          <Card className="bg-card border-border mb-6">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="text-foreground">
                 Información de la Orden
@@ -291,9 +327,10 @@ export default function NewPurchaseOrderPage() {
                 </Label>
                 <Select
                   value={formData.supplierId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, supplierId: value })
-                  }
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, supplierId: value });
+                    // Items se limpiarán automáticamente con useEffect
+                  }}
                 >
                   <SelectTrigger className="bg-card border-border text-foreground">
                     <SelectValue placeholder="Selecciona un proveedor" />
@@ -348,7 +385,7 @@ export default function NewPurchaseOrderPage() {
           </Card>
 
           {/* Products */}
-          <Card className="bg-card border-border mb-6">
+          <Card className="bg-card border-border">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -356,182 +393,121 @@ export default function NewPurchaseOrderPage() {
                     Productos <span className="text-red-500">*</span>
                   </CardTitle>
                   <CardDescription className="text-muted-foreground">
-                    Agrega los productos a la orden
+                    {!formData.supplierId
+                      ? "Selecciona un proveedor primero"
+                      : `Productos de ${
+                          suppliers.find((s) => s.id === formData.supplierId)
+                            ?.name
+                        }`}
                   </CardDescription>
                 </div>
-                <Dialog
-                  open={isProductDialogOpen}
-                  onOpenChange={setIsProductDialogOpen}
+                <Button
+                  type="button"
+                  onClick={() => setIsProductDialogOpen(true)}
+                  disabled={!formData.supplierId}
+                  className="gap-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <DialogTrigger asChild>
-                    <Button
-                      type="button"
-                      className="gap-2 bg-pink-600 hover:bg-pink-700"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Agregar Producto
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-card border-border max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle className="text-foreground">
-                        Seleccionar Producto
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Buscar producto..."
-                          value={searchProduct}
-                          onChange={(e) => setSearchProduct(e.target.value)}
-                          className="pl-10 bg-card border-border text-foreground"
-                        />
-                      </div>
-                      <div className="max-h-96 overflow-y-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="border-border">
-                              <TableHead className="text-muted-foreground">
-                                Nombre
-                              </TableHead>
-                              <TableHead className="text-muted-foreground">
-                                SKU
-                              </TableHead>
-                              <TableHead className="text-muted-foreground">
-                                Stock
-                              </TableHead>
-                              <TableHead className="text-muted-foreground"></TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {filteredProducts.map((product) => (
-                              <TableRow
-                                key={product.id}
-                                className="border-border"
-                              >
-                                <TableCell className="text-foreground">
-                                  {product.name}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {product.sku}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {product.stock}
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={() => handleAddProduct(product)}
-                                  >
-                                    Agregar
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                  <Plus className="h-4 w-4" />
+                  Agregar Producto
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
               {items.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No hay productos agregados
+                <div className="text-center py-12 text-muted-foreground">
+                  {!formData.supplierId
+                    ? "Selecciona un proveedor para comenzar"
+                    : "No hay productos agregados"}
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border">
-                      <TableHead className="text-muted-foreground">
-                        Producto
-                      </TableHead>
-                      <TableHead className="text-muted-foreground">
-                        SKU
-                      </TableHead>
-                      <TableHead className="text-muted-foreground">
-                        Cantidad
-                      </TableHead>
-                      <TableHead className="text-muted-foreground">
-                        Precio Unitario
-                      </TableHead>
-                      <TableHead className="text-muted-foreground">
-                        Subtotal
-                      </TableHead>
-                      <TableHead className="text-muted-foreground"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={item.productId} className="border-border">
-                        <TableCell className="text-foreground">
-                          {item.productName}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {item.sku}
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              handleUpdateItem(
-                                item.productId,
-                                "quantity",
-                                parseInt(e.target.value) || 0
-                              )
-                            }
-                            className="w-24 bg-card border-border text-foreground"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.unitPrice}
-                            onChange={(e) =>
-                              handleUpdateItem(
-                                item.productId,
-                                "unitPrice",
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
-                            className="w-32 bg-card border-border text-foreground"
-                            placeholder="0.00"
-                          />
-                        </TableCell>
-                        <TableCell className="text-foreground font-semibold">
-                          ${(item.quantity * item.unitPrice).toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              handleRemoveProduct(item.productId)
-                            }
-                            className="text-red-400 hover:bg-red-500/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border">
+                        <TableHead className="text-muted-foreground">
+                          Producto
+                        </TableHead>
+                        <TableHead className="text-muted-foreground">
+                          SKU
+                        </TableHead>
+                        <TableHead className="text-muted-foreground">
+                          Cantidad
+                        </TableHead>
+                        <TableHead className="text-muted-foreground">
+                          Precio Unitario
+                        </TableHead>
+                        <TableHead className="text-muted-foreground">
+                          Subtotal
+                        </TableHead>
+                        <TableHead className="text-muted-foreground"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item) => (
+                        <TableRow key={item.productId} className="border-border">
+                          <TableCell className="text-foreground">
+                            {item.productName}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-xs">
+                            {item.sku}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                handleUpdateItem(
+                                  item.productId,
+                                  "quantity",
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              className="w-24 bg-card border-border text-foreground"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={item.unitPrice}
+                              onChange={(e) =>
+                                handleUpdateItem(
+                                  item.productId,
+                                  "unitPrice",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className="w-32 bg-card border-border text-foreground"
+                              placeholder="0.00"
+                            />
+                          </TableCell>
+                          <TableCell className="text-foreground font-semibold">
+                            ${(item.quantity * item.unitPrice).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveProduct(item.productId)}
+                              className="text-red-400 hover:bg-red-500/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
 
           {/* Total */}
-          <Card className="bg-card border-border mb-6">
+          <Card className="bg-card border-border">
             <CardContent className="pt-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-muted-foreground">
@@ -551,7 +527,7 @@ export default function NewPurchaseOrderPage() {
           </Card>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 justify-end">
             <Button
               type="button"
               variant="outline"
@@ -563,7 +539,7 @@ export default function NewPurchaseOrderPage() {
             </Button>
             <Button
               type="submit"
-              disabled={saving}
+              disabled={saving || items.length === 0}
               className="gap-2 bg-pink-600 hover:bg-pink-700"
             >
               {saving ? (
@@ -581,6 +557,176 @@ export default function NewPurchaseOrderPage() {
           </div>
         </form>
       </div>
+
+      {/* ✅ MODAL CON INFO DEL PROVEEDOR */}
+      {isProductDialogOpen && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsProductDialogOpen(false);
+            }
+          }}
+        >
+          <div className="bg-card border border-border rounded-lg max-w-5xl w-full max-h-[85vh] flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-border flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">
+                  Seleccionar Producto
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Productos de{" "}
+                  <span className="font-semibold text-pink-600">
+                    {suppliers.find((s) => s.id === formData.supplierId)?.name}
+                  </span>
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsProductDialogOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4 flex-1 overflow-hidden flex flex-col">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre o SKU..."
+                  value={searchProduct}
+                  onChange={(e) => setSearchProduct(e.target.value)}
+                  className="pl-10 bg-background border-border text-foreground"
+                  autoFocus
+                />
+              </div>
+
+              <div className="text-xs text-muted-foreground flex items-center justify-between">
+                <span>
+                  Total: {products.length} | Mostrando: {filteredProducts.length}
+                </span>
+                {products.length > 0 && (
+                  <span className="text-pink-600">
+                    ✓ Los precios mostrados son específicos de este proveedor
+                  </span>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto border border-border rounded-lg">
+                {filteredProducts.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    {products.length === 0
+                      ? "Este proveedor no tiene productos asociados"
+                      : "No se encontraron productos con esa búsqueda"}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-card z-10">
+                      <TableRow className="border-border">
+                        <TableHead className="text-muted-foreground">
+                          Nombre
+                        </TableHead>
+                        <TableHead className="text-muted-foreground">
+                          SKU
+                        </TableHead>
+                        <TableHead className="text-muted-foreground text-center">
+                          Stock
+                        </TableHead>
+                        <TableHead className="text-muted-foreground text-right">
+                          Costo Unitario
+                        </TableHead>
+                        <TableHead className="text-muted-foreground text-center">
+                          Cant. Mín
+                        </TableHead>
+                        <TableHead className="text-muted-foreground text-center">
+                          Entrega
+                        </TableHead>
+                        <TableHead className="text-muted-foreground w-28"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProducts.map((product) => (
+                        <TableRow
+                          key={product.id}
+                          className="border-border hover:bg-muted/50"
+                        >
+                          <TableCell className="text-foreground font-medium">
+                            <div>
+                              <div>{product.name}</div>
+                              {product.category && (
+                                <div className="text-xs text-muted-foreground">
+                                  {product.category.name}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-xs font-mono">
+                            {product.sku}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span
+                              className={`px-2 py-1 rounded text-xs ${
+                                (product.stock || 0) > 20
+                                  ? "bg-green-500/10 text-green-600"
+                                  : (product.stock || 0) > 0
+                                  ? "bg-yellow-500/10 text-yellow-600"
+                                  : "bg-red-500/10 text-red-600"
+                              }`}
+                            >
+                              {product.stock ?? 0}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-semibold text-foreground">
+                              ${Number(product.supplierCost || 0).toLocaleString()}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center text-muted-foreground">
+                            {product.minimumOrderQty || "-"}
+                          </TableCell>
+                          <TableCell className="text-center text-muted-foreground text-xs">
+                            {product.leadTimeDays ? `${product.leadTimeDays}d` : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => handleAddProduct(product)}
+                              className="bg-pink-600 hover:bg-pink-700 w-full"
+                            >
+                              Agregar
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-border flex justify-between items-center">
+              <div className="text-sm text-muted-foreground">
+                💡 Tip: Los precios y cantidades mínimas se auto-completan
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsProductDialogOpen(false)}
+                className="border-border text-foreground"
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminDashboardLayout>
   );
 }
