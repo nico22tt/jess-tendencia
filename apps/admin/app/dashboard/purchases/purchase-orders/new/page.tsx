@@ -39,11 +39,29 @@ import {
   Trash2,
   Search,
   X,
+  Filter,
 } from "lucide-react";
+
+const CATEGORIES_FIXED = [
+  { id: "zapatillas", name: "Zapatillas", slug: "zapatillas" },
+  { id: "botas", name: "Botas", slug: "botas" },
+  { id: "botines", name: "Botines", slug: "botines" },
+  { id: "pantuflas", name: "Pantuflas", slug: "pantuflas" },
+  { id: "jeans", name: "Jeans", slug: "jeans" },
+  { id: "accesorios", name: "Accesorios", slug: "accesorios" },
+];
 
 interface Supplier {
   id: string;
   name: string;
+  email?: string;
+  productCount?: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface Product {
@@ -56,7 +74,6 @@ interface Product {
     name: string;
     slug: string;
   };
-  // ✅ Info del proveedor
   supplierCost?: number;
   supplierSku?: string;
   leadTimeDays?: number;
@@ -77,12 +94,18 @@ export default function NewPurchaseOrderPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+
+  const [categories] = useState<Category[]>(CATEGORIES_FIXED);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+  const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
+
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchProduct, setSearchProduct] = useState("");
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
 
   const [formData, setFormData] = useState({
+    categoryId: "",
     supplierId: "",
     expectedDate: "",
     notes: "",
@@ -90,78 +113,105 @@ export default function NewPurchaseOrderPage() {
 
   const [items, setItems] = useState<OrderItem[]>([]);
 
+  // Auth
   useEffect(() => {
-    checkAuth();
-    fetchSuppliers();
-  }, []);
-
-  // ✅ Cargar productos cuando cambia el proveedor
-  useEffect(() => {
-    if (formData.supplierId) {
-      fetchProducts();
-    } else {
-      setProducts([]);
-      setItems([]); // Limpiar items al cambiar proveedor
-    }
-  }, [formData.supplierId]);
-
-  const checkAuth = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user || user.user_metadata?.role !== "admin") {
-      router.push("/login");
-      return;
-    }
-    setUser(user);
-    setLoading(false);
-  };
-
-  const fetchSuppliers = async () => {
-    try {
-      const res = await fetch("/api/purchases/suppliers?isActive=true");
-      const data = await res.json();
-      if (data.success) {
-        setSuppliers(data.data);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  const fetchProducts = async () => {
-    if (!formData.supplierId) {
-      setProducts([]);
-      return;
-    }
-
-    try {
-      console.log("🔍 Cargando productos del proveedor:", formData.supplierId);
-
-      const res = await fetch(
-        `/api/products?supplierId=${formData.supplierId}`
-      );
-
-      if (!res.ok) {
-        console.error("❌ HTTP Error:", res.status, res.statusText);
+    const checkAuth = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || user.user_metadata?.role !== "admin") {
+        router.push("/login");
         return;
       }
+      setUser(user);
+      setLoading(false);
+    };
+    checkAuth();
+  }, [router, supabase]);
 
+  // Proveedores al cambiar categoría
+  useEffect(() => {
+    if (formData.categoryId) {
+      fetchSuppliersForCategory();
+    } else {
+      setFilteredSuppliers([]);
+    }
+  }, [formData.categoryId]);
+
+  // Productos cuando cambia categoría o proveedor
+  useEffect(() => {
+    if (formData.categoryId && formData.supplierId) {
+      fetchProductsForCategory();
+    } else {
+      setAllProducts([]);
+      setFilteredProducts([]);
+      setItems([]);
+    }
+  }, [formData.categoryId, formData.supplierId]);
+
+  // Sincronizar filtro de productos
+  useEffect(() => {
+    setFilteredProducts(allProducts);
+  }, [allProducts]);
+
+  // --------- FETCHS ---------
+
+  const fetchSuppliersForCategory = async () => {
+    try {
+      setLoadingSuppliers(true);
+      const res = await fetch(
+        `/api/purchases/suppliers-by-category?categorySlug=${formData.categoryId}`
+      );
       const data = await res.json();
-      console.log("📦 Respuesta API:", data);
-
       if (data.success && data.data) {
-        console.log(`✅ ${data.data.length} productos del proveedor cargados`);
-        setProducts(data.data);
+        setFilteredSuppliers(data.data as Supplier[]);
       } else {
-        console.error("❌ API error:", data.error || "Respuesta sin datos");
-        setProducts([]);
+        setFilteredSuppliers([]);
       }
     } catch (error) {
-      console.error("❌ Error en fetch:", error);
-      setProducts([]);
+      console.error("Error cargando proveedores:", error);
+      setFilteredSuppliers([]);
+    } finally {
+      setLoadingSuppliers(false);
     }
   };
+
+  // API especial para órdenes: productos por categoría + info del proveedor, incluye stock 0
+  const fetchProductsForCategory = async () => {
+    if (!formData.categoryId || !formData.supplierId) {
+      setAllProducts([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `/api/purchases/products-for-orders?categorySlug=${formData.categoryId}&supplierId=${formData.supplierId}`
+      );
+      const data = await res.json();
+
+      if (data.success && data.data) {
+        const normalized: Product[] = data.data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          stock: p.stock ?? 0,
+          category: p.category,
+          supplierCost: p.supplierCost,
+          supplierSku: p.supplierSku,
+          leadTimeDays: p.leadTimeDays,
+          minimumOrderQty: p.minimumOrderQty,
+        }));
+        setAllProducts(normalized);
+      } else {
+        setAllProducts([]);
+      }
+    } catch (error) {
+      console.error("Error cargando productos:", error);
+      setAllProducts([]);
+    }
+  };
+
+  // --------- MANEJO DE ITEMS ---------
 
   const handleAddProduct = (product: Product) => {
     const exists = items.find((item) => item.productId === product.id);
@@ -170,14 +220,14 @@ export default function NewPurchaseOrderPage() {
       return;
     }
 
-    setItems([
-      ...items,
+    setItems((prev) => [
+      ...prev,
       {
         productId: product.id,
         productName: product.name,
         sku: product.sku,
-        quantity: product.minimumOrderQty || 1, // ✅ Cantidad mínima
-        unitPrice: Number(product.supplierCost) || 0, // ✅ Precio del proveedor
+        quantity: product.minimumOrderQty || 1,
+        unitPrice: Number(product.supplierCost) || 0,
       },
     ]);
     setIsProductDialogOpen(false);
@@ -185,7 +235,7 @@ export default function NewPurchaseOrderPage() {
   };
 
   const handleRemoveProduct = (productId: string) => {
-    setItems(items.filter((item) => item.productId !== productId));
+    setItems((prev) => prev.filter((item) => item.productId !== productId));
   };
 
   const handleUpdateItem = (
@@ -193,8 +243,8 @@ export default function NewPurchaseOrderPage() {
     field: "quantity" | "unitPrice",
     value: number
   ) => {
-    setItems(
-      items.map((item) =>
+    setItems((prev) =>
+      prev.map((item) =>
         item.productId === productId ? { ...item, [field]: value } : item
       )
     );
@@ -209,6 +259,8 @@ export default function NewPurchaseOrderPage() {
     const total = subtotal + tax;
     return { subtotal, tax, total };
   };
+
+  // --------- SUBMIT ---------
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,12 +285,13 @@ export default function NewPurchaseOrderPage() {
 
     try {
       setSaving(true);
-
       const res = await fetch("/api/purchases/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          supplierId: formData.supplierId,
+          expectedDate: formData.expectedDate,
+          notes: formData.notes,
           items: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -263,11 +316,14 @@ export default function NewPurchaseOrderPage() {
     }
   };
 
-  const filteredProducts = products.filter((p) => {
+  // --------- DERIVADOS ---------
+
+  const productsToShow = filteredProducts.filter((p) => {
     const searchLower = searchProduct.toLowerCase();
-    const matchesName = p.name?.toLowerCase().includes(searchLower) || false;
-    const matchesSku = p.sku?.toLowerCase().includes(searchLower) || false;
-    return matchesName || matchesSku;
+    return (
+      p.name?.toLowerCase().includes(searchLower) ||
+      p.sku?.toLowerCase().includes(searchLower)
+    );
   });
 
   const { subtotal, tax, total } = calculateTotal();
@@ -283,7 +339,7 @@ export default function NewPurchaseOrderPage() {
   return (
     <AdminDashboardLayout user={user}>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
+        {/* HEADER */}
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
@@ -309,18 +365,52 @@ export default function NewPurchaseOrderPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Order Info */}
+          {/* INFO ORDEN */}
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="text-foreground">
                 Información de la Orden
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                Datos generales de la orden de compra
+                Selecciona categoría y proveedor
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Proveedor */}
+              {/* CATEGORÍA */}
+              <div className="space-y-2">
+                <Label htmlFor="categoryId" className="text-foreground">
+                  <Filter className="h-4 w-4 inline mr-2" />
+                  Categoría <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.categoryId}
+                  onValueChange={(value) => {
+                    setFormData({
+                      ...formData,
+                      categoryId: value,
+                      supplierId: "",
+                    });
+                    setItems([]);
+                  }}
+                >
+                  <SelectTrigger className="bg-card border-border text-foreground">
+                    <SelectValue placeholder="Selecciona una categoría primero" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {categories.map((cat) => (
+                      <SelectItem
+                        key={cat.id}
+                        value={cat.slug}
+                        className="text-foreground"
+                      >
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* PROVEEDOR */}
               <div className="space-y-2">
                 <Label htmlFor="supplierId" className="text-foreground">
                   Proveedor <span className="text-red-500">*</span>
@@ -329,27 +419,43 @@ export default function NewPurchaseOrderPage() {
                   value={formData.supplierId}
                   onValueChange={(value) => {
                     setFormData({ ...formData, supplierId: value });
-                    // Items se limpiarán automáticamente con useEffect
+                    setItems([]);
                   }}
+                  disabled={!formData.categoryId || loadingSuppliers}
                 >
                   <SelectTrigger className="bg-card border-border text-foreground">
-                    <SelectValue placeholder="Selecciona un proveedor" />
+                    <SelectValue
+                      placeholder={
+                        !formData.categoryId
+                          ? "Selecciona categoría primero"
+                          : loadingSuppliers
+                          ? "Cargando proveedores..."
+                          : filteredSuppliers.length === 0
+                          ? "No hay proveedores para esta categoría"
+                          : "Selecciona un proveedor"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
-                    {suppliers.map((supplier) => (
+                    {filteredSuppliers.map((supplier) => (
                       <SelectItem
                         key={supplier.id}
                         value={supplier.id}
                         className="text-foreground"
                       >
                         {supplier.name}
+                        {supplier.productCount && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ({supplier.productCount} productos)
+                          </span>
+                        )}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Fecha Esperada */}
+              {/* FECHA */}
               <div className="space-y-2">
                 <Label htmlFor="expectedDate" className="text-foreground">
                   Fecha Esperada de Entrega
@@ -365,7 +471,7 @@ export default function NewPurchaseOrderPage() {
                 />
               </div>
 
-              {/* Notas */}
+              {/* NOTAS */}
               <div className="space-y-2">
                 <Label htmlFor="notes" className="text-foreground">
                   Notas
@@ -384,7 +490,7 @@ export default function NewPurchaseOrderPage() {
             </CardContent>
           </Card>
 
-          {/* Products */}
+          {/* PRODUCTOS */}
           <Card className="bg-card border-border">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -393,10 +499,12 @@ export default function NewPurchaseOrderPage() {
                     Productos <span className="text-red-500">*</span>
                   </CardTitle>
                   <CardDescription className="text-muted-foreground">
-                    {!formData.supplierId
-                      ? "Selecciona un proveedor primero"
-                      : `Productos de ${
-                          suppliers.find((s) => s.id === formData.supplierId)
+                    {!formData.categoryId
+                      ? "Selecciona una categoría primero"
+                      : !formData.supplierId
+                      ? "Selecciona un proveedor"
+                      : `${filteredProducts.length} productos disponibles en ${
+                          categories.find((c) => c.slug === formData.categoryId)
                             ?.name
                         }`}
                   </CardDescription>
@@ -404,8 +512,12 @@ export default function NewPurchaseOrderPage() {
                 <Button
                   type="button"
                   onClick={() => setIsProductDialogOpen(true)}
-                  disabled={!formData.supplierId}
-                  className="gap-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={
+                    !formData.categoryId ||
+                    !formData.supplierId ||
+                    filteredProducts.length === 0
+                  }
+                  className="gap-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" />
                   Agregar Producto
@@ -415,8 +527,8 @@ export default function NewPurchaseOrderPage() {
             <CardContent>
               {items.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  {!formData.supplierId
-                    ? "Selecciona un proveedor para comenzar"
+                  {!formData.categoryId || !formData.supplierId
+                    ? "Completa categoría y proveedor"
                     : "No hay productos agregados"}
                 </div>
               ) : (
@@ -439,7 +551,7 @@ export default function NewPurchaseOrderPage() {
                         <TableHead className="text-muted-foreground">
                           Subtotal
                         </TableHead>
-                        <TableHead className="text-muted-foreground"></TableHead>
+                        <TableHead className="text-muted-foreground" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -454,7 +566,7 @@ export default function NewPurchaseOrderPage() {
                           <TableCell>
                             <Input
                               type="number"
-                              min="1"
+                              min={1}
                               value={item.quantity}
                               onChange={(e) =>
                                 handleUpdateItem(
@@ -469,7 +581,7 @@ export default function NewPurchaseOrderPage() {
                           <TableCell>
                             <Input
                               type="number"
-                              min="0"
+                              min={0}
                               step="0.01"
                               value={item.unitPrice}
                               onChange={(e) =>
@@ -480,7 +592,6 @@ export default function NewPurchaseOrderPage() {
                                 )
                               }
                               className="w-32 bg-card border-border text-foreground"
-                              placeholder="0.00"
                             />
                           </TableCell>
                           <TableCell className="text-foreground font-semibold">
@@ -506,7 +617,7 @@ export default function NewPurchaseOrderPage() {
             </CardContent>
           </Card>
 
-          {/* Total */}
+          {/* TOTAL */}
           <Card className="bg-card border-border">
             <CardContent className="pt-6">
               <div className="space-y-2">
@@ -526,7 +637,7 @@ export default function NewPurchaseOrderPage() {
             </CardContent>
           </Card>
 
-          {/* Actions */}
+          {/* ACCIONES */}
           <div className="flex gap-3 justify-end">
             <Button
               type="button"
@@ -558,13 +669,14 @@ export default function NewPurchaseOrderPage() {
         </form>
       </div>
 
-      {/* ✅ MODAL CON INFO DEL PROVEEDOR */}
+      {/* MODAL DE PRODUCTOS */}
       {isProductDialogOpen && (
         <div
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setIsProductDialogOpen(false);
+              setSearchProduct("");
             }
           }}
         >
@@ -576,9 +688,17 @@ export default function NewPurchaseOrderPage() {
                   Seleccionar Producto
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Productos de{" "}
+                  {
+                    categories.find((c) => c.slug === formData.categoryId)
+                      ?.name
+                  }{" "}
+                  de{" "}
                   <span className="font-semibold text-pink-600">
-                    {suppliers.find((s) => s.id === formData.supplierId)?.name}
+                    {
+                      filteredSuppliers.find(
+                        (s) => s.id === formData.supplierId
+                      )?.name
+                    }
                   </span>
                 </p>
               </div>
@@ -586,7 +706,10 @@ export default function NewPurchaseOrderPage() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsProductDialogOpen(false)}
+                onClick={() => {
+                  setIsProductDialogOpen(false);
+                  setSearchProduct("");
+                }}
                 className="text-muted-foreground hover:text-foreground"
               >
                 <X className="h-5 w-5" />
@@ -608,20 +731,21 @@ export default function NewPurchaseOrderPage() {
 
               <div className="text-xs text-muted-foreground flex items-center justify-between">
                 <span>
-                  Total: {products.length} | Mostrando: {filteredProducts.length}
+                  Mostrando: {productsToShow.length} de{" "}
+                  {filteredProducts.length} productos
                 </span>
-                {products.length > 0 && (
+                {filteredProducts.length > 0 && (
                   <span className="text-pink-600">
-                    ✓ Los precios mostrados son específicos de este proveedor
+                    ✓ Los precios y cantidades mínimas se auto-completan
                   </span>
                 )}
               </div>
 
               <div className="flex-1 overflow-y-auto border border-border rounded-lg">
-                {filteredProducts.length === 0 ? (
+                {productsToShow.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    {products.length === 0
-                      ? "Este proveedor no tiene productos asociados"
+                    {filteredProducts.length === 0
+                      ? "No hay productos en esta categoría"
                       : "No se encontraron productos con esa búsqueda"}
                   </div>
                 ) : (
@@ -646,11 +770,11 @@ export default function NewPurchaseOrderPage() {
                         <TableHead className="text-muted-foreground text-center">
                           Entrega
                         </TableHead>
-                        <TableHead className="text-muted-foreground w-28"></TableHead>
+                        <TableHead className="text-muted-foreground w-28" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredProducts.map((product) => (
+                      {productsToShow.map((product) => (
                         <TableRow
                           key={product.id}
                           className="border-border hover:bg-muted/50"
@@ -683,14 +807,19 @@ export default function NewPurchaseOrderPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <span className="font-semibold text-foreground">
-                              ${Number(product.supplierCost || 0).toLocaleString()}
+                              $
+                              {Number(
+                                product.supplierCost || 0
+                              ).toLocaleString()}
                             </span>
                           </TableCell>
                           <TableCell className="text-center text-muted-foreground">
                             {product.minimumOrderQty || "-"}
                           </TableCell>
                           <TableCell className="text-center text-muted-foreground text-xs">
-                            {product.leadTimeDays ? `${product.leadTimeDays}d` : "-"}
+                            {product.leadTimeDays
+                              ? `${product.leadTimeDays}d`
+                              : "-"}
                           </TableCell>
                           <TableCell>
                             <Button
@@ -718,7 +847,10 @@ export default function NewPurchaseOrderPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsProductDialogOpen(false)}
+                onClick={() => {
+                  setIsProductDialogOpen(false);
+                  setSearchProduct("");
+                }}
                 className="border-border text-foreground"
               >
                 Cerrar

@@ -306,20 +306,7 @@ export default function InventoryPage() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-card border border-border">
-            <TabsTrigger
-              value="products"
-              className="data-[state=active]:bg-pink-600 data-[state=active]:text-white"
-            >
-              <Package className="h-4 w-4 mr-2" />
-              Por Producto
-            </TabsTrigger>
-            <TabsTrigger
-              value="variants"
-              className="data-[state=active]:bg-pink-600 data-[state=active]:text-white"
-            >
-              <Boxes className="h-4 w-4 mr-2" />
-              Por Tallas/Colores
-            </TabsTrigger>
+
           </TabsList>
 
           {/* Tab: Vista por Producto */}
