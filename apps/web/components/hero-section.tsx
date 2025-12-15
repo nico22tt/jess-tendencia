@@ -16,16 +16,19 @@ export function HeroSection() {
     fetchUser()
   }, [supabase])
 
+  const displayName = user?.user_metadata?.name || user?.email
+
   return (
     <section className="relative h-[70vh] flex items-center justify-center overflow-hidden">
       {/* Imagen de fondo */}
       <div
-        className="hero-bg"
+        className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: `url('/elegant-fashion-model-wearing-trendy-outfit-in-sof.png')`,
+          backgroundImage:
+            "url('/elegant-fashion-model-wearing-trendy-outfit-in-sof.png')",
         }}
       >
-        <div className="absolute inset-0 bg-black/20 my-0 mt-0" />
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
       {/* Contenido */}
@@ -33,7 +36,7 @@ export function HeroSection() {
         {user ? (
           <>
             <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4 leading-tight">
-              ¡Hola, {user.user_metadata?.name || user.email}!
+              ¡Hola, {displayName}!
             </h2>
             <p className="text-2xl md:text-3xl mb-6 text-white/95 font-medium">
               ¿Lista para renovar tu estilo?
@@ -53,13 +56,6 @@ export function HeroSection() {
             </p>
           </>
         )}
-
-        <Button
-          size="lg"
-          className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-3 text-lg"
-        >
-          Explorar Colección
-        </Button>
       </div>
     </section>
   )

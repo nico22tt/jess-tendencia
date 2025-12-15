@@ -1,7 +1,7 @@
-import { ProductGrid } from "@/components/product-grid"
-import { ProductFilters } from "@/components/product-filters"
+// app/jeans/page.tsx
 import { CategoryPageLayout } from "@/components/category-page-layout"
 import type { Metadata } from "next"
+import { JeansClient } from "./JeansClient"
 
 export const metadata: Metadata = {
   title: "Jeans para Mujer - Estilo y Versatilidad",
@@ -18,7 +18,8 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Jeans para Mujer - Jess Tendencia",
-    description: "Descubre nuestra línea de jeans para mujer. Variedad de fits y modelos.",
+    description:
+      "Descubre nuestra línea de jeans para mujer. Variedad de fits y modelos.",
     images: ["/blue-skinny-jeans.png"],
   },
 }
@@ -29,10 +30,7 @@ export default function JeansPage() {
       title="Jeans"
       description="Jeans que se adaptan a tu cuerpo y a tu actitud."
     >
-      <div className="sticky top-[72px] z-40 bg-white py-4 -mx-6 px-6 mb-6 shadow-sm">
-        <ProductFilters categorySlug="jeans" />
-      </div>
-      <ProductGrid categorySlug="jeans" />
+      <JeansClient />
     </CategoryPageLayout>
   )
 }

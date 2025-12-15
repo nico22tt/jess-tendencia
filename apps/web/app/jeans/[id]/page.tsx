@@ -98,6 +98,7 @@ export default function JeansProductPage(props: Props) {
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [user, setUser] = useState<any>(null)
+  const [isFavorite, setIsFavorite] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -150,21 +151,21 @@ export default function JeansProductPage(props: Props) {
     sizes.length > 0 && !sizes.every((t: string) => t.toLowerCase().includes("único"))
 
 // ✅ HANDLE ADDTOCART MEJORADO
-const handleAddToCart = async () => {
-  if (showSizeSelector && !selectedSize) {
-    alert("Por favor selecciona una talla")
-    return
-  }
+  const handleAddToCart = async () => {
+    if (showSizeSelector && !selectedSize) {
+      alert("Por favor selecciona una talla")
+      return
+    }
 
-  if (!user) {
-    alert("Debes iniciar sesión para agregar productos al carrito")
-    router.push("/login")
-    return
-  }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  if (!product) return
+    if (!user) {
+      router.push("/login")
+      return
+    }
 
-  try {
     const res = await fetch("/api/cart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -175,19 +176,54 @@ const handleAddToCart = async () => {
       }),
     })
 
-    const data = await res.json()
-
     if (!res.ok) {
-      throw new Error(data.details || data.error || "Error al agregar al carrito")
+      console.error("Error al agregar al carrito")
+      return
     }
 
-    alert("✅ Producto agregado al carrito")
-    router.push("/cart")
+    // opcional: router.push("/carrito")
+  }
+
+
+const handleToggleFavorite = async () => {
+  if (!product) return
+
+  if (!user) {
+    alert("Debes iniciar sesión para guardar favoritos")
+    router.push("/login")
+    return
+  }
+
+  try {
+    if (!isFavorite) {
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          productId: product.id,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.details || data.error || "Error al agregar a favoritos")
+      }
+      setIsFavorite(true)
+    } else {
+      const url = `/api/favorites?userId=${user.id}&productId=${product.id}`
+      const res = await fetch(url, { method: "DELETE" })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.details || data.error || "Error al quitar de favoritos")
+      }
+      setIsFavorite(false)
+    }
   } catch (error: any) {
-    console.error("Error al agregar al carrito:", error)
+    console.error("Error favoritos:", error)
     alert(`❌ ${error.message}`)
   }
 }
+
 
   return (
     <main className="min-h-screen bg-white">
@@ -357,23 +393,21 @@ const handleAddToCart = async () => {
               </div>
               <Button
                 onClick={handleAddToCart}
-                className="w-full bg-pink-600 hover:bg-pink-700 text-white gap-2 font-semibold py-6 text-lg"
-                disabled={
-                  showSizeSelector &&
-                  (selectedSize === "" ||
-                    (getStockBySize(product, selectedSize) ?? 0) <= 0)
-                }
+                disabled={showSizeSelector && !selectedSize}
+                className="w-full bg-pink-600 hover:bg-pink-700 text-white gap-2 font-semibold py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingCart className="h-5 w-5" />
                 Agregar al carro
               </Button>
-              <Button
-                variant="outline"
-                className="w-full gap-2 py-6 text-lg border-pink-600 text-pink-600 hover:bg-pink-50"
-              >
-                <Heart className="h-5 w-5" />
-                Agregar a favoritos
-              </Button>
+                <Button
+                  variant={isFavorite ? "default" : "outline"}
+                  className="w-full gap-2 py-6 text-lg border-pink-600 text-pink-600 hover:bg-pink-50"
+                  onClick={handleToggleFavorite}
+                >
+                  <Heart className={`h-5 w-5 ${isFavorite ? "fill-pink-600" : ""}`} />
+                  {isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+                </Button>
+
             </div>
 
             {/* Beneficios */}

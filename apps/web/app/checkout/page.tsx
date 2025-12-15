@@ -67,7 +67,8 @@ export default function CheckoutPage() {
   const userId = user?.id
   const router = useRouter()
 
-  const { items, total, loading: cartLoading, getCartItemPrice } = useCheckoutCart(userId)
+  const { items, total, loading: cartLoading, getCartItemPrice } =
+    useCheckoutCart(userId)
   const { addresses, selectedAddress, setSelectedAddress, setAddresses } =
     useUserAddresses(userId)
 
@@ -91,10 +92,9 @@ export default function CheckoutPage() {
     notes: "",
   })
 
-  // ✅ PROTEGER LA PÁGINA: Redirigir si no hay usuario
+  // Proteger la página: redirigir si no hay usuario
   useEffect(() => {
-    if (authLoading) return // Esperar a que termine de cargar
-
+    if (authLoading) return
     if (!user || !user.id) {
       alert("Debes iniciar sesión para acceder al checkout.")
       router.push("/login")
@@ -124,8 +124,7 @@ export default function CheckoutPage() {
   const handleNewAddr = (e: React.ChangeEvent<HTMLInputElement>) =>
     setNewAddr((prev) => ({ ...prev, [e.target.name]: e.target.value }))
 
-  const handleCreateAddress = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleCreateAddress = async () => {
     if (!userId) {
       alert("Debes iniciar sesión para continuar.")
       return
@@ -154,15 +153,13 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // ✅ VALIDAR QUE HAY USER_ID ANTES DE CONTINUAR
     if (!userId) {
       alert("Debes iniciar sesión para continuar con la compra.")
       router.push("/login")
       return
     }
 
-    // ✅ Validar que no sea el usuario sincronizado
-    if (userId === '25f597bd-fd93-4aa7-b50d-4900199cf474') {
+    if (userId === "25f597bd-fd93-4aa7-b50d-4900199cf474") {
       alert("Sesión inválida. Por favor cierra sesión y vuelve a iniciar.")
       router.push("/login")
       return
@@ -216,7 +213,6 @@ export default function CheckoutPage() {
     }
   }
 
-  // ✅ Mostrar loading mientras carga la autenticación
   if (authLoading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
@@ -228,7 +224,6 @@ export default function CheckoutPage() {
     )
   }
 
-  // ✅ Si no hay usuario después de cargar, no mostrar nada (el useEffect redirige)
   if (!user || !userId) {
     return null
   }
@@ -400,10 +395,7 @@ export default function CheckoutPage() {
               )}
 
               {showNewAddress && (
-                <form
-                  onSubmit={handleCreateAddress}
-                  className="mt-2 space-y-2 bg-pink-25 p-4 rounded"
-                >
+                <div className="mt-2 space-y-2 bg-pink-25 p-4 rounded">
                   <div>
                     <label className="block mb-1">Alias *</label>
                     <Input
@@ -479,10 +471,14 @@ export default function CheckoutPage() {
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full">
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={handleCreateAddress}
+                  >
                     Guardar dirección
                   </Button>
-                </form>
+                </div>
               )}
             </div>
           )}

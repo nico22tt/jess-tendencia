@@ -3,7 +3,13 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Dialog, DialogContent, DialogClose } from "@jess/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogClose,
+  DialogTitle,
+  DialogDescription,
+} from "@jess/ui/dialog"
 import { Button } from "@jess/ui/button"
 import { Badge } from "@jess/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jess/ui/select"
@@ -67,7 +73,13 @@ export function QuickViewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl p-0 gap-0 bg-white overflow-hidden" showCloseButton={false}>
+      <DialogContent className="max-w-5xl p-0 gap-0 bg-white overflow-hidden">
+        {/* Título y descripción accesibles (puedes ocultarlos visualmente si quieres) */}
+        <DialogTitle className="sr-only">{product.name}</DialogTitle>
+        <DialogDescription className="sr-only">
+          Vista rápida del producto
+        </DialogDescription>
+
         <DialogClose className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2 disabled:pointer-events-none bg-white/80 hover:bg-white p-1">
           <X className="h-5 w-5" />
           <span className="sr-only">Cerrar</span>

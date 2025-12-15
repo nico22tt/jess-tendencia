@@ -1,7 +1,7 @@
 import { ProductGrid } from "@/components/product-grid"
-import { ProductFilters } from "@/components/product-filters"
 import { CategoryPageLayout } from "@/components/category-page-layout"
 import type { Metadata } from "next"
+import { PantuflasClient } from "./PantuflasClient"
 
 export const metadata: Metadata = {
   title: "Pantuflas para Mujer - Comodidad y Estilo",
@@ -29,10 +29,7 @@ export default function SlippersPage() {
       title="Pantuflas"
       description="Pantuflas cómodas y con onda para estar en casa con estilo."
     >
-      <div className="sticky top-[72px] z-40 bg-white py-4 -mx-6 px-6 mb-6 shadow-sm">
-        <ProductFilters categorySlug="pantuflas" />
-      </div>
-      <ProductGrid categorySlug="pantuflas" />
+      <PantuflasClient />
     </CategoryPageLayout>
   )
 }

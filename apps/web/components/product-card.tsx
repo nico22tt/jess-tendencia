@@ -7,8 +7,7 @@ import Link from "next/link"
 import { Button } from "@jess/ui/button"
 import { Card, CardContent } from "@jess/ui/card"
 import { Badge } from "@jess/ui/badge"
-import { Heart, ShoppingCart, Eye, Image as ImageIcon } from "lucide-react"
-import dynamic from "next/dynamic"
+import { Heart, ShoppingCart, Image as ImageIcon } from "lucide-react"
 import type { Product } from "@jess/shared/types/product"
 import { createClient } from "@utils/supabase/client"
 import { useRouter } from "next/navigation"
@@ -18,15 +17,9 @@ interface ProductCardProps {
   category?: string
 }
 
-const QuickViewModal = dynamic(
-  () => import("@/components/quick-view-modal").then((mod) => mod.QuickViewModal),
-  { ssr: false }
-)
-
 export function ProductCard({ product, category = "zapatillas" }: ProductCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
   const [selectedVariant, setSelectedVariant] = useState(0)
-  const [showQuickView, setShowQuickView] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
@@ -41,7 +34,7 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
       style: "currency",
       currency: "CLP",
       minimumFractionDigits: 0,
-    }).format(price) // <-- sin /100
+    }).format(price)
 
   const getImageSrc = (): string => {
     const images: any = (product as any).images
@@ -69,9 +62,6 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
     }
 
     const mainImg = arr.find((img) => img.isMain && img.url)
-    if (isHovered && arr[1]?.url) {
-      return arr[1].url
-    }
 
     return (
       mainImg?.url ||
@@ -81,51 +71,88 @@ export function ProductCard({ product, category = "zapatillas" }: ProductCardPro
     )
   }
 
-const handleAddToCart = async (e: React.MouseEvent) => {
-  e.preventDefault()
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault()
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  if (authError) {
-    console.error("Error al obtener usuario de Supabase:", authError)
-    return
+    if (authError) {
+      console.error("Error al obtener usuario de Supabase:", authError)
+      return
+    }
+
+    if (!user?.id) {
+      router.push("/login")
+      return
+    }
+
+    const res = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.id,
+        productId: product.id,
+        quantity: 1,
+      }),
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      console.error("Error al agregar al carrito desde ProductCard", res.status, text)
+    }
   }
 
-  if (!user?.id) {
-    console.error("No hay user.id, redirigiendo a login")
-    router.push("/login")
-    return
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError) {
+      console.error("Error al obtener usuario de Supabase (favorites):", authError)
+      return
+    }
+
+    if (!user?.id) {
+      router.push("/login")
+      return
+    }
+
+    try {
+      if (!isFavorite) {
+        const res = await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            productId: product.id,
+          }),
+        })
+        if (!res.ok) {
+          const text = await res.text()
+          console.error("Error al agregar favorito", res.status, text)
+          return
+        }
+        setIsFavorite(true)
+      } else {
+        const url = `/api/favorites?userId=${user.id}&productId=${product.id}`
+        const res = await fetch(url, { method: "DELETE" })
+        if (!res.ok) {
+          const text = await res.text()
+          console.error("Error al eliminar favorito", res.status, text)
+          return
+        }
+        setIsFavorite(false)
+      }
+    } catch (err) {
+      console.error("Error toggle favorito:", err)
+    }
   }
-
-  console.log("Add to cart payload:", {
-    userId: user.id,
-    productId: product.id,
-  })
-
-  const res = await fetch("/api/cart", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      userId: user.id,
-      productId: product.id,
-      quantity: 1,
-    }),
-  })
-
-  if (!res.ok) {
-    const text = await res.text()
-    console.error(
-      "Error al agregar al carrito desde ProductCard",
-      res.status,
-      text
-    )
-    return
-  }
-}
-
 
   const renderStars = () => {
     const rating = product.rating || 0
@@ -143,13 +170,9 @@ const handleAddToCart = async (e: React.MouseEvent) => {
   return (
     <>
       <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-xl transition-all duration-300 bg-white">
-        <div
-          className="relative overflow-hidden"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
+        <div className="relative overflow-hidden">
           <Link href={`/${category}/${product.id}`}>
-            <div className="aspect-square relative bg-gray-50">
+            <div className="aspect-square relative bg-gray-50 group">
               {getImageSrc() ? (
                 <Image
                   src={getImageSrc()}
@@ -186,29 +209,15 @@ const handleAddToCart = async (e: React.MouseEvent) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-3 right-3 bg-white/80 hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                onClick={(e) => e.preventDefault()}
+                className={`absolute top-3 right-3 bg-white/80 hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+                  isFavorite ? "text-pink-600" : "text-gray-700"
+                }`}
+                onClick={handleToggleFavorite}
                 title="Agregar a favoritos"
                 aria-label="Agregar a favoritos"
               >
-                <Heart className="h-4 w-4" />
+                <Heart className={`h-4 w-4 ${isFavorite ? "fill-pink-600" : ""}`} />
               </Button>
-
-              {isHovered && (
-                <div className="absolute inset-0 bg-black/20 flex items-center justify-center transition-all duration-300">
-                  <Button
-                    variant="secondary"
-                    className="bg-white hover:bg-gray-100 text-gray-900 gap-2"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      setShowQuickView(true)
-                    }}
-                  >
-                    <Eye className="h-4 w-4" />
-                    Vista Previa
-                  </Button>
-                </div>
-              )}
             </div>
           </Link>
         </div>
@@ -280,15 +289,6 @@ const handleAddToCart = async (e: React.MouseEvent) => {
           </Button>
         </CardContent>
       </Card>
-
-      {showQuickView && (
-        <QuickViewModal
-          product={product}
-          category={category}
-          open={showQuickView}
-          onOpenChange={setShowQuickView}
-        />
-      )}
     </>
   )
 }

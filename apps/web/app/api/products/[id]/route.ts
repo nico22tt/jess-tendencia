@@ -1,10 +1,10 @@
 // app/api/products/[id]/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@jess/shared/lib/prisma'
+import { NextRequest, NextResponse } from "next/server"
+import prisma from "@jess/shared/lib/prisma"
 
 export async function GET(
   _request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await context.params
@@ -28,20 +28,28 @@ export async function GET(
 
     if (!product) {
       return NextResponse.json(
-        { success: false, error: 'Producto no encontrado' },
-        { status: 404 }
+        { success: false, error: "Producto no encontrado" },
+        { status: 404 },
       )
     }
 
-    // Aquí NO toques todavía las imágenes, deja que vengan igual que en /api/products
+    // flag de stock global basado en las variantes
+    const isOutOfStock =
+      product.product_variants.length > 0 &&
+      product.product_variants.every((v) => v.stock === 0)
+
+    // Aquí NO toques las imágenes, se devuelven igual que en /api/products
     return NextResponse.json({
       success: true,
-      data: product,
+      data: {
+        ...product,
+        is_out_of_stock: isOutOfStock,
+      },
     })
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Error al buscar producto' },
-      { status: 500 }
+      { success: false, error: error.message || "Error al buscar producto" },
+      { status: 500 },
     )
   }
 }

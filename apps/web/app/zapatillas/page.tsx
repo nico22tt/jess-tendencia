@@ -1,8 +1,6 @@
-// app/zapatillas/page.tsx
-import { ProductGrid } from "@/components/product-grid"
-import { ProductFilters } from "@/components/product-filters"
 import { CategoryPageLayout } from "@/components/category-page-layout"
 import type { Metadata } from "next"
+import { ZapatillasClient } from "./ZapatillasClient"
 
 export const metadata: Metadata = {
   title: "Zapatillas para Mujer - Últimas Tendencias",
@@ -30,10 +28,7 @@ export default function ZapatillasPage() {
       title="Zapatillas"
       description="Explora nuestra selección de zapatillas con estilo y comodidad"
     >
-      <div className="sticky top-[72px] z-40 bg-white py-4 -mx-6 px-6 shadow-sm mb-0.5">
-        <ProductFilters categorySlug="zapatillas" />
-      </div>
-      <ProductGrid categorySlug="zapatillas" />
+      <ZapatillasClient />
     </CategoryPageLayout>
   )
 }

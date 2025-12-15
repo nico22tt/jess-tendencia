@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
     const limitParam = searchParams.get("limit")
     const limit = limitParam ? parseInt(limitParam, 10) : 32
 
-    let where: any = { isPublished: true }
+    // Solo productos publicados y con stock > 0
+    let where: any = { isPublished: true, stock: { gt: 0 } }
 
     // Si vienen IDs, se prioriza ese filtro
     if (ids.length > 0) {

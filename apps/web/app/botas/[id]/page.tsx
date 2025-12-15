@@ -39,46 +39,36 @@ const formatPrice = (price: number) =>
     minimumFractionDigits: 0,
   }).format(price)
 
-// ✅ FUNCIÓN IDÉNTICA A ACCESORIOS: Manejo robusto de imágenes
+// misma función robusta de imágenes
 const parseProductImages = (product: Product): string[] => {
   const images: any = product?.images
   let arr: Array<string | { url: string; isMain?: boolean }> = []
 
-  // Si es un array
   if (Array.isArray(images)) {
-    // Si son strings directos
     if (typeof images[0] === "string") {
       arr = images.filter((img) => typeof img === "string" && img.trim())
     } else {
-      // Si son objetos con url
       arr = images
     }
-  } 
-  // Si es un string JSON, parsearlo
-  else if (typeof images === "string" && images.trim()) {
+  } else if (typeof images === "string" && images.trim()) {
     try {
       const parsed = JSON.parse(images)
       if (Array.isArray(parsed)) arr = parsed
     } catch {
       arr = []
     }
-  } 
-  // Si es un objeto único
-  else if (images && typeof images === "object") {
+  } else if (images && typeof images === "object") {
     arr = [images]
   }
 
-  // Convertir todo a strings
   const urlStrings = arr
     .map((img) => (typeof img === "string" ? img : img?.url))
     .filter((url): url is string => !!url && url.trim() !== "")
 
-  // Agregar imagen principal si existe y no está en el array
   if (typeof product.image === "string" && product.image.trim() && !urlStrings.includes(product.image)) {
     urlStrings.unshift(product.image)
   }
 
-  // Fallback si no hay imágenes
   return urlStrings.length > 0 ? urlStrings : ["/placeholder.svg"]
 }
 
@@ -100,10 +90,10 @@ export default function BootPage(props: Props) {
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [user, setUser] = useState<any>(null)
+  const [isFavorite, setIsFavorite] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    // ✅ Cargar usuario
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
 
     fetch(`/api/products/${paramsObj.id}`)
@@ -129,13 +119,11 @@ export default function BootPage(props: Props) {
 
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
-  // ✅ USA LA NUEVA FUNCIÓN DE IMÁGENES
   const allImages = parseProductImages(product)
 
   const sizes =
     product.sizes && product.sizes.length ? product.sizes : ["36", "37", "38", "39", "40"]
 
-  // ✅ HANDLE ADDTOCART MEJORADO (igual que accesorios)
   const handleAddToCart = async () => {
     if (sizes.length > 1 && !selectedSize) {
       alert("Por favor selecciona una talla")
@@ -168,9 +156,48 @@ export default function BootPage(props: Props) {
       }
 
       alert("✅ Producto agregado al carrito")
-      router.push("/cart")
+      // opcional: router.push("/carrito")
     } catch (error: any) {
       console.error("Error al agregar al carrito:", error)
+      alert(`❌ ${error.message}`)
+    }
+  }
+
+  const handleToggleFavorite = async () => {
+    if (!product) return
+
+    if (!user) {
+      alert("Debes iniciar sesión para guardar favoritos")
+      router.push("/login")
+      return
+    }
+
+    try {
+      if (!isFavorite) {
+        const res = await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            productId: product.id,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data.details || data.error || "Error al agregar a favoritos")
+        }
+        setIsFavorite(true)
+      } else {
+        const url = `/api/favorites?userId=${user.id}&productId=${product.id}`
+        const res = await fetch(url, { method: "DELETE" })
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data.details || data.error || "Error al quitar de favoritos")
+        }
+        setIsFavorite(false)
+      }
+    } catch (error: any) {
+      console.error("Error favoritos:", error)
       alert(`❌ ${error.message}`)
     }
   }
@@ -346,11 +373,12 @@ export default function BootPage(props: Props) {
               </Button>
 
               <Button
-                variant="outline"
+                variant={isFavorite ? "default" : "outline"}
                 className="w-full gap-2 py-6 text-lg border-pink-600 text-pink-600 hover:bg-pink-50"
+                onClick={handleToggleFavorite}
               >
-                <Heart className="h-5 w-5" />
-                Agregar a favoritos
+                <Heart className={`h-5 w-5 ${isFavorite ? "fill-pink-600" : ""}`} />
+                {isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
               </Button>
             </div>
 

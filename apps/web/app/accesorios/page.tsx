@@ -1,7 +1,6 @@
-import { ProductGrid } from "@/components/product-grid"
-import { ProductFilters } from "@/components/product-filters"
 import { CategoryPageLayout } from "@/components/category-page-layout"
 import type { Metadata } from "next"
+import { AccesoriosClient } from "./AccesoriosClient"
 
 export const metadata: Metadata = {
   title: "Accesorios para Mujer - Últimas Tendencias",
@@ -30,10 +29,7 @@ export default function AccesoriosPage() {
       title="Accesorios"
       description="Explora nuestra selección de accesorios con estilo y elegancia"
     >
-      <div className="sticky top-[72px] z-40 bg-white py-4 -mx-6 px-6 shadow-sm mb-0.5">
-        <ProductFilters categorySlug="accesorios" />
-      </div>
-      <ProductGrid categorySlug="accesorios" />
+      <AccesoriosClient />
     </CategoryPageLayout>
   )
 }

@@ -1,7 +1,7 @@
-import { ProductGrid } from "@/components/product-grid"
-import { ProductFilters } from "@/components/product-filters"
+// app/botines/page.tsx
 import { CategoryPageLayout } from "@/components/category-page-layout"
 import type { Metadata } from "next"
+import { BotinesClient } from "./BotinesClient"
 
 export const metadata: Metadata = {
   title: "Botines para Mujer - Estilo Urbano y Elegante",
@@ -30,10 +30,7 @@ export default function AnkleBootsPage() {
       title="Botines"
       description="Botines versátiles para looks urbanos y elegantes."
     >
-      <div className="sticky top-[72px] z-40 bg-white py-4 -mx-6 px-6 mb-6 shadow-sm">
-        <ProductFilters categorySlug="botines" />
-      </div>
-      <ProductGrid categorySlug="botines" />
+      <BotinesClient />
     </CategoryPageLayout>
   )
 }

@@ -1,14 +1,23 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Heart, ChevronDown, User, LogOut, UserCircle, Package, ShoppingCart } from "lucide-react"
+import {
+  Search,
+  Heart,
+  ChevronDown,
+  User,
+  LogOut,
+  UserCircle,
+  Package,
+  ShoppingCart,
+} from "lucide-react"
 import { Button } from "@jess/ui/button"
 import { Input } from "@jess/ui/input"
 import { cn } from "@jess/shared/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
 import { createClient } from "@utils/supabase/client"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 interface MenuItem {
   id: string
@@ -44,37 +53,66 @@ export function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
   const [totalItems, setTotalItems] = useState<number>(0)
+  const [favoriteCount, setFavoriteCount] = useState<number>(0)
   const [searchTerm, setSearchTerm] = useState("")
   const supabase = createClient()
   const router = useRouter()
+  const pathname = usePathname()
 
-  useEffect(() => {
-    async function loadUserAndCart() {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
+  const loadUserCartAndFavorites = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    setUser(user)
 
-      if (!user) {
-        setTotalItems(0)
-        return
-      }
+    if (!user) {
+      setTotalItems(0)
+      setFavoriteCount(0)
+      return
+    }
 
-      const res = await fetch(`/api/cart?userId=${user.id}`)
-      const data = await res.json()
-      const items = Array.isArray(data) ? data : []
-
-      const count = items.reduce(
+    try {
+      // Carrito
+      const cartRes = await fetch(`/api/cart?userId=${user.id}`, {
+        cache: "no-store",
+      })
+      const cartData = await cartRes.json()
+      const cartItems = Array.isArray(cartData) ? cartData : []
+      const count = cartItems.reduce(
         (sum: number, i: any) => sum + (i.quantity || 1),
         0
       )
       setTotalItems(count)
-    }
 
-    loadUserAndCart()
+      // Favoritos
+      const favRes = await fetch(`/api/favorites?userId=${user.id}`, {
+        cache: "no-store",
+      })
+      const favData = await favRes.json()
+      const favItems = Array.isArray(favData) ? favData : []
+      setFavoriteCount(favItems.length)
+    } catch (err) {
+      console.error("Error cargando carrito/favoritos en Header:", err)
+    }
+  }
+
+  // Cargar al montar
+  useEffect(() => {
+    loadUserCartAndFavorites()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase])
+
+  // Volver a cargar cuando cambie la ruta (por ejemplo al volver desde /carrito o /favoritos)
+  useEffect(() => {
+    loadUserCartAndFavorites()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   const logout = async () => {
     await supabase.auth.signOut()
     setUser(null)
+    setTotalItems(0)
+    setFavoriteCount(0)
     router.push("/login")
   }
 
@@ -121,7 +159,7 @@ export function Header() {
                     href={item.href}
                     className={cn(
                       "flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                      "text-gray-700 hover:text-pink-600 hover:bg-pink-50",
+                      "text-gray-700 hover:text-pink-600 hover:bg-pink-50"
                     )}
                   >
                     {item.label}
@@ -131,7 +169,7 @@ export function Header() {
                     className={cn(
                       "flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                       "text-gray-700 hover:text-pink-600 hover:bg-pink-50",
-                      activeDropdown === item.id && "text-pink-600 bg-pink-50",
+                      activeDropdown === item.id && "text-pink-600 bg-pink-50"
                     )}
                   >
                     {item.label}
@@ -139,7 +177,7 @@ export function Header() {
                       <ChevronDown
                         className={cn(
                           "h-4 w-4 transition-transform duration-200",
-                          activeDropdown === item.id && "rotate-180",
+                          activeDropdown === item.id && "rotate-180"
                         )}
                       />
                     )}
@@ -151,7 +189,7 @@ export function Header() {
                       "absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-pink-100 overflow-hidden transition-all duration-200 ease-out",
                       activeDropdown === item.id
                         ? "opacity-100 transform translate-y-0 visible"
-                        : "opacity-0 transform -translate-y-2 invisible",
+                        : "opacity-0 transform -translate-y-2 invisible"
                     )}
                   >
                     {item.subcategories.map((subcategory, index) => (
@@ -160,7 +198,8 @@ export function Header() {
                         href={subcategory.href}
                         className="block w-full text-left px-4 py-3 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-25 transition-all duration-150"
                         style={{
-                          transitionDelay: activeDropdown === item.id ? `${index * 30}ms` : "0ms",
+                          transitionDelay:
+                            activeDropdown === item.id ? `${index * 30}ms` : "0ms",
                         }}
                       >
                         {subcategory.name}
@@ -185,9 +224,25 @@ export function Header() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </form>
-          <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
-            <Heart className="h-5 w-5" />
-          </Button>
+
+          {/* Favoritos */}
+          <Link href="/favoritos" className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-foreground hover:text-primary"
+              aria-label="Ver favoritos"
+            >
+              <Heart className="h-5 w-5" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 rounded-full bg-pink-500 text-white text-[10px] font-semibold flex items-center justify-center border-2 border-white px-[2px]">
+                  {favoriteCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+
+          {/* Carrito */}
           <Link href="/carrito" className="relative">
             <Button
               variant="ghost"
@@ -211,6 +266,7 @@ export function Header() {
               )}
             </Button>
           </Link>
+
           {user ? (
             <div
               className="relative"
@@ -233,7 +289,7 @@ export function Header() {
                   "absolute top-full right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-pink-100 overflow-hidden transition-all duration-200 ease-out",
                   activeDropdown === "user"
                     ? "opacity-100 transform translate-y-0 visible"
-                    : "opacity-0 transform -translate-y-2 invisible",
+                    : "opacity-0 transform -translate-y-2 invisible"
                 )}
               >
                 <div className="px-4 py-3 border-b border-pink-100">
@@ -276,7 +332,11 @@ export function Header() {
             </div>
           ) : (
             <Link href="/login">
-              <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-foreground hover:text-primary"
+              >
                 <User className="h-5 w-5" />
               </Button>
             </Link>

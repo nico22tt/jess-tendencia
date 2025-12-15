@@ -1,732 +1,475 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@utils/supabase/client";
-import { AdminDashboardLayout } from "@/components/admin-dashboard-layout";
-import { Button } from "@jess/ui/button";
-import { Input } from "@jess/ui/input";
-import { Label } from "@jess/ui/label";
-import { Textarea } from "@jess/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@jess/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@jess/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@jess/ui/table";
-import {
-  ArrowLeft,
-  Save,
-  Loader2,
-  ShoppingCart,
-  Plus,
-  Trash2,
-  Search,
-  X,
-} from "lucide-react";
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@utils/supabase/client"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@jess/ui/card"
+import { Button } from "@jess/ui/button"
+import { Input } from "@jess/ui/input"
+import { Label } from "@jess/ui/label"
+import { Badge } from "@jess/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@jess/ui/select"
+import { User, Edit, MapPin, Plus, Trash2, Home, X } from "lucide-react"
 
-interface Supplier {
-  id: string;
-  name: string;
+interface Address {
+  id: string
+  alias: string
+  recipient_name: string
+  phone_number: string
+  address_line_1: string
+  address_line_2: string
+  city: string
+  region: string
+  zip_code: string
+  is_default: boolean
 }
 
-interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  stock: number | null;
-  category?: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  // ✅ Info del proveedor
-  supplierCost?: number;
-  supplierSku?: string;
-  leadTimeDays?: number;
-  minimumOrderQty?: number;
+interface Region {
+  code: string
+  name: string
 }
 
-interface OrderItem {
-  productId: string;
-  productName: string;
-  sku: string;
-  quantity: number;
-  unitPrice: number;
+const initialAddressState: Omit<Address, 'id'> = {
+  alias: '',
+  recipient_name: '',
+  phone_number: '',
+  address_line_1: '',
+  address_line_2: '',
+  city: '',
+  region: '',
+  zip_code: '',
+  is_default: false,
 }
 
-export default function NewPurchaseOrderPage() {
-  const router = useRouter();
-  const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [searchProduct, setSearchProduct] = useState("");
-  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
-
+export default function MiCuentaPage() {
+  const supabase = createClient()
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
-    supplierId: "",
-    expectedDate: "",
-    notes: "",
-  });
-
-  const [items, setItems] = useState<OrderItem[]>([]);
+    name: "",
+    email: "",
+    phone: ""
+  })
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([])
+  const [addressData, setAddressData] = useState<Omit<Address, 'id'>>(initialAddressState)
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false)
+  
+  // Data from API
+  const [regions, setRegions] = useState<Region[]>([])
+  const [communes, setCommunes] = useState<string[]>([])
+  const [loadingCommunes, setLoadingCommunes] = useState(false)
 
   useEffect(() => {
-    checkAuth();
-    fetchSuppliers();
-  }, []);
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push("/login")
+        return
+      }
+      setUser(user)
+      setFormData({
+        name: user.user_metadata?.name || "",
+        email: user.email || "",
+        phone: ""
+      })
 
-  // ✅ Cargar productos cuando cambia el proveedor
-  useEffect(() => {
-    if (formData.supplierId) {
-      fetchProducts();
-    } else {
-      setProducts([]);
-      setItems([]); // Limpiar items al cambiar proveedor
+      // Cargar teléfono desde profiles
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("phone")
+        .eq("id", user.id)
+        .single()
+
+      if (profile?.phone) {
+        setFormData(prev => ({ ...prev, phone: profile.phone }))
+      }
+
+      // Cargar regiones y direcciones
+      await Promise.all([
+        fetchRegions(),
+        fetchAddresses(user.id)
+      ])
+      
+      setLoading(false)
     }
-  }, [formData.supplierId]);
+    fetchUser()
+  }, [supabase, router])
 
-  const checkAuth = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user || user.user_metadata?.role !== "admin") {
-      router.push("/login");
-      return;
-    }
-    setUser(user);
-    setLoading(false);
-  };
-
-  const fetchSuppliers = async () => {
+  const fetchRegions = async () => {
     try {
-      const res = await fetch("/api/purchases/suppliers?isActive=true");
-      const data = await res.json();
-      if (data.success) {
-        setSuppliers(data.data);
+      const res = await fetch("/api/user/addresses?regions=true")
+      if (res.ok) {
+        const data = await res.json()
+        setRegions(data)
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error cargando regiones:", error)
     }
-  };
-
-  const fetchProducts = async () => {
-    if (!formData.supplierId) {
-      setProducts([]);
-      return;
-    }
-
-    try {
-      console.log("🔍 Cargando productos del proveedor:", formData.supplierId);
-
-      const res = await fetch(
-        `/api/products?supplierId=${formData.supplierId}`
-      );
-
-      if (!res.ok) {
-        console.error("❌ HTTP Error:", res.status, res.statusText);
-        return;
-      }
-
-      const data = await res.json();
-      console.log("📦 Respuesta API:", data);
-
-      if (data.success && data.data) {
-        console.log(`✅ ${data.data.length} productos del proveedor cargados`);
-        setProducts(data.data);
-      } else {
-        console.error("❌ API error:", data.error || "Respuesta sin datos");
-        setProducts([]);
-      }
-    } catch (error) {
-      console.error("❌ Error en fetch:", error);
-      setProducts([]);
-    }
-  };
-
-  const handleAddProduct = (product: Product) => {
-    const exists = items.find((item) => item.productId === product.id);
-    if (exists) {
-      alert("Este producto ya está en la orden");
-      return;
-    }
-
-    setItems([
-      ...items,
-      {
-        productId: product.id,
-        productName: product.name,
-        sku: product.sku,
-        quantity: product.minimumOrderQty || 1, // ✅ Cantidad mínima
-        unitPrice: Number(product.supplierCost) || 0, // ✅ Precio del proveedor
-      },
-    ]);
-    setIsProductDialogOpen(false);
-    setSearchProduct("");
-  };
-
-  const handleRemoveProduct = (productId: string) => {
-    setItems(items.filter((item) => item.productId !== productId));
-  };
-
-  const handleUpdateItem = (
-    productId: string,
-    field: "quantity" | "unitPrice",
-    value: number
-  ) => {
-    setItems(
-      items.map((item) =>
-        item.productId === productId ? { ...item, [field]: value } : item
-      )
-    );
-  };
-
-  const calculateTotal = () => {
-    const subtotal = items.reduce(
-      (sum, item) => sum + item.quantity * item.unitPrice,
-      0
-    );
-    const tax = 0;
-    const total = subtotal + tax;
-    return { subtotal, tax, total };
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.supplierId) {
-      alert("Debes seleccionar un proveedor");
-      return;
-    }
-
-    if (items.length === 0) {
-      alert("Debes agregar al menos un producto");
-      return;
-    }
-
-    const invalidItems = items.filter(
-      (item) => item.quantity <= 0 || item.unitPrice <= 0
-    );
-    if (invalidItems.length > 0) {
-      alert("Todos los productos deben tener cantidad y precio mayores a 0");
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      const res = await fetch("/api/purchases/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          items: items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice.toString(),
-          })),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        alert("Orden de compra creada correctamente");
-        router.push(`/dashboard/purchases/purchase-orders/${data.data.id}`);
-      } else {
-        alert(data.error || "Error al crear orden");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Error al crear orden");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const filteredProducts = products.filter((p) => {
-    const searchLower = searchProduct.toLowerCase();
-    const matchesName = p.name?.toLowerCase().includes(searchLower) || false;
-    const matchesSku = p.sku?.toLowerCase().includes(searchLower) || false;
-    return matchesName || matchesSku;
-  });
-
-  const { subtotal, tax, total } = calculateTotal();
-
-  if (loading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 text-pink-600 animate-spin" />
-      </div>
-    );
   }
 
+  const fetchCommunes = async (regionCode: string) => {
+    if (!regionCode) return
+    setLoadingCommunes(true)
+    try {
+      const res = await fetch(`/api/user/addresses?communes=true&region_code=${regionCode}`)
+      if (res.ok) {
+        const data = await res.json()
+        setCommunes(data)
+      }
+    } catch (error) {
+      console.error("Error cargando comunas:", error)
+    } finally {
+      setLoadingCommunes(false)
+    }
+  }
+
+  const fetchAddresses = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/user/addresses?user_id=${userId}`)
+      if (res.ok) {
+        const addresses = await res.json()
+        setSavedAddresses(addresses)
+      }
+    } catch (error) {
+      console.error("Error cargando direcciones:", error)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!user) return
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ phone: formData.phone })
+        .eq("id", user.id)
+      if (error) throw error
+      alert("✅ Teléfono actualizado exitosamente")
+      setIsEditing(false)
+    } catch (error) {
+      console.error("Error actualizando teléfono:", error)
+      alert("❌ Error al actualizar. Intenta de nuevo.")
+    }
+  }
+
+  const handleSaveAddress = async () => {
+    if (!user) return
+    const { alias, recipient_name, phone_number, address_line_1, city, region, zip_code } = addressData
+    if (!alias || !recipient_name || !phone_number || !address_line_1 || !city || !region || !zip_code) {
+      alert("⚠️ Completa todos los campos requeridos.")
+      return
+    }
+
+    try {
+      const method = editingAddressId ? "PUT" : "POST"
+      const body = editingAddressId 
+        ? { id: editingAddressId, user_id: user.id, ...addressData }
+        : { user_id: user.id, ...addressData }
+
+      const res = await fetch("/api/user/addresses", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || "Error guardando dirección")
+      }
+
+      alert(`✅ Dirección ${editingAddressId ? "actualizada" : "guardada"} exitosamente`)
+      setAddressData(initialAddressState)
+      setEditingAddressId(null)
+      setIsAddressDialogOpen(false)
+      await fetchAddresses(user.id)
+    } catch (error: any) {
+      console.error("Error guardando dirección:", error)
+      alert(`❌ ${error.message}`)
+    }
+  }
+
+  const handleEditAddress = (addr: Address) => {
+    const { id, ...rest } = addr
+    setAddressData(rest)
+    setEditingAddressId(id)
+    setIsAddressDialogOpen(true)
+    // Cargar comunas de la región seleccionada
+    if (rest.region) {
+      fetchCommunes(rest.region)
+    }
+  }
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!confirm("¿Seguro que deseas eliminar esta dirección?")) return
+    try {
+      const res = await fetch("/api/user/addresses", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      })
+      if (!res.ok) throw new Error("Error eliminando dirección")
+      setSavedAddresses((prev) => prev.filter((a) => a.id !== id))
+      alert("✅ Dirección eliminada")
+    } catch (error) {
+      console.error("Error eliminando dirección:", error)
+      alert("❌ Error al eliminar. Intenta de nuevo.")
+    }
+  }
+
+  const resetAddressForm = () => {
+    setAddressData(initialAddressState)
+    setEditingAddressId(null)
+    setCommunes([])
+  }
+
+  const handleRegionChange = (regionCode: string) => {
+    setAddressData(a => ({ ...a, region: regionCode, city: "" }))
+    fetchCommunes(regionCode)
+  }
+
+  if (loading) return <div className="py-24 text-center text-xl">Cargando...</div>
+
   return (
-    <AdminDashboardLayout user={user}>
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.back()}
-            className="border-zinc-700 text-muted-foreground hover:bg-muted"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-pink-600/10 rounded-lg">
-              <ShoppingCart className="h-6 w-6 text-pink-600" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                Nueva Orden de Compra
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Crea una orden de compra a un proveedor
-              </p>
-            </div>
-          </div>
+    <main className="pt-24 pb-16 bg-gray-50 min-h-screen">
+      <div className="container mx-auto px-6 max-w-4xl my-16">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Mi Cuenta</h1>
+          <p className="text-gray-600">Gestiona tu información personal y preferencias</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Order Info */}
-          <Card className="bg-card border-border">
+        <div className="grid gap-6">
+          {/* Información Personal */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-foreground">
-                Información de la Orden
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5 text-pink-600" />
+                Información Personal
               </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Datos generales de la orden de compra
-              </CardDescription>
+              <CardDescription>Actualiza tu información de contacto</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Proveedor */}
               <div className="space-y-2">
-                <Label htmlFor="supplierId" className="text-foreground">
-                  Proveedor <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formData.supplierId}
-                  onValueChange={(value) => {
-                    setFormData({ ...formData, supplierId: value });
-                    // Items se limpiarán automáticamente con useEffect
-                  }}
-                >
-                  <SelectTrigger className="bg-card border-border text-foreground">
-                    <SelectValue placeholder="Selecciona un proveedor" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    {suppliers.map((supplier) => (
-                      <SelectItem
-                        key={supplier.id}
-                        value={supplier.id}
-                        className="text-foreground"
-                      >
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="name">Nombre completo</Label>
+                <Input id="name" value={formData.name} disabled className="bg-gray-100" />
               </div>
-
-              {/* Fecha Esperada */}
               <div className="space-y-2">
-                <Label htmlFor="expectedDate" className="text-foreground">
-                  Fecha Esperada de Entrega
-                </Label>
-                <Input
-                  id="expectedDate"
-                  type="date"
-                  value={formData.expectedDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, expectedDate: e.target.value })
-                  }
-                  className="bg-card border-border text-foreground"
-                />
+                <Label htmlFor="email">Correo electrónico</Label>
+                <Input id="email" type="email" value={formData.email} disabled className="bg-gray-100" />
               </div>
-
-              {/* Notas */}
               <div className="space-y-2">
-                <Label htmlFor="notes" className="text-foreground">
-                  Notas
-                </Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                  placeholder="Información adicional sobre la orden..."
-                  rows={3}
-                  className="bg-card border-border text-foreground"
-                />
+                <Label htmlFor="phone">Teléfono</Label>
+                <Input id="phone" value={formData.phone} placeholder="Ej: +56 9 1234 5678"
+                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} disabled={!isEditing} />
+              </div>
+              <div className="flex gap-2 pt-4">
+                {isEditing ? (
+                  <>
+                    <Button onClick={handleSave} className="bg-pink-500 hover:bg-pink-600">Guardar cambios</Button>
+                    <Button variant="outline" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                  </>
+                ) : (
+                  <Button onClick={() => setIsEditing(true)} variant="outline">
+                    <Edit className="h-4 w-4 mr-2" />Editar información
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Products */}
-          <Card className="bg-card border-border">
+          {/* Direcciones */}
+          <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-foreground">
-                    Productos <span className="text-red-500">*</span>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-pink-600" />
+                    Direcciones de Envío
                   </CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    {!formData.supplierId
-                      ? "Selecciona un proveedor primero"
-                      : `Productos de ${
-                          suppliers.find((s) => s.id === formData.supplierId)
-                            ?.name
-                        }`}
-                  </CardDescription>
+                  <CardDescription>Gestiona tus direcciones de despacho</CardDescription>
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => setIsProductDialogOpen(true)}
-                  disabled={!formData.supplierId}
-                  className="gap-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="h-4 w-4" />
-                  Agregar Producto
-                </Button>
+                  <Button 
+                    type="button"
+                    onClick={() => router.push('/mi-cuenta/nueva-direccion')}
+                    className="bg-pink-600 hover:bg-pink-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nueva dirección
+                  </Button>
+
               </div>
             </CardHeader>
-            <CardContent>
-              {items.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  {!formData.supplierId
-                    ? "Selecciona un proveedor para comenzar"
-                    : "No hay productos agregados"}
+            <CardContent className="space-y-4">
+              {savedAddresses.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <Home className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 mb-2">No tienes direcciones guardadas</p>
+                  <p className="text-sm text-gray-500">Agrega una dirección para facilitar tus compras</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border">
-                        <TableHead className="text-muted-foreground">
-                          Producto
-                        </TableHead>
-                        <TableHead className="text-muted-foreground">
-                          SKU
-                        </TableHead>
-                        <TableHead className="text-muted-foreground">
-                          Cantidad
-                        </TableHead>
-                        <TableHead className="text-muted-foreground">
-                          Precio Unitario
-                        </TableHead>
-                        <TableHead className="text-muted-foreground">
-                          Subtotal
-                        </TableHead>
-                        <TableHead className="text-muted-foreground"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {items.map((item) => (
-                        <TableRow key={item.productId} className="border-border">
-                          <TableCell className="text-foreground">
-                            {item.productName}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-xs">
-                            {item.sku}
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) =>
-                                handleUpdateItem(
-                                  item.productId,
-                                  "quantity",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              className="w-24 bg-card border-border text-foreground"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={item.unitPrice}
-                              onChange={(e) =>
-                                handleUpdateItem(
-                                  item.productId,
-                                  "unitPrice",
-                                  parseFloat(e.target.value) || 0
-                                )
-                              }
-                              className="w-32 bg-card border-border text-foreground"
-                              placeholder="0.00"
-                            />
-                          </TableCell>
-                          <TableCell className="text-foreground font-semibold">
-                            ${(item.quantity * item.unitPrice).toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveProduct(item.productId)}
-                              className="text-red-400 hover:bg-red-500/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                savedAddresses.map((addr) => (
+                  <div key={addr.id} className="rounded-lg border p-4 flex items-start justify-between bg-white shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <b className="text-gray-800">{addr.alias}</b>
+                        {addr.is_default && <Badge className="bg-pink-500 text-white">Principal</Badge>}
+                      </div>
+                      <div className="text-sm text-gray-700">{addr.recipient_name} · {addr.phone_number}</div>
+                      <div className="text-sm text-gray-600">
+                        {addr.address_line_1} {addr.address_line_2 && `- ${addr.address_line_2}`}, {addr.city}, {regions.find(x => x.code === addr.region)?.name || addr.region}, CP {addr.zip_code}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button size="sm" variant="outline" onClick={() => router.push(`/mi-cuenta/editar-direccion/${addr.id}`)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+
+                      <Button size="sm" variant="ghost" onClick={() => handleDeleteAddress(addr.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
               )}
             </CardContent>
           </Card>
-
-          {/* Total */}
-          <Card className="bg-card border-border">
-            <CardContent className="pt-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal:</span>
-                  <span>${subtotal.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>IVA/Impuesto:</span>
-                  <span>${tax.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-2xl font-bold text-foreground pt-2 border-t border-border">
-                  <span>Total:</span>
-                  <span>${total.toLocaleString()}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex gap-3 justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              disabled={saving}
-              className="border-border text-foreground hover:bg-muted"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={saving || items.length === 0}
-              className="gap-2 bg-pink-600 hover:bg-pink-700"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Creando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Crear Orden
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
+        </div>
       </div>
 
-      {/* ✅ MODAL CON INFO DEL PROVEEDOR */}
-      {isProductDialogOpen && (
+      {/* ✅ MODAL MANUAL COMO EN PURCHASE ORDERS */}
+      {isAddressDialogOpen && (
         <div
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setIsProductDialogOpen(false);
+              setIsAddressDialogOpen(false)
+              resetAddressForm()
             }
           }}
         >
-          <div className="bg-card border border-border rounded-lg max-w-5xl w-full max-h-[85vh] flex flex-col">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="p-6 border-b border-border flex items-start justify-between">
+            <div className="p-6 border-b flex items-start justify-between sticky top-0 bg-white z-10">
               <div>
-                <h2 className="text-xl font-bold text-foreground">
-                  Seleccionar Producto
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingAddressId ? "Editar dirección" : "Agregar nueva dirección"}
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Productos de{" "}
-                  <span className="font-semibold text-pink-600">
-                    {suppliers.find((s) => s.id === formData.supplierId)?.name}
-                  </span>
+                <p className="text-sm text-gray-600 mt-1">
+                  Completa todos los campos para {editingAddressId ? "actualizar" : "guardar"} tu dirección de envío
                 </p>
               </div>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsProductDialogOpen(false)}
-                className="text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setIsAddressDialogOpen(false)
+                  resetAddressForm()
+                }}
+                className="text-gray-500 hover:text-gray-700"
               >
                 <X className="h-5 w-5" />
               </Button>
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-4 flex-1 overflow-hidden flex flex-col">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nombre o SKU..."
-                  value={searchProduct}
-                  onChange={(e) => setSearchProduct(e.target.value)}
-                  className="pl-10 bg-background border-border text-foreground"
-                  autoFocus
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="alias">Alias *</Label>
+                  <Input id="alias" required placeholder="Ej: Casa, Oficina" value={addressData.alias}
+                    onChange={e => setAddressData(a => ({ ...a, alias: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="recipient_name">A nombre de *</Label>
+                  <Input id="recipient_name" required placeholder="Nombre del receptor" value={addressData.recipient_name}
+                    onChange={e => setAddressData(a => ({ ...a, recipient_name: e.target.value }))} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone_number">Teléfono *</Label>
+                <Input id="phone_number" required placeholder="Ej: +56 9 12345678" value={addressData.phone_number}
+                  onChange={e => setAddressData(a => ({ ...a, phone_number: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_line_1">Calle y número *</Label>
+                <Input id="address_line_1" required placeholder="Ej: Av. Siempre Viva 123" value={addressData.address_line_1}
+                  onChange={e => setAddressData(a => ({ ...a, address_line_1: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_line_2">Referencia</Label>
+                <Input id="address_line_2" placeholder="Depto, torre, detalles..." value={addressData.address_line_2}
+                  onChange={e => setAddressData(a => ({ ...a, address_line_2: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="region">Región *</Label>
+                  <Select value={addressData.region} onValueChange={handleRegionChange}>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Selecciona una región" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border shadow-lg max-h-60 overflow-auto">
+                      {regions.map(r =>
+                        <SelectItem key={r.code} value={r.code}>{r.name}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">Comuna *</Label>
+                  <Select value={addressData.city}
+                    onValueChange={(val) => setAddressData(a => ({ ...a, city: val }))}
+                    disabled={!addressData.region || loadingCommunes}>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder={loadingCommunes ? "Cargando..." : "Selecciona una comuna"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border shadow-lg max-h-60 overflow-auto">
+                      {communes.map(comuna =>
+                        <SelectItem key={comuna} value={comuna}>{comuna}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zip_code">Código postal *</Label>
+                <Input id="zip_code" required placeholder="Ej: 8320000" value={addressData.zip_code}
+                  onChange={e => setAddressData(a => ({ ...a, zip_code: e.target.value }))} />
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <input 
+                  id="is_default" 
+                  type="checkbox"
+                  aria-label="Dirección principal"
+                  title="Dirección principal"
+                  checked={addressData.is_default ?? false}
+                  onChange={e => setAddressData(a => ({ ...a, is_default: e.target.checked }))}
+                  className="h-4 w-4 text-pink-500 border-gray-300 rounded focus:ring-pink-500" 
                 />
-              </div>
-
-              <div className="text-xs text-muted-foreground flex items-center justify-between">
-                <span>
-                  Total: {products.length} | Mostrando: {filteredProducts.length}
-                </span>
-                {products.length > 0 && (
-                  <span className="text-pink-600">
-                    ✓ Los precios mostrados son específicos de este proveedor
-                  </span>
-                )}
-              </div>
-
-              <div className="flex-1 overflow-y-auto border border-border rounded-lg">
-                {filteredProducts.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    {products.length === 0
-                      ? "Este proveedor no tiene productos asociados"
-                      : "No se encontraron productos con esa búsqueda"}
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-card z-10">
-                      <TableRow className="border-border">
-                        <TableHead className="text-muted-foreground">
-                          Nombre
-                        </TableHead>
-                        <TableHead className="text-muted-foreground">
-                          SKU
-                        </TableHead>
-                        <TableHead className="text-muted-foreground text-center">
-                          Stock
-                        </TableHead>
-                        <TableHead className="text-muted-foreground text-right">
-                          Costo Unitario
-                        </TableHead>
-                        <TableHead className="text-muted-foreground text-center">
-                          Cant. Mín
-                        </TableHead>
-                        <TableHead className="text-muted-foreground text-center">
-                          Entrega
-                        </TableHead>
-                        <TableHead className="text-muted-foreground w-28"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredProducts.map((product) => (
-                        <TableRow
-                          key={product.id}
-                          className="border-border hover:bg-muted/50"
-                        >
-                          <TableCell className="text-foreground font-medium">
-                            <div>
-                              <div>{product.name}</div>
-                              {product.category && (
-                                <div className="text-xs text-muted-foreground">
-                                  {product.category.name}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-xs font-mono">
-                            {product.sku}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span
-                              className={`px-2 py-1 rounded text-xs ${
-                                (product.stock || 0) > 20
-                                  ? "bg-green-500/10 text-green-600"
-                                  : (product.stock || 0) > 0
-                                  ? "bg-yellow-500/10 text-yellow-600"
-                                  : "bg-red-500/10 text-red-600"
-                              }`}
-                            >
-                              {product.stock ?? 0}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-semibold text-foreground">
-                              ${Number(product.supplierCost || 0).toLocaleString()}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center text-muted-foreground">
-                            {product.minimumOrderQty || "-"}
-                          </TableCell>
-                          <TableCell className="text-center text-muted-foreground text-xs">
-                            {product.leadTimeDays ? `${product.leadTimeDays}d` : "-"}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleAddProduct(product)}
-                              className="bg-pink-600 hover:bg-pink-700 w-full"
-                            >
-                              Agregar
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                <Label htmlFor="is_default" className="cursor-pointer">Dirección principal</Label>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-border flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">
-                💡 Tip: Los precios y cantidades mínimas se auto-completan
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsProductDialogOpen(false)}
-                className="border-border text-foreground"
+            <div className="p-6 border-t flex gap-2 justify-end sticky bottom-0 bg-white">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setIsAddressDialogOpen(false)
+                  resetAddressForm()
+                }}
               >
-                Cerrar
+                Cancelar
+              </Button>
+              <Button type="button" onClick={handleSaveAddress} className="bg-pink-600 hover:bg-pink-700">
+                {editingAddressId ? "Actualizar" : "Guardar dirección"}
               </Button>
             </div>
           </div>
         </div>
       )}
-    </AdminDashboardLayout>
-  );
+    </main>
+  )
 }

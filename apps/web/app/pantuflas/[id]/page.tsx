@@ -51,10 +51,15 @@ export default function SlipperProductPage(props: Props) {
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
+    // cargar usuario
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+
     fetch(`/api/products/${paramsObj.id}`)
       .then((res) => {
         if (!res.ok) throw new Error("No existe el producto")
@@ -74,10 +79,11 @@ export default function SlipperProductPage(props: Props) {
         }
       })
       .catch(() => router.replace("/404"))
-  }, [paramsObj.id, router])
+  }, [paramsObj.id, router, supabase])
 
   if (!product) return <div className="py-24 text-center text-lg">Cargando producto...</div>
 
+  // imágenes robustas
   const images: any = product?.images
   let arr: Array<string | { url: string; isMain?: boolean }> = []
 
@@ -111,7 +117,6 @@ export default function SlipperProductPage(props: Props) {
   }
 
   if (!allImages.length) allImages.push("/placeholder.svg")
-
 
   const sizes: string[] =
     (product.sizes?.filter(Boolean) ?? []).length ? product.sizes.filter(Boolean) : ["Único"]
@@ -150,6 +155,45 @@ export default function SlipperProductPage(props: Props) {
     }
 
     // opcional: router.push("/carrito")
+  }
+
+  const handleToggleFavorite = async () => {
+    if (!product) return
+
+    if (!user) {
+      alert("Debes iniciar sesión para guardar favoritos")
+      router.push("/login")
+      return
+    }
+
+    try {
+      if (!isFavorite) {
+        const res = await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            productId: product.id,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data.details || data.error || "Error al agregar a favoritos")
+        }
+        setIsFavorite(true)
+      } else {
+        const url = `/api/favorites?userId=${user.id}&productId=${product.id}`
+        const res = await fetch(url, { method: "DELETE" })
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data.details || data.error || "Error al quitar de favoritos")
+        }
+        setIsFavorite(false)
+      }
+    } catch (error: any) {
+      console.error("Error favoritos:", error)
+      alert(`❌ ${error.message}`)
+    }
   }
 
   return (
@@ -317,11 +361,12 @@ export default function SlipperProductPage(props: Props) {
                 Agregar al carro
               </Button>
               <Button
-                variant="outline"
+                variant={isFavorite ? "default" : "outline"}
                 className="w-full gap-2 py-6 text-lg border-pink-600 text-pink-600 hover:bg-pink-50"
+                onClick={handleToggleFavorite}
               >
-                <Heart className="h-5 w-5" />
-                Agregar a favoritos
+                <Heart className={`h-5 w-5 ${isFavorite ? "fill-pink-600" : ""}`} />
+                {isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
               </Button>
             </div>
 
@@ -343,7 +388,7 @@ export default function SlipperProductPage(props: Props) {
           </div>
         </div>
 
-        {/* Descripción, detalles y GUÍA DE TALLAS */}
+        {/* Descripción, detalles y guía de tallas */}
         <div className="mb-12">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="description">
