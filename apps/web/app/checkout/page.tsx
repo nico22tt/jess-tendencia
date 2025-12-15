@@ -153,13 +153,23 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!userId) {
-      alert("Debes iniciar sesión para continuar con la compra.")
+    // Revalidar sesión fresca con Supabase (importante en producción)
+    const supabase = createClient()
+    const {
+      data: { user: currentUser },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !currentUser || !currentUser.id) {
+      alert("Tu sesión ha expirado. Por favor inicia sesión de nuevo.")
       router.push("/login")
       return
     }
 
-    if (userId === "25f597bd-fd93-4aa7-b50d-4900199cf474") {
+    const realUserId = currentUser.id
+
+    // Validación anti-usuario sincronizado/hardcoded
+    if (realUserId === "25f597bd-fd93-4aa7-b50d-4900199cf474") {
       alert("Sesión inválida. Por favor cierra sesión y vuelve a iniciar.")
       router.push("/login")
       return
@@ -183,7 +193,7 @@ export default function CheckoutPage() {
     setIsSubmitting(true)
     try {
       const orderData = {
-        user_id: userId,
+        user_id: realUserId,
         user_address_id: shippingMethod === "delivery" ? selectedAddress : null,
         shipping_method: shippingMethod,
         client_name: form.name,
@@ -200,11 +210,11 @@ export default function CheckoutPage() {
         })),
       }
 
-      console.log("📦 Creando orden con user_id:", userId)
+      console.log("📦 Creando orden con user_id:", realUserId)
       console.log("📧 Email del usuario:", form.email)
 
       const { order_id } = await createOrder(orderData)
-      await clearCartInDb(userId, items)
+      await clearCartInDb(realUserId, items)
       router.push(`/checkout/${order_id}`)
     } catch (err: any) {
       console.error("Error en checkout:", err)

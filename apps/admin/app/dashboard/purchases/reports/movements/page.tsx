@@ -148,8 +148,16 @@ export default function MovementsReportPage() {
       }
 
       const res = await fetch(
-        `/api/purchases/products/${selectedProduct}/movements?${params}`
+        `/api/inventory/${selectedProduct}/movements?${params.toString()}`
       );
+
+      if (!res.ok) {
+        // opcional: loguear el cuerpo texto para debug
+        const text = await res.text();
+        console.error("Error response:", text);
+        return;
+      }
+
       const data = await res.json();
 
       if (data.success) {
@@ -162,6 +170,7 @@ export default function MovementsReportPage() {
       setLoading(false);
     }
   };
+
 
   const handleExport = () => {
     if (movements.length === 0 || !currentProduct) return;
