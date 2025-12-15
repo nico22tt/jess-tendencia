@@ -95,6 +95,7 @@ export default function CheckoutPage() {
   // Proteger la página: redirigir si no hay usuario
   useEffect(() => {
     if (authLoading) return
+
     if (!user || !user.id) {
       alert("Debes iniciar sesión para acceder al checkout.")
       router.push("/login")
@@ -124,7 +125,8 @@ export default function CheckoutPage() {
   const handleNewAddr = (e: React.ChangeEvent<HTMLInputElement>) =>
     setNewAddr((prev) => ({ ...prev, [e.target.name]: e.target.value }))
 
-  const handleCreateAddress = async () => {
+  const handleCreateAddress = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!userId) {
       alert("Debes iniciar sesión para continuar.")
       return
@@ -153,23 +155,15 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Revalidar sesión fresca con Supabase (importante en producción)
-    const supabase = createClient()
-    const {
-      data: { user: currentUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !currentUser || !currentUser.id) {
-      alert("Tu sesión ha expirado. Por favor inicia sesión de nuevo.")
+    // Validar que hay userId
+    if (!userId) {
+      alert("Debes iniciar sesión para continuar con la compra.")
       router.push("/login")
       return
     }
 
-    const realUserId = currentUser.id
-
-    // Validación anti-usuario sincronizado/hardcoded
-    if (realUserId === "25f597bd-fd93-4aa7-b50d-4900199cf474") {
+    // Validar que no sea el usuario sincronizado
+    if (userId === "25f597bd-fd93-4aa7-b50d-4900199cf474") {
       alert("Sesión inválida. Por favor cierra sesión y vuelve a iniciar.")
       router.push("/login")
       return
@@ -193,7 +187,7 @@ export default function CheckoutPage() {
     setIsSubmitting(true)
     try {
       const orderData = {
-        user_id: realUserId,
+        user_id: userId,
         user_address_id: shippingMethod === "delivery" ? selectedAddress : null,
         shipping_method: shippingMethod,
         client_name: form.name,
@@ -210,11 +204,11 @@ export default function CheckoutPage() {
         })),
       }
 
-      console.log("📦 Creando orden con user_id:", realUserId)
+      console.log("📦 Creando orden con user_id:", userId)
       console.log("📧 Email del usuario:", form.email)
 
       const { order_id } = await createOrder(orderData)
-      await clearCartInDb(realUserId, items)
+      await clearCartInDb(userId, items)
       router.push(`/checkout/${order_id}`)
     } catch (err: any) {
       console.error("Error en checkout:", err)
@@ -405,7 +399,10 @@ export default function CheckoutPage() {
               )}
 
               {showNewAddress && (
-                <div className="mt-2 space-y-2 bg-pink-25 p-4 rounded">
+                <form
+                  onSubmit={handleCreateAddress}
+                  className="mt-2 space-y-2 bg-pink-25 p-4 rounded"
+                >
                   <div>
                     <label className="block mb-1">Alias *</label>
                     <Input
@@ -481,14 +478,10 @@ export default function CheckoutPage() {
                       required
                     />
                   </div>
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={handleCreateAddress}
-                  >
+                  <Button type="submit" className="w-full">
                     Guardar dirección
                   </Button>
-                </div>
+                </form>
               )}
             </div>
           )}
