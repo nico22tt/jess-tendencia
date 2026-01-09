@@ -1,154 +1,97 @@
-Jess Tendencia - E-commerce de Moda Femenina
-Plataforma de e-commerce para productos de moda femenina, construida con Next.js 15, Turborepo, Prisma y Supabase.
+#  Jess Tendencia - E-commerce Platform
 
-Características principales
-Panel de administración completo: gestión de productos, categorías y órdenes.
+Plataforma de comercio electrónico B2C especializada en moda femenina, construida con arquitectura monorepo moderna y stack full-stack escalable.
 
-Catálogo de productos con filtros, búsqueda, imágenes y navegación por categorías.
+🚀 Stack Tecnológico
+Frontend: Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui
 
-Gestión de inventario en tiempo real.
+Backend: Next.js API Routes, FastAPI (ML Service)
 
-Autenticación robusta con Supabase Auth: validación restrictiva de emails aceptados.
+Base de Datos: PostgreSQL con Prisma ORM
 
-Registro y login con validación de dominios populares (gmail, hotmail, outlook, yahoo).
+Auth & Storage: Supabase (Auth + Storage Buckets)
 
-Edición y alta de productos permite subir imágenes directamente desde el equipo del usuario (almacenadas en bucket Supabase).
+Monorepo: Turborepo con pnpm workspaces
 
-Checkout y resumen de compra funcionales (pendiente: sincronizar ubicaciones y mostrar historial de compras del cliente).
+✨ Características Principales
+Panel Administrativo: Gestión completa de productos, categorías, inventario y órdenes
 
-Perfil de usuario (admin y cliente) sincronizado con la base de datos y edición desde la UI.
+Catálogo Inteligente: Búsqueda avanzada, filtros por categoría, gestión de imágenes
 
-Búsqueda avanzada y calendario administrativo propio en el panel.
+Sistema de Recomendaciones: ML integrado para sugerencias personalizadas de productos
 
-Sincronización automática de BD tras cambios con Prisma.
+Autenticación Segura: Login/registro con validación de dominios y gestión de roles
 
-Estructura monorepo moderna y modular (Turborepo).
+Gestión de Inventario: Actualización en tiempo real con sincronización automática
 
-Estructura del Monorepo
-Aplicaciones (apps/):
+Arquitectura Modular: Monorepo con apps y paquetes compartidos
 
-admin: Panel para gestión, reportes y administración de productos, usuarios y órdenes.
-
-web: Tienda pública, orientada al cliente.
-
-Paquetes (packages/):
-
-@jess/ui: Componentes visuales compartidos (basados en shadcn/ui).
-
-@jess/shared: Lógica, helpers y configuración compartida.
-
-@jess/prisma: Esquema y cliente de Prisma.
-
-Configuraciones propias de ESLint y TypeScript para todo el monorepo.
-
-Stack Tecnológico
-Frontend: Next.js 15 (App Router), React 19, TypeScript
-
-UI/UX: Tailwind CSS, shadcn/ui, Radix UI
-
-Backend: Next.js API Routes
-
-Base de Datos y Auth: PostgreSQL y Supabase Auth
-
-ORM: Prisma
-
-Monorepo: Turborepo, pnpm
-
-Inicio rápido
-Prerrequisitos
-Node.js 18+
-
-pnpm 8+
-
-Instalación
-Clonar el repositorio:
-
+📦 Estructura del Proyecto
+text
+apps/
+├── admin/          # Panel de administración
+├── web/            # Tienda pública (cliente)
+packages/
+├── @jess/ui/       # Componentes compartidos
+├── @jess/shared/   # Lógica y utilidades
+├── @jess/prisma/   # Schema y cliente de BD
+🛠️ Inicio Rápido
 bash
+# Clonar repositorio
 git clone https://github.com/nico22tt/jess-tendencia.git
 cd jess-tendencia
-Instalar dependencias:
 
-bash
+# Instalar dependencias
 pnpm install
-Crear archivo .env y configurar variables (ver ejemplo incluido).
 
-Configurar Prisma:
+# Configurar variables de entorno
+cp .env.example .env
 
-bash
+# Iniciar base de datos
 cd packages/prisma
 pnpm exec prisma generate
 pnpm exec prisma db push
-Iniciar el servidor de desarrollo:
 
-bash
+# Iniciar desarrollo
 cd ../..
 pnpm dev
+URLs locales:
+
 Admin: http://localhost:3000
 
 Cliente: http://localhost:3001
 
-Scripts útiles
-pnpm dev: Levanta todo el monorepo en modo desarrollo.
+📝 Scripts Útiles
+bash
+pnpm dev                      # Desarrollo (todas las apps)
+pnpm dev --filter=admin       # Solo admin
+pnpm build                    # Build producción
+pnpm exec prisma studio       # Visualizar BD
+🔐 Autenticación
+Admin: Acceso restringido vía /login
 
-pnpm dev --filter=admin: Solo admin.
+Cliente: Registro público con validación de email
 
-pnpm dev --filter=web: Solo cliente.
+Gestión de sesiones y permisos con Supabase Auth
 
-pnpm build: Build de todas las apps.
+🚢 Deploy
+Vercel (Recomendado)
 
-pnpm lint: Corre linter.
+Conectar repositorio
 
-pnpm format: Formatea el código.
+Configurar variables de entorno:
 
-Base de Datos
-pnpm exec prisma generate: Generar cliente Prisma.
+DATABASE_URL
 
-pnpm exec prisma db push: Aplicar cambios de schema.
+NEXT_PUBLIC_SUPABASE_URL
 
-pnpm exec prisma studio: Visualización editable de la BD.
+NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-Modelos principales de la base de datos
-User (usuarios, admin y clientes)
+Deploy automático en cada push a main
 
-Category (categorías y subcategorías)
+👥 Autores
+Nicolás Medina - @nico22tt
+Bastián - Colaborador
 
-Product (productos de la tienda)
-
-Order y OrderItem (órdenes de compra y sus ítems; próximos lanzamientos)
-
-Ver schema.prisma para detalles completos.
-
-Autenticación
-Admin: Login exclusivo en /login.
-
-Cliente: Registro/Login en la web pública con validación de dominio popular.
-
-Manejo de sesión y cuentas via Supabase Auth.
-
-Deploy
-Vercel (recomendado)
-Conecta a tu repositorio
-
-Declara tus variables de entorno (DATABASE_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY)
-
-Deploy automático en cada push a main.
-
-Documentación adicional
-Next.js Documentation
-
-Turborepo Documentation
-
-Prisma Documentation
-
-Supabase Documentation
-
-Contribuir
-Proyecto privado. Para colaborar, contactar al owner por GitHub.
-
-Licencia
-Privado – Todos los derechos reservados
-
-Autor
-Nicolás — @nico22tt
-
-Desarrollado con Next.js y Turborepo.
+Licencia: Privado - Proyecto de Título
+Año: 2024-2025
