@@ -70,20 +70,25 @@ Admin: http://localhost:3000
 
 Cliente: http://localhost:3001
 
-📝 Scripts Útiles
-bash
+#  📝 Scripts Útiles
+
 pnpm dev                      # Desarrollo (todas las apps)
+
 pnpm dev --filter=admin       # Solo admin
+
 pnpm build                    # Build producción
+
 pnpm exec prisma studio       # Visualizar BD
-🔐 Autenticación
+
+#  🔐 Autenticación
+
 Admin: Acceso restringido vía /login
 
 Cliente: Registro público con validación de email
 
 Gestión de sesiones y permisos con Supabase Auth
 
-🚢 Deploy
+#  🚢 Deploy
 Vercel (Recomendado)
 
 Conectar repositorio
@@ -98,7 +103,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 Deploy automático en cada push a main
 
-👥 Autores
+#  👥 Autores
 Nicolás Medina - @nico22tt
 
 Licencia: Privado - Proyecto de Título
