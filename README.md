@@ -2,7 +2,8 @@
 
 Plataforma de comercio electrónico B2C especializada en moda femenina, construida con arquitectura monorepo moderna y stack full-stack escalable.
 
-🚀 Stack Tecnológico
+#  🚀 Stack Tecnológico
+
 Frontend: Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui
 
 Backend: Next.js API Routes, FastAPI (ML Service)
@@ -13,7 +14,8 @@ Auth & Storage: Supabase (Auth + Storage Buckets)
 
 Monorepo: Turborepo con pnpm workspaces
 
-✨ Características Principales
+#  ✨ Características Principales
+
 Panel Administrativo: Gestión completa de productos, categorías, inventario y órdenes
 
 Catálogo Inteligente: Búsqueda avanzada, filtros por categoría, gestión de imágenes
@@ -26,17 +28,24 @@ Gestión de Inventario: Actualización en tiempo real con sincronización autom�
 
 Arquitectura Modular: Monorepo con apps y paquetes compartidos
 
-📦 Estructura del Proyecto
-text
+#  📦 Estructura del Proyecto
+
 apps/
+
 ├── admin/          # Panel de administración
+
 ├── web/            # Tienda pública (cliente)
+
 packages/
+
 ├── @jess/ui/       # Componentes compartidos
+
 ├── @jess/shared/   # Lógica y utilidades
+
 ├── @jess/prisma/   # Schema y cliente de BD
+
 🛠️ Inicio Rápido
-bash
+
 # Clonar repositorio
 git clone https://github.com/nico22tt/jess-tendencia.git
 cd jess-tendencia
@@ -91,7 +100,6 @@ Deploy automático en cada push a main
 
 👥 Autores
 Nicolás Medina - @nico22tt
-Bastián - Colaborador
 
 Licencia: Privado - Proyecto de Título
-Año: 2024-2025
+Año: 2025
