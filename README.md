@@ -1,6 +1,6 @@
 #  Jess Tendencia - E-commerce Platform
 
-Plataforma de comercio electrónico B2C especializada en moda femenina, construida con arquitectura monorepo moderna y stack full-stack escalable.
+Plataforma de comercio electrónico B2C construida con arquitectura monorepo moderna y stack full-stack escalable. Desarrollada como proyecto de título para un emprendimiento familiar real especializado en moda femenina
 
 #  🚀 Stack Tecnológico
 
