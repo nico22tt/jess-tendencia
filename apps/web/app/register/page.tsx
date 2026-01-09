@@ -8,7 +8,7 @@ import { Input } from "@jess/ui/input"
 import { Label } from "@jess/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@jess/ui/card"
 import { Alert, AlertDescription } from "@jess/ui/alert"
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -33,7 +33,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [successMsg, setSuccessMsg] = useState("")
+  const [registrationComplete, setRegistrationComplete] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -70,7 +70,6 @@ export default function RegisterPage() {
     if (!validateForm()) return
     setIsLoading(true)
     setErrors({})
-    setSuccessMsg("")
 
     const origin = typeof window !== "undefined" ? window.location.origin : ""
 
@@ -107,8 +106,11 @@ export default function RegisterPage() {
 
     // Caso típico con confirmación de email activada: user existe pero session es null
     if (data.user && !data.session) {
-      // En lugar de quedarse en esta página, lo llevamos al login
-      router.replace("/login")
+      setRegistrationComplete(true)
+      // Redirigir al login después de 7 segundos
+      setTimeout(() => {
+        router.replace("/login")
+      }, 7000)
       return
     }
 
@@ -121,6 +123,50 @@ export default function RegisterPage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }))
     }
+  }
+
+  // Pantalla de confirmación exitosa
+  if (registrationComplete) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-pink-25 via-white to-pink-50">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4 mt-40 mb-20">
+          <div className="w-full max-w-md">
+            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <CardContent className="pt-6 pb-8 text-center space-y-4">
+                <div className="flex justify-center">
+                  <CheckCircle2 className="h-16 w-16 text-green-500" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-gray-900">
+                  ¡Cuenta creada exitosamente!
+                </CardTitle>
+                <Alert className="bg-green-50 border-green-400 text-left">
+                  <AlertDescription className="text-sm text-green-800 space-y-2">
+                    <p className="font-medium">
+                      📧 Te enviamos un email de confirmación a:
+                    </p>
+                    <p className="font-semibold">{formData.email}</p>
+                    <p className="mt-3">
+                      Por favor, revisa tu bandeja de entrada y <strong>también la carpeta de spam o correo no deseado</strong> para activar tu cuenta.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+                <p className="text-sm text-gray-600">
+                  Serás redirigido al inicio de sesión en unos segundos...
+                </p>
+                <Button
+                  onClick={() => router.replace("/login")}
+                  className="w-full bg-pink-500 hover:bg-pink-600 text-white"
+                >
+                  Ir a Iniciar Sesión
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   return (
@@ -136,13 +182,6 @@ export default function RegisterPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {successMsg && (
-                <Alert className="py-2 bg-green-50 border-green-400">
-                  <AlertDescription className="text-xs text-green-800">
-                    {successMsg}
-                  </AlertDescription>
-                </Alert>
-              )}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {errors.general && (
                   <Alert variant="destructive" className="py-2">
